@@ -8,14 +8,13 @@ import numpy as np
 
 from ..module import Module
 from ..rng import next_rng_key
-from ..tree import Parameter
 
 
 class Conv1D(Module):
     """A proxy for dm-haiku Conv1D."""
 
-    w: Parameter
-    b: Parameter
+    w: jnp.ndarray
+    b: jnp.ndarray
 
     in_features: int
     out_features: int
@@ -74,8 +73,8 @@ class Conv1D(Module):
         elif data_format == "NWC":
             x = np.empty(shape=(1, 1, in_features), dtype=jnp.float32)
         params = self.fwd.init(rng_key, x)
-        self.w = params["conv1_d"]["w"]
-        self.b = params["conv1_d"]["b"] if with_bias else None
+        self.register_parameter("w", params["conv1_d"]["w"])
+        self.register_parameter("b", params["conv1_d"]["b"] if with_bias else None)
 
     def __call__(self, x):
         return self.fwd.apply({"conv1_d": {"w": self.w, "b": self.b}}, x)
@@ -84,8 +83,8 @@ class Conv1D(Module):
 class Conv2D(Module):
     """A proxy for dm-haiku Conv2D."""
 
-    w: Parameter
-    b: Parameter
+    w: jnp.ndarray
+    b: jnp.ndarray
 
     in_features: int
     out_features: int
@@ -144,8 +143,8 @@ class Conv2D(Module):
         elif data_format == "NHWC":
             x = np.empty(shape=(1, 1, 1, in_features), dtype=jnp.float32)
         params = self.fwd.init(rng_key, x)
-        self.w = params["conv2_d"]["w"]
-        self.b = params["conv2_d"]["b"] if with_bias else None
+        self.register_parameter("w", params["conv2_d"]["w"])
+        self.register_parameter("b", params["conv2_d"]["b"] if with_bias else None)
 
     def __call__(self, x):
         return self.fwd.apply({"conv2_d": {"w": self.w, "b": self.b}}, x)

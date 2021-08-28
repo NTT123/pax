@@ -31,7 +31,7 @@ def test_batchnorm_eval():
 
 def test_batchnorm_params_filter():
     bn = pax.nn.BatchNorm((None, None, 3), True, True, 0.9)
-    params = bn.filter(pax.Parameter)
+    params = bn.filter("parameter")
     bn = bn.update(params)
 
 

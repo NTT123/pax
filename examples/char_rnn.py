@@ -38,7 +38,7 @@ else:
     steps_per_update = 1
     num_devices = jax.device_count()
     batch_size = 1 * num_devices * steps_per_update
-    seq_len = 32 + 1
+    seq_len = 64 + 1
     vocab_size = 256
     hidden_dim = 256
     num_steps = 20_000
@@ -168,7 +168,6 @@ tfdata = (
     .prefetch(tf.data.AUTOTUNE)
     .as_numpy_iterator()
 )
-
 
 losses = 0.0
 tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")

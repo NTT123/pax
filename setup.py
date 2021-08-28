@@ -1,12 +1,11 @@
 from setuptools import find_packages, setup
 
-__version__ = "0.1.0"
+__version__ = "0.2.0_beta"
 url = "https://github.com/ntt123/pax"
 
 install_requires = ["dm-haiku", "jax", "optax"]
 setup_requires = []
 tests_require = ["tensorflow", "tensorflow_datasets", "tqdm", "chex", "pytest"]
-
 
 setup(
     name="pax",

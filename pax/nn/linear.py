@@ -5,14 +5,13 @@ import numpy as np
 from .. import initializers
 from ..module import Module
 from ..rng import next_rng_key
-from ..tree import Parameter
 
 
 class Linear(Module):
     """A linear transformation applied over the last dimension of the input."""
 
-    W: Parameter
-    b: Parameter
+    W: jnp.ndarray
+    b: jnp.ndarray
 
     # props
     in_dim: int
@@ -52,9 +51,9 @@ class Linear(Module):
         params = self.f.init(rng_key, np.empty((1, self.in_dim), dtype=np.float32))[
             "linear"
         ]
-        self.W = params["w"]
+        self.register_parameter("W", params["w"])
         if self.with_bias:
-            self.b = params["b"]
+            self.register_parameter("b", params["b"])
 
     def __call__(self, x: np.ndarray) -> jnp.ndarray:
         """Applies a linear transformation to the inputs along the last dimension.

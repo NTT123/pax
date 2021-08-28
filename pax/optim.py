@@ -2,24 +2,22 @@
 
 import logging
 from abc import abstractmethod
-from typing import List, TypeVar, cast
+from typing import Any, List, TypeVar, cast
 
 import jax
 import jax.tree_util
 import optax
 
 from .module import Module
-from .tree import State
 
 T = TypeVar("T", bound="Module")
-
-_OptaxState = List[State]
+_OptaxState = List[Any]
 # TODO: remove cast trick.
 OptaxState = cast(List[optax.OptState], _OptaxState)
 
 
 class Optimizer(Module):
-    state: OptaxState
+    state: Any
 
     @abstractmethod
     def __init__(self, params: T, *args, **kwargs):
@@ -43,7 +41,7 @@ def from_optax(optax_obj: optax.GradientTransformation):
         state: OptaxState
 
         def __init__(self, params: T):
-            self.state = optax_obj.init(params)
+            self.register_state_subtree("state", optax_obj.init(params))
 
         def step(self, grads: T, model: T) -> T:
             """Update model parameters and optimizer state.
@@ -58,9 +56,8 @@ def from_optax(optax_obj: optax.GradientTransformation):
             params = model.parameters()
             if jax.tree_structure(params) != jax.tree_structure(grads):
                 logging.error(
-                    """Parameter's structure is different from gradient's structure. 
-                    This is likely due to updates of the model's data fields 
-                    (which are not `tx.State` or `tx.Parameter`) in the forward pass."""
+                    """parameter's structure is different from gradient's structure. 
+                    This is likely due to updates of the model's data fields in the forward pass."""
                 )
             updates, self.state = optax_obj.update(grads, self.state, params)
             new_params = optax.apply_updates(params, updates)

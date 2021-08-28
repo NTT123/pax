@@ -4,32 +4,87 @@ Note: This file is originated from https://raw.githubusercontent.com/cgarciae/tr
 which is under MIT License.
 """
 
-import collections
-import inspect
-from typing import Callable, List, Optional, Type, TypeVar, Union
+from typing import Any, Callable, List, Optional, Set, TypeVar
 
 import jax
+import jax.numpy as jnp
 import jax.tree_util
-
-from . import tree
 
 A = TypeVar("A")
 B = TypeVar("B")
 T = TypeVar("T", bound="Module")
-FilterFn = Callable[[tree.Leaf, T], bool]
+FilterFn = Callable[[Any, T], bool]
+
+
+@jax.tree_util.register_pytree_node_class
+class Nothing:
+    def tree_flatten(self):
+        return (), None
+
+    @classmethod
+    def tree_unflatten(cls, _aux_data, children):
+        return cls()
+
+    def __repr__(self) -> str:
+        return "Nothing"
+
+    def __eq__(self, o: object) -> bool:
+        return isinstance(o, Nothing)
 
 
 class Module:
     _training = True
-    _param_filter_fn: Optional[FilterFn] = None
+    _module_filter_fn: Optional[FilterFn] = None
+    _parameters: Set[str] = set()
+    _states: Set[str] = set()
+    _param_subtrees: Set[str] = set()
+    _state_subtrees: Set[str] = set()
+    _module_subtrees: Set[str] = set()
+    _modules: Set[str] = set()
 
     @property
-    def param_filter_fn(self) -> FilterFn:
-        return self._param_filter_fn
+    def module_filter_fn(self) -> FilterFn:
+        return self._module_filter_fn
 
     @property
     def training(self) -> bool:
         return self._training
+
+    def register_parameter(self, name: str, value: jnp.ndarray):
+        if len(self._parameters) == 0:
+            self._parameters = set()
+        setattr(self, name, value)
+        self._parameters.add(name)
+
+    def register_state(self, name: str, value: jnp.ndarray):
+        if len(self._states) == 0:
+            self._states = set()
+        setattr(self, name, value)
+        self._states.add(name)
+
+    def register_param_subtree(self, name: str, value: Any):
+        if len(self._param_subtrees) == 0:
+            self._param_subtrees = set()
+        setattr(self, name, value)
+        self._param_subtrees.add(name)
+
+    def register_module_subtree(self, name: str, value: Any):
+        if len(self._module_subtrees) == 0:
+            self._module_subtrees = set()
+        setattr(self, name, value)
+        self._module_subtrees.add(name)
+
+    def register_module_subtree(self, name: str, value: Any):
+        if len(self._module_subtrees) == 0:
+            self._module_subtrees = set()
+        setattr(self, name, value)
+        self._module_subtrees.add(name)
+
+    def register_state_subtree(self, name: str, value: Any):
+        if len(self._state_subtrees) == 0:
+            self._state_subtrees = set()
+        setattr(self, name, value)
+        self._state_subtrees.add(name)
 
     def tree_flatten(self):
         annotations = getattr(self.__class__, "__annotations__", {})
@@ -40,19 +95,25 @@ class Module:
 
         for name, value in fields.items():
             # `_training` is already in `props`.
-            if name in ["_training"]:
+            if name in [
+                "_training",
+                "_module_filter_fn",
+                "_parameters",
+                "_states",
+                "_param_subtrees",
+                "_state_subtrees",
+            ]:
                 continue
-            annotation = annotations.get(name, None)
-            annotation = _flatten_tree_type(annotation)
 
-            if annotation is None or not inspect.isclass(annotation):
-                _not_tree[name] = value
-            elif issubclass(annotation, Module):
+            if name in self._module_subtrees or name in self._modules:
                 _tree[name] = value
-            elif issubclass(annotation, tree.Leaf):
-                _tree[name] = jax.tree_map(
-                    lambda x: annotation(x, {"module": self}), value
-                )
+            elif name in self._param_subtrees or name in self._parameters:
+                _tree[name] = value
+            elif name in self._state_subtrees or name in self._states:
+                _tree[name] = value
+            elif isinstance(value, Module):
+                # when a field is module, it is automatically part of the pytree.
+                _tree[name] = value
             else:
                 _not_tree[name] = value
 
@@ -61,6 +122,11 @@ class Module:
             not_tree=_not_tree,
             props=dict(
                 _training=self._training,
+                _module_filter_fn=self._module_filter_fn,
+                _parameters=self._parameters,
+                _states=self._states,
+                _param_subtrees=self._param_subtrees,
+                _state_subtrees=self._state_subtrees,
             ),
         )
 
@@ -85,29 +151,52 @@ class Module:
     def copy(self: T) -> T:
         return jax.tree_map(lambda x: x, self)
 
-    def filter(self: T, *filters: Type, filter_fn: Optional[FilterFn] = None) -> T:
+    def filter(
+        self: T,
+        filter_type: str = "parameter",
+        module_filter_fn: Optional[FilterFn] = None,
+    ) -> T:
         """Filtering a module based on the type of leaf nodes or a custom function.
 
         If `filter_fn` is not None, a filter function will be applied.
         We also pass `self` to `filter_fn` function as this is helpful when selecting a subset of `self`.
         """
-        flat: List[tree.Leaf]
+        flat: List[Any]
+        fields = vars(self)
+        cls = self.__class__
+        module = cls.__new__(cls)
 
-        if filter_fn is None:
+        if module_filter_fn is None:
+            module_filter_fn = lambda x, info: x
 
-            def filter_fn(x, m: T):
-                return isinstance(x, filters)
-
-        flat, treedef = jax.tree_flatten(
-            self, is_leaf=lambda x: isinstance(x, tree.Leaf)
-        )
-        flat_out = [
-            leaf.value
-            if isinstance(leaf, tree.Leaf) and filter_fn(leaf, self)
-            else tree.Nothing()
-            for leaf in flat
-        ]
-        module = jax.tree_unflatten(treedef, flat_out)
+        for name, value in fields.items():
+            if name in self._module_subtrees or name in self._modules:
+                value = jax.tree_map(
+                    lambda x: module_filter_fn(
+                        x.filter(filter_type, module_filter_fn),
+                        {"old": x, "parent": self, "name": name},
+                    ),
+                    value,
+                    is_leaf=lambda x: isinstance(x, Module),
+                )
+            elif name in self._param_subtrees or name in self._parameters:
+                if module_filter_fn is None:
+                    module_filter_fn = lambda x, y: True
+                fn1 = lambda x: x
+                fn2 = lambda x: Nothing()
+                fn = fn1 if filter_type == "parameter" else fn2
+                value = jax.tree_map(fn, value)
+            elif name in self._state_subtrees or name in self._states:
+                fn1 = lambda x: x
+                fn2 = lambda x: Nothing()
+                fn = fn1 if filter_type == "state" else fn2
+                value = jax.tree_map(fn, value)
+            elif isinstance(value, Module):
+                value = module_filter_fn(
+                    value.filter(filter_type, module_filter_fn),
+                    {"old": value, "parent": self, "name": name},
+                )
+            setattr(module, name, value)
 
         return module
 
@@ -117,13 +206,13 @@ class Module:
         def merge_fn(xs):
             acc, *xs = xs
             for x in xs:
-                if not isinstance(x, tree.Nothing):
+                if not isinstance(x, Nothing):
                     acc = x
             return acc
 
         flats, treedefs = zip(
             *[
-                jax.tree_flatten(m, is_leaf=lambda x: isinstance(x, tree.Nothing))
+                jax.tree_flatten(m, is_leaf=lambda x: isinstance(x, Nothing))
                 for m in modules
             ]
         )
@@ -151,8 +240,8 @@ class Module:
     def eval(self: T) -> T:
         return self.train(False)
 
-    def filter_parameters(self, filter_fn: FilterFn):
-        """Set a filter function for trainable parameters.
+    def filter_modules(self, filter_fn: FilterFn):
+        """Set a filter function for trainable modules.
         This function is used to fine-tune a subset of the module.
 
         Arguments:
@@ -162,39 +251,14 @@ class Module:
             new_self: a new module.
         """
         new_self = self.copy()
-        new_self._param_filter_fn = filter_fn
+        new_self._module_filter_fn = filter_fn
         return new_self
 
     def parameters(self):
         """Return trainable parameters of the module.
 
         Apply `self.param_filter_fn` if available."""
-        params = self.filter(tree.Parameter)
-        if self.param_filter_fn is not None:
-            params = params.filter(filter_fn=self.param_filter_fn)
+        params = self.filter("parameter")
+        if self.module_filter_fn is not None:
+            params = params.filter(module_filter_fn=self.module_filter_fn)
         return params
-
-
-def _flatten_tree_type(t: Optional[type]) -> Optional[type]:
-    """Flatten Optional[T], List[T] and Sequence[T], Dict[K, T] -> T.
-
-    Note: Tuple is not supported.
-    """
-    if t is None or inspect.isclass(t):
-        return t
-    elif hasattr(t, "__origin__") and hasattr(t, "__args__"):
-        subtypes = [x for x in t.__args__ if x != type(None)]
-        # check if Leaf/Module in Optional type, Union[Leaf, int] is not supported.
-        if t.__origin__ is Union:
-            if len(subtypes) == 1:
-                x = _flatten_tree_type(subtypes[0])
-                if inspect.isclass(x) and issubclass(x, (tree.Leaf, Module)):
-                    return x
-        elif t.__origin__ in [list, collections.abc.Sequence] and len(subtypes) == 1:
-            return _flatten_tree_type(subtypes[0])
-        elif t.__origin__ is dict:
-            [k, v] = t.__args__
-            del k
-            v = _flatten_tree_type(v)
-            return v
-    return t

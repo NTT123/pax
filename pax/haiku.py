@@ -1,18 +1,16 @@
 """Convert Haiku module to tx.Module"""
-from haiku import dynamic_unroll
 from typing import Dict, Optional
 
-import haiku as hk
 import jax
 import jax.numpy as jnp
 import numpy as np
-from haiku import LSTMState
 
+import haiku as hk
+from haiku import LSTMState, dynamic_unroll
 from pax.module import Module
-from pax.tree import Parameter, State
 
-HaikuState = Dict[str, Dict[str, State]]
-HaikuParam = Dict[str, Dict[str, Parameter]]
+HaikuState = Dict[str, Dict[str, jnp.ndarray]]
+HaikuParam = Dict[str, Dict[str, jnp.ndarray]]
 
 
 def from_haiku(cls, use_rng: bool = False, pass_is_training: bool = False, **kwargs):
@@ -32,17 +30,19 @@ def from_haiku(cls, use_rng: bool = False, pass_is_training: bool = False, **kwa
     class HaikuModule(Module):
         params: HaikuParam
         state: HaikuState
-        rng_key: State
+        rng_key: jnp.ndarray
 
         def __init__(self, *u, rng_key: Optional[jnp.ndarray] = None, **v) -> None:
             rng_key = jax.random.PRNGKey(42) if rng_key is None else rng_key
             if pass_is_training:
                 v["is_training"] = self.training
-            self.params, self.state = map(
+            params, state = map(
                 hk.data_structures.to_mutable_dict,
                 hk_fwd.init(rng_key, *u, **v),
             )
-            self.rng_key = rng_key
+            self.register_param_subtree("params", params)
+            self.register_state_subtree("state", state)
+            self.register_state_subtree("rng_key", rng_key)
 
         def __call__(self, *args, **kwargs):
             if use_rng:

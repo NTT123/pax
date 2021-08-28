@@ -28,11 +28,16 @@ class ConvNet(pax.Module):
     output: pax.nn.Conv2D
 
     def __init__(self):
-        self.convs = [
-            pax.nn.Conv2D((1 if i == 0 else 32), 32, 6, padding="VALID")
-            for i in range(5)
-        ]
-        self.bns = [pax.haiku.batch_norm_2d(32) for _ in range(5)]
+        self.register_module_subtree(
+            "convs",
+            [
+                pax.nn.Conv2D((1 if i == 0 else 32), 32, 6, padding="VALID")
+                for i in range(5)
+            ],
+        )
+        self.register_module_subtree(
+            "bns", [pax.haiku.batch_norm_2d(32) for _ in range(5)]
+        )
         self.output = pax.nn.Conv2D(32, 10, 3, padding="VALID")
 
     def __call__(self, x: jnp.ndarray):
@@ -110,7 +115,6 @@ if len(ckpts) > 0:
     last_epoch, net = load_ckpt(net, ckpts[-1])
 else:
     last_epoch = -1
-
 
 for epoch in range(last_epoch + 1, 10):
     losses = 0.0

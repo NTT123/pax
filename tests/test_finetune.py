@@ -1,11 +1,10 @@
-from typing import List
+from typing import Any, List
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
 import pax
-from pax.tree import Leaf
 
 
 def test_finetune():
@@ -15,9 +14,10 @@ def test_finetune():
         layers: List[pax.Module]
 
         def __init__(self, dims: List[int]):
-            self.layers = []
+            layers = []
             for in_dim, out_dim in zip(dims[:-1], dims[1:]):
-                self.layers.append(pax.nn.Linear(in_dim, out_dim))
+                layers.append(pax.nn.Linear(in_dim, out_dim))
+            self.register_module_subtree("layers", layers)
 
         def __call__(self, x):
             for f in self.layers:
@@ -35,12 +35,20 @@ def test_finetune():
 
     x = jax.random.normal(pax.next_rng_key(), (1, 10))
 
-    def freeze_filter(node: Leaf, model: MLP):
-        # freeze all layers except the last one.
-        freezed_layers = model.layers[0:-1]
-        return node.info["module"] not in freezed_layers
+    def module_filter(mod: Any, info):
+        if isinstance(info["parent"], MLP) and info["name"] == "layers":
+            # freeze all layers except the last one.
+            trainable_layers = [info["parent"].layers[-1]]
+            if info["old"] in trainable_layers:
+                return mod
+            else:
+                return jax.tree_map(lambda x: pax.module.Nothing(), mod)
+        else:
+            return mod
 
-    net = net.filter_parameters(freeze_filter)
+    # finetune
+    # net.layers[-1] = pax.nn.Linear(2, 10)
+    net = net.filter_modules(module_filter)
     optimizer = pax.optim.from_optax(optax.adam(1e-2))(net.parameters())
 
     @jax.jit

@@ -20,7 +20,9 @@ class Sequential(Module):
 
     def __init__(self, *layers):
         filter_fn = lambda f: isinstance(f, Module)
-        self.modules = [(f if filter_fn(f) else None) for f in layers]
+        self.register_param_subtree(
+            "modules", [(f if filter_fn(f) else None) for f in layers]
+        )
         self.functions = [(f if not filter_fn(f) else None) for f in layers]
 
     def __call__(self, x):
