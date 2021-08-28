@@ -1,8 +1,9 @@
 """Useful functions."""
 
-import jax.numpy as jnp
+from typing import Any, Callable, Tuple, TypeVar
+
 import jax
-from typing import Any, Callable, Optional, Tuple, TypeVar
+import jax.numpy as jnp
 
 from pax.module import Module
 from pax.optim import Optimizer

@@ -1,3 +1,9 @@
+"""Pax tree system.
+
+Note: This file is originated from https://github.com/cgarciae/treex/blob/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/types.py
+which is under MIT License.
+"""
+
 from typing import Any, Dict, cast
 
 import jax

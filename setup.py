@@ -1,23 +1,18 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 url = "https://github.com/ntt123/pax"
 
-install_requires = [
-    "dm-haiku",
-    "einops",
-    "jax",
-    "jaxlib",
-    "optax",
-]
+install_requires = ["dm-haiku", "jax", "optax"]
 setup_requires = []
-tests_require = []
+tests_require = ["tensorflow", "tensorflow_datasets", "tqdm", "chex", "pytest"]
+
 
 setup(
     name="pax",
     version=__version__,
-    description="A Pytree Jax Framework.",
-    author="ntt123",
+    description="A Pytree <3 Jax Framework.",
+    author="Thông Nguyễn",
     url=url,
     keywords=[
         "deep-learning",
@@ -26,6 +21,7 @@ setup(
     install_requires=install_requires,
     setup_requires=setup_requires,
     tests_require=tests_require,
-    packages=["pax"],
+    packages=find_packages(exclude=["examples", "tests"]),
+    extras_require={"test": tests_require},
     python_requires=">=3.6",
 )

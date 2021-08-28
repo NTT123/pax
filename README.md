@@ -1,6 +1,6 @@
-# Pytree Jax (Pax)
+# Pax
 
-A stateful pytree library for training neural networks.
+Pax is a stateful pytree library for training neural networks.
 
 
 ## Getting started
@@ -11,9 +11,9 @@ import jax
 
 
 class Counter(pax.Module):
-    counter: pax.tree.State
+    counter: pax.State
 
-    def __init__(self, start_value: int):
+    def __init__(self, start_value: int = 0):
         self.counter = jax.numpy.array(start_value)
 
     def __call__(self):
@@ -24,9 +24,11 @@ class Counter(pax.Module):
 print(Counter(3)())
 ```
 
-## Rules
+## Rules and limitations
 
-1. All parameters and states have to be annotated with the type ``pax.tree.Parameter`` or ``pax.tree.State``.
-2. Any field whose type is not `pax.tree.State` or  `pax.tree.Parameter` should not be modified inside the forward pass.
-3. Functions that are input to jax's higher-order functions (e.g., ``jax.jit``, ``jax.grad``, ``jax.pmap``, etc.) should have no side effects. Modified objects/values should be returned as output of the function.
-
+1. All parameters and states have to be annotated with the type ``pax.Parameter`` or ``pax.State``.
+2. All sub-modules have to be annotated with the type `pax.Module`.
+3. PyTree-compatible types such as: `List[pax.Parameter]`, `Dict[str, pax.Module]`, `Optional[pax.State]` are allowed.
+4. Tuple types such as `Tuple[pax.Parameter, pax.Parameter]` are not allowed. Use `List` instead.
+4. Any field whose type is not `pax.State` or  `pax.Parameter` should not be modified inside the forward pass.
+5. Functions (e.g., loss functions) that are input to jax's higher-order functions (e.g., ``jax.jit``, ``jax.grad``, ``jax.pmap``, etc.) should have no side effects. Modified objects/values should be returned as output of the function.

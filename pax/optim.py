@@ -1,4 +1,4 @@
-"""Optax optimizers as trex modules."""
+"""Optax optimizers as Pax modules."""
 
 import logging
 from abc import abstractmethod
@@ -8,8 +8,8 @@ import jax
 import jax.tree_util
 import optax
 
-from pax.module import Module
-from pax.tree import State
+from .module import Module
+from .tree import State
 
 T = TypeVar("T", bound="Module")
 

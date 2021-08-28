@@ -1,3 +1,9 @@
+"""Pax module.
+
+Note: This file is originated from https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
+which is under MIT License.
+"""
+
 import collections
 import inspect
 from typing import Callable, List, Optional, Type, TypeVar, Union
@@ -5,7 +11,7 @@ from typing import Callable, List, Optional, Type, TypeVar, Union
 import jax
 import jax.tree_util
 
-import pax.tree as tree
+from . import tree
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -128,7 +134,7 @@ class Module:
         return module
 
     def train(self: T, mode=True):
-        """Rebuild a new model recursively and set `self._training=mode`."""
+        """Rebuild a new model recursively and set `self._training = mode`."""
         submods, treedef = jax.tree_flatten(
             self, is_leaf=lambda x: isinstance(x, Module) and x is not self
         )
