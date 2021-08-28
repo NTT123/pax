@@ -19,12 +19,9 @@ import jax.numpy as jnp
 import pax
 
 class Counter(pax.Module):
-    counter: jnp.ndarray
-    bias: jnp.ndarray
-
     def __init__(self, start_value: int = 0):
-        self.counter = jnp.array(start_value)
-        self.register_parameter('bias', jnp.array(0.0))
+        self.register_state("counter", jnp.array(start_value))
+        self.register_parameter("bias", jnp.array(0.0))
 
 
     def __call__(self, x):
@@ -42,15 +39,16 @@ grad_fn = jax.grad(loss_fn, has_aux=True)
 net = Counter(3)
 x = jnp.array(10.)
 grads, (loss, net) = grad_fn(net.parameters(), net, x)
-print(grads.counter) # Nothing
+print(grads.counter) # None
 print(grads.bias) # 60.0
 ```
 
 There are a few important things in the above example:
-1. ``counter`` is annotated with type `pax.State` to make it a non-trainable leaf of the pytree.
+1. ``counter`` is registered as a non-trainable state using ``register_state`` method.
+2. ``biase`` is registered as a trainable parameter using ``register_parameter`` method.
 3. ``model = model.update(params)`` has two purposes: (1) it causes ``model`` to use ``params`` in the forward computation, (2) it returns a new version of ``model``, therefore, makes ``loss_fn`` a function without side effects.
 4. ``loss_fn`` returns the updated `model` in its output.
-5. ``net.parameters()`` keeps all trainable leaves intact while setting all other leaves to ``pax.tree.Nothing``. This is needed to make sure that we only compute gradients w.r.t trainable parameters only.
+5. ``net.parameters()`` keeps all trainable leaves intact while setting all other leaves to ``None``. This is needed to make sure that we only compute gradients w.r.t trainable parameters only.
 
 
 ## Rules and limitations
@@ -80,7 +78,7 @@ class SGD(pax.Optimizer):
     def __init__(self, params, learning_rate: float = 1e-2, momentum: float = 0.9):
         self.momentum = momentum
         self.learning_rate = learning_rate
-        self.register_param_subtree('velocity', jax.tree_map(lambda x: jnp.zeros_like(x), params))
+        self.register_state_subtree('velocity', jax.tree_map(lambda x: jnp.zeros_like(x), params))
         
     def step(self, grads: pax.Module, model: pax.Module):
         self.velocity = jax.tree_map(
@@ -93,7 +91,7 @@ class SGD(pax.Optimizer):
         return model.update(new_params)
 ```
 
-Because Pax's Module is stateful, ``SGD`` can store its internal state ``velocity`` naturally.
+Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally using the ``register_state_subtree`` method.
 
 Moreover, Pax provides the ``pax.optim.from_optax`` function that convert any [optax](https://optax.readthedocs.io/en/latest/) optimizer to a pax's Module.
 
@@ -106,7 +104,7 @@ SGD = pax.optim.from_optax(
 
 ## Fine-tunning models.
 
-Pax's Module provides the ``Module.filter_modules`` method to select trainable sub-modules.
+Pax's Module provides the ``freeze`` method to convert all trainable parameters to non-trainable states.
 
 ```python
 net = pax.nn.Sequential(
@@ -115,20 +113,9 @@ net = pax.nn.Sequential(
     pax.nn.Linear(64, 10),
 )
 
-def finetune_filter(mod, info):
-    model = info['parent']
-    old_mod = info['old']
-    if isinstance(model, pax.nn.Sequential):
-        trainable_layers = [model.modules[2]]
-        if old_mod in trainable_layers:
-            return mod
-        else:
-            return jax.tree_map(lambda x: tree.Nothing(), mod)
-    else:
-        return mod
-
 # we only predict two classes.
 net.modules[2] = pax.nn.Linear(64, 2)
-net = net.filter_modules(finetune_filter)
+# freeze the first layer.
+net.modules[0] = net.modules[0].freeze() 
 ```
-``net.parameters()`` will only returns parameters of the last layer that we want to finetune.
+``net.parameters()`` will now only returns parameters of the last layer.

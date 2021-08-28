@@ -11,7 +11,7 @@ def test_finetune():
     pax.seed_rng_key(42)
 
     class MLP(pax.Module):
-        layers: List[pax.Module]
+        layers: List[pax.nn.Linear]
 
         def __init__(self, dims: List[int]):
             layers = []
@@ -35,20 +35,11 @@ def test_finetune():
 
     x = jax.random.normal(pax.next_rng_key(), (1, 10))
 
-    def module_filter(mod: Any, info):
-        if isinstance(info["parent"], MLP) and info["name"] == "layers":
-            # freeze all layers except the last one.
-            trainable_layers = [info["parent"].layers[-1]]
-            if info["old"] in trainable_layers:
-                return mod
-            else:
-                return jax.tree_map(lambda x: pax.module.Nothing(), mod)
-        else:
-            return mod
+    # make all layers non-trainable except the last layer.
+    for i in range(len(net.layers) - 1):
+        net.layers[i] = net.layers[i].freeze()
 
-    # finetune
     # net.layers[-1] = pax.nn.Linear(2, 10)
-    net = net.filter_modules(module_filter)
     optimizer = pax.optim.from_optax(optax.adam(1e-2))(net.parameters())
 
     @jax.jit
