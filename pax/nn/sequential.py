@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 from ..module import Module
 
@@ -15,8 +15,8 @@ class Sequential(Module):
     """
 
     # Note: we cannot mix pax.Module and jax functions (e.g., jax.nn.relu) in the same list.
-    modules: List[Module]
-    functions: List[Callable]
+    modules: List[Optional[Module]]
+    functions: List[Optional[Callable]]
 
     def __init__(self, *layers):
         filter_fn = lambda f: isinstance(f, Module)
