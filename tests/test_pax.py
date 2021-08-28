@@ -133,12 +133,12 @@ def test_train_eval():
     net = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(3, 3))
 
     assert net._training == True
-    net.pytree_layers[0]._training == True
+    net.modules[0]._training == True
     net = net.eval()
     assert net._training == False
-    net.pytree_layers[0]._training == False
-    net.pytree_layers[1]._training == False
+    net.modules[0]._training == False
+    net.modules[1]._training == False
     net = net.train()
     assert net._training == True
-    net.pytree_layers[0]._training == True
-    net.pytree_layers[1]._training == True
+    net.modules[0]._training == True
+    net.modules[1]._training == True
