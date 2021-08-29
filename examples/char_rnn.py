@@ -38,7 +38,7 @@ else:
     steps_per_update = 1
     num_devices = jax.device_count()
     batch_size = 1 * num_devices * steps_per_update
-    seq_len = 32 + 1
+    seq_len = 64 + 1
     vocab_size = 256
     hidden_dim = 256
     num_steps = 20_000
@@ -60,6 +60,7 @@ class LM(pax.Module):
             vocab_size: int, size of the alphabet.
             hidden_dim: int, number of LSTM cells.
         """
+        super().__init__()
         self.vocab_size = vocab_size
         self.hidden_dim = hidden_dim
         self.embed = pax.haiku.embed(vocab_size, hidden_dim)
@@ -155,7 +156,7 @@ def detokenize(tokens):
 
 data = inspect.getsource(LM)  # a _true_ AGI learns about itself.
 data_token = tokenize(data)
-test_prompt = "class LM(tx.Module):"
+test_prompt = "class LM(pax.Module):"
 
 tfdata = (
     tf.data.Dataset.from_tensors(data_token)
@@ -168,7 +169,6 @@ tfdata = (
     .prefetch(tf.data.AUTOTUNE)
     .as_numpy_iterator()
 )
-
 
 losses = 0.0
 tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")

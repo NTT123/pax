@@ -9,7 +9,7 @@ Differences:
     2. We can input `rng_key` to seed the value of scale/offset parameters.
 """
 import collections
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import jax
 import jax.numpy as jnp
@@ -17,9 +17,8 @@ import numpy as np
 from haiku import initializers
 
 from .. import initializers
-from ..module import Module, Union
+from ..module import Module
 from ..rng import next_rng_key
-from ..tree import Parameter
 
 
 class LayerNorm(Module):
@@ -27,8 +26,8 @@ class LayerNorm(Module):
     See: https://arxiv.org/abs/1607.06450.
     """
 
-    scale: Optional[Parameter] = None
-    offset: Optional[Parameter] = None
+    scale: Optional[jnp.ndarray] = None
+    offset: Optional[jnp.ndarray] = None
 
     def __init__(
         self,
@@ -59,6 +58,7 @@ class LayerNorm(Module):
             formulation for computing variance.
           rng_key: RNG key.
         """
+        super().__init__()
         if not create_scale and scale_init is not None:
             raise ValueError("Cannot set `scale_init` if `create_scale=False`.")
         if not create_offset and offset_init is not None:
@@ -87,9 +87,13 @@ class LayerNorm(Module):
             rng_key = next_rng_key()
         rng1, rng2 = jax.random.split(rng_key)
         if create_scale:
-            self.scale = self.scale_init(param_shape, jnp.float32, rng1)
+            self.register_parameter(
+                "scale", self.scale_init(param_shape, jnp.float32, rng1)
+            )
         if create_offset:
-            self.offset = self.offset_init(param_shape, jnp.float32, rng2)
+            self.register_parameter(
+                "offset", self.offset_init(param_shape, jnp.float32, rng2)
+            )
 
     def __call__(
         self,

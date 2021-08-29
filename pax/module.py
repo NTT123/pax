@@ -1,35 +1,63 @@
 """Pax module.
 
-Note: This file is originated from https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
+Note: This file is originated from 
+https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
 which is under MIT License.
 """
 
-import collections
-import inspect
-from typing import Callable, List, Optional, Type, TypeVar, Union
+import copy
+from typing import Any, Callable, Dict, TypeVar
 
 import jax
+import jax.numpy as jnp
 import jax.tree_util
-
-from . import tree
 
 A = TypeVar("A")
 B = TypeVar("B")
 T = TypeVar("T", bound="Module")
-FilterFn = Callable[[tree.Leaf, T], bool]
+FilterFn = Callable[[Any, T], bool]
 
 
 class Module:
-    _training = True
-    _param_filter_fn: Optional[FilterFn] = None
+    _properties: Dict[str, Any]
 
-    @property
-    def param_filter_fn(self) -> FilterFn:
-        return self._param_filter_fn
+    def __init__(self):
+        self._properties = dict()
+        self._properties["_training"] = True
+        self._properties["_parameters"] = set()
+        self._properties["_states"] = set()
+        self._properties["_modules"] = set()
+        self._properties["_parameter_subtrees"] = set()
+        self._properties["_state_subtrees"] = set()
+        self._properties["_module_subtrees"] = set()
 
     @property
     def training(self) -> bool:
-        return self._training
+        return self._properties["_training"]
+
+    def register_parameter(self, name: str, value: jnp.ndarray):
+        setattr(self, name, value)
+        self._properties["_parameters"].add(name)
+
+    def register_state(self, name: str, value: jnp.ndarray):
+        setattr(self, name, value)
+        self._properties["_states"].add(name)
+
+    def register_module(self, name: str, value: Any):
+        setattr(self, name, value)
+        self._properties["_modules"].add(name)
+
+    def register_parameter_subtree(self, name: str, value: Any):
+        setattr(self, name, value)
+        self._properties["_parameter_subtrees"].add(name)
+
+    def register_state_subtree(self, name: str, value: Any):
+        setattr(self, name, value)
+        self._properties["_state_subtrees"].add(name)
+
+    def register_module_subtree(self, name: str, value: Any):
+        setattr(self, name, value)
+        self._properties["_module_subtrees"].add(name)
 
     def tree_flatten(self):
         annotations = getattr(self.__class__, "__annotations__", {})
@@ -38,43 +66,42 @@ class Module:
         _tree = {}
         _not_tree = {}
 
-        for name, value in fields.items():
-            # `_training` is already in `props`.
-            if name in ["_training"]:
-                continue
-            annotation = annotations.get(name, None)
-            annotation = _flatten_tree_type(annotation)
+        all_tree_fields = set.union(
+            self._properties["_parameters"],
+            self._properties["_states"],
+            self._properties["_modules"],
+            self._properties["_parameter_subtrees"],
+            self._properties["_state_subtrees"],
+            self._properties["_module_subtrees"],
+        )
 
-            if annotation is None or not inspect.isclass(annotation):
-                _not_tree[name] = value
-            elif issubclass(annotation, Module):
+        for name, value in fields.items():
+            if name == "_properties":
+                continue
+
+            if name in all_tree_fields:
                 _tree[name] = value
-            elif issubclass(annotation, tree.Leaf):
-                _tree[name] = jax.tree_map(
-                    lambda x: annotation(x, {"module": self}), value
-                )
+            elif isinstance(value, Module):
+                # when a field is Module's instance, it is automatically part of the pytree.
+                _tree[name] = value
             else:
                 _not_tree[name] = value
 
         return tuple(_tree.values()), dict(
             tree=_tree.keys(),
             not_tree=_not_tree,
-            props=dict(
-                _training=self._training,
-            ),
+            _properties=copy.deepcopy(self._properties),
         )
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         module = cls.__new__(cls)
+        module._properties = copy.deepcopy(aux_data["_properties"])
 
         for i, k in enumerate(aux_data["tree"]):
             setattr(module, k, children[i])
 
         for k, v in aux_data["not_tree"].items():
-            setattr(module, k, v)
-
-        for k, v in aux_data["props"].items():
             setattr(module, k, v)
 
         return module
@@ -85,116 +112,107 @@ class Module:
     def copy(self: T) -> T:
         return jax.tree_map(lambda x: x, self)
 
-    def filter(self: T, *filters: Type, filter_fn: Optional[FilterFn] = None) -> T:
-        """Filtering a module based on the type of leaf nodes or a custom function.
+    def filter(self: T, keep: str = "parameter") -> T:
+        """Filtering a module"""
+        assert keep in ["parameter", "state"]
+        fields = vars(self)
+        cls = self.__class__
+        module = cls.__new__(cls)
 
-        If `filter_fn` is not None, a filter function will be applied.
-        We also pass `self` to `filter_fn` function as this is helpful when selecting a subset of `self`.
-        """
-        flat: List[tree.Leaf]
-
-        if filter_fn is None:
-
-            def filter_fn(x, m: T):
-                return isinstance(x, filters)
-
-        flat, treedef = jax.tree_flatten(
-            self, is_leaf=lambda x: isinstance(x, tree.Leaf)
+        param_field_names = self._properties["_parameters"].union(
+            self._properties["_parameter_subtrees"]
         )
-        flat_out = [
-            leaf.value
-            if isinstance(leaf, tree.Leaf) and filter_fn(leaf, self)
-            else tree.Nothing()
-            for leaf in flat
-        ]
-        module = jax.tree_unflatten(treedef, flat_out)
+        state_field_names = self._properties["_states"].union(
+            self._properties["_state_subtrees"]
+        )
+        module_field_names = self._properties["_modules"].union(
+            self._properties["_module_subtrees"]
+        )
+
+        for name, value in fields.items():
+            if name in module_field_names:
+                value = jax.tree_map(
+                    lambda x: x.filter(keep),
+                    value,
+                    is_leaf=lambda x: isinstance(x, Module),
+                )
+            elif name in param_field_names:
+                fn1 = lambda x: x
+                fn2 = lambda x: None
+                fn = fn1 if keep == "parameter" else fn2
+                value = jax.tree_map(fn, value)
+            elif name in state_field_names:
+                fn1 = lambda x: x
+                fn2 = lambda x: None
+                fn = fn1 if keep == "state" else fn2
+                value = jax.tree_map(fn, value)
+            elif isinstance(value, Module):
+                value = value.filter(keep)
+            setattr(module, name, value)
 
         return module
 
-    def update(self: T, other: T, *rest: T) -> T:
-        modules = (self, other) + rest
-
-        def merge_fn(xs):
-            acc, *xs = xs
-            for x in xs:
-                if not isinstance(x, tree.Nothing):
-                    acc = x
-            return acc
-
-        flats, treedefs = zip(
-            *[
-                jax.tree_flatten(m, is_leaf=lambda x: isinstance(x, tree.Nothing))
-                for m in modules
-            ]
-        )
-        # flat_out = jax.tree_util.tree_map(merge_fn, *flats)
-        flat_out = [merge_fn(values) for values in zip(*flats)]
-        module = jax.tree_unflatten(treedefs[0], flat_out)
-
-        return module
+    def update(self: T, other: T) -> T:
+        return jax.tree_map(lambda s, o: (s if o is None else o), self, other)
 
     def train(self: T, mode=True):
         """Rebuild a new model recursively and set `self._training = mode`."""
         submods, treedef = jax.tree_flatten(
             self, is_leaf=lambda x: isinstance(x, Module) and x is not self
         )
-        new_submodes = []
+        new_submods = []
         for mod in submods:
             if isinstance(mod, Module):
-                new_submodes.append(mod.train(mode=mode))
+                new_submods.append(mod.train(mode=mode))
             else:
-                new_submodes.append(mod)
-        model = jax.tree_unflatten(treedef, new_submodes)
-        model._training = mode
+                new_submods.append(mod)
+        model = jax.tree_unflatten(treedef, new_submods)
+        model._properties["_training"] = mode
         return model
 
     def eval(self: T) -> T:
         return self.train(False)
 
-    def filter_parameters(self, filter_fn: FilterFn):
-        """Set a filter function for trainable parameters.
-        This function is used to fine-tune a subset of the module.
-
-        Arguments:
-            filter_fn: FilterFn, a filter function which picks trainble parameters.
-
-        Returns:
-            new_self: a new module.
-        """
-        new_self = self.copy()
-        new_self._param_filter_fn = filter_fn
-        return new_self
-
     def parameters(self):
         """Return trainable parameters of the module.
 
         Apply `self.param_filter_fn` if available."""
-        params = self.filter(tree.Parameter)
-        if self.param_filter_fn is not None:
-            params = params.filter(filter_fn=self.param_filter_fn)
+        params = self.filter("parameter")
         return params
 
+    def freeze(self: T) -> T:
+        """Convert all trainable parameters to non-trainable states."""
+        submods, treedef = jax.tree_flatten(
+            self, is_leaf=lambda x: isinstance(x, Module) and x is not self
+        )
+        new_submods = []
+        for mod in submods:
+            if isinstance(mod, Module):
+                new_submods.append(mod.freeze())
+            else:
+                new_submods.append(mod)
+        model = jax.tree_unflatten(treedef, new_submods)
+        model._properties["_states"].update(self._properties["_parameters"])
+        model._properties["_parameters"].clear()
+        model._properties["_state_subtrees"].update(
+            self._properties["_parameter_subtrees"]
+        )
+        model._properties["_parameter_subtrees"].clear()
 
-def _flatten_tree_type(t: Optional[type]) -> Optional[type]:
-    """Flatten Optional[T], List[T] and Sequence[T], Dict[K, T] -> T.
+        return model
 
-    Note: Tuple is not supported.
-    """
-    if t is None or inspect.isclass(t):
-        return t
-    elif hasattr(t, "__origin__") and hasattr(t, "__args__"):
-        subtypes = [x for x in t.__args__ if x != type(None)]
-        # check if Leaf/Module in Optional type, Union[Leaf, int] is not supported.
-        if t.__origin__ is Union:
-            if len(subtypes) == 1:
-                x = _flatten_tree_type(subtypes[0])
-                if inspect.isclass(x) and issubclass(x, (tree.Leaf, Module)):
-                    return x
-        elif t.__origin__ in [list, collections.abc.Sequence] and len(subtypes) == 1:
-            return _flatten_tree_type(subtypes[0])
-        elif t.__origin__ is dict:
-            [k, v] = t.__args__
-            del k
-            v = _flatten_tree_type(v)
-            return v
-    return t
+    def hk_init(self, *args, enable_jit=False, **kwargs):
+        """Return a new initialized module.
+
+        Arguments:
+        enable_jit: bool, if using `jax.jit` for the init function.
+        """
+
+        def init_fn(mod, args, kwargs):
+            mod = mod.copy()
+            mod(*args, **kwargs)
+            return mod
+
+        if enable_jit:
+            init_fn = jax.jit(init_fn)
+        return init_fn(self, args, kwargs)

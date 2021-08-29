@@ -23,14 +23,15 @@ def test_pax_next_rng_key():
 
 def test_type_union():
     class Counter(pax.Module):
-        count: Union[int, pax.State]
+        count: Union[int, jnp.ndarray]
 
         def __init__(self):
-            self.count = [0]
+            super().__init__()
+            self.register_state("count", [0])
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
-    assert leaves == []
+    assert leaves == [0]
 
 
 def test_type_list_int():
@@ -38,6 +39,7 @@ def test_type_list_int():
         count: List[int]
 
         def __init__(self):
+            super().__init__()
             self.count = [0]
 
     counter = Counter()
@@ -47,10 +49,11 @@ def test_type_list_int():
 
 def test_type_sequence():
     class Counter(pax.Module):
-        count: Sequence[pax.State]
+        count: Sequence[int]
 
         def __init__(self):
-            self.count = [0]
+            super().__init__()
+            self.register_parameter_subtree("count", [0])
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -59,10 +62,13 @@ def test_type_sequence():
 
 def test_type_dict():
     class Counter(pax.Module):
-        count: Dict[str, pax.State]
+        count: Dict[str, int]
 
         def __init__(self):
-            self.count = {"conv1": [1, 2, 3], "conv2": ["a", "b"]}
+            super().__init__()
+            self.register_state_subtree(
+                "count", {"conv1": [1, 2, 3], "conv2": ["a", "b"]}
+            )
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -71,10 +77,13 @@ def test_type_dict():
 
 def test_type_dict_dict1():
     class Counter(pax.Module):
-        count: Dict[str, Dict[int, pax.State]]
+        count: Dict[str, Dict[int, int]]
 
         def __init__(self):
-            self.count = {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
+            super().__init__()
+            self.register_state_subtree(
+                "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
+            )
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -83,10 +92,13 @@ def test_type_dict_dict1():
 
 def test_type_dict_dict_optional():
     class Counter(pax.Module):
-        count: Dict[str, Dict[int, Optional[pax.State]]]
+        count: Dict[str, Dict[int, Optional[int]]]
 
         def __init__(self):
-            self.count = {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
+            super().__init__()
+            self.register_state_subtree(
+                "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
+            )
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -98,6 +110,7 @@ def test_type_dict_dict_optional1():
         count: Dict[str, Dict[int, Optional[int]]]
 
         def __init__(self):
+            super().__init__()
             self.count = {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
 
     counter = Counter()
@@ -110,6 +123,7 @@ def test_type_tuple():
         count: Tuple[int, int]
 
         def __init__(self):
+            super().__init__()
             self.count = (1, 2)
 
     counter = Counter()
@@ -119,10 +133,11 @@ def test_type_tuple():
 
 def test_type_optional():
     class Counter(pax.Module):
-        count: Optional[pax.State]
+        count: Optional[int]
 
         def __init__(self):
-            self.count = 0
+            super().__init__()
+            self.register_state("count", 0)
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -132,13 +147,31 @@ def test_type_optional():
 def test_train_eval():
     net = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(3, 3))
 
-    assert net._training == True
-    net.modules[0]._training == True
+    assert net._properties["_training"] == True
+    net.modules[0]._properties["_training"] == True
     net = net.eval()
-    assert net._training == False
-    net.modules[0]._training == False
-    net.modules[1]._training == False
+    assert net._properties["_training"] == False
+    net.modules[0]._properties["_training"] == False
+    net.modules[1]._properties["_training"] == False
     net = net.train()
-    assert net._training == True
-    net.modules[0]._training == True
-    net.modules[1]._training == True
+    assert net._properties["_training"] == True
+    net.modules[0]._properties["_training"] == True
+    net.modules[1]._properties["_training"] == True
+
+
+def test_state_of_param():
+    class M1(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.register_parameter("p1", jnp.array(0.0, dtype=jnp.float32))
+
+    m1 = M1()
+
+    class M2(pax.Module):
+        def __init__(self, m11):
+            super().__init__()
+            self.register_state_subtree("m2", {"m1": m11})
+
+    m2 = M2(m1)
+    assert len(jax.tree_leaves(m1.filter("state"))) == 0
+    assert len(jax.tree_leaves(m2.filter("parameter"))) == 0

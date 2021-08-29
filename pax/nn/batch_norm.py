@@ -1,4 +1,4 @@
-"""BatchNorm module."""
+"""BatchNorm Module."""
 from typing import Optional, Sequence, Union
 
 import haiku as hk
@@ -35,6 +35,7 @@ class BatchNorm(Module):
         Arguments:
             input_shape: The shape of input tensor. For example `[None, None, 3]`. Use `None` to indicate unknown value.
         """
+        super().__init__()
 
         def fwd(x, is_training: bool):
             return hk.BatchNorm(
@@ -53,8 +54,12 @@ class BatchNorm(Module):
         rng_key = next_rng_key() if rng_key is None else rng_key
         x = np.empty([(1 if i is None else i) for i in input_shape], dtype=np.float32)
         self.params, self.state = self.fwd.init(rng_key, x, is_training=self.training)
-        self.params = hk.data_structures.to_mutable_dict(self.params)
-        self.state = hk.data_structures.to_mutable_dict(self.state)
+        self.register_parameter_subtree(
+            "params", hk.data_structures.to_mutable_dict(self.params)
+        )
+        self.register_state_subtree(
+            "state", hk.data_structures.to_mutable_dict(self.state)
+        )
 
     def __call__(self, x):
         x, state = self.fwd.apply(self.params, self.state, x, is_training=self.training)

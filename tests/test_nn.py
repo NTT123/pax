@@ -31,7 +31,7 @@ def test_batchnorm_eval():
 
 def test_batchnorm_params_filter():
     bn = pax.nn.BatchNorm((None, None, 3), True, True, 0.9)
-    params = bn.filter(pax.Parameter)
+    params = bn.filter("parameter")
     bn = bn.update(params)
 
 
@@ -84,6 +84,14 @@ def test_layer_norm_init():
     params = fwd.init(rng, x)
     chex.assert_equal_shape((layer_norm.scale, params["layer_norm"]["scale"]))
     chex.assert_equal_shape((layer_norm.offset, params["layer_norm"]["offset"]))
+
+
+def test_linear_computation():
+    fc = pax.nn.Linear(1, 1)
+    x = jnp.array([[5.0]], dtype=jnp.float32)
+    y = fc(x)
+    target = x * fc.W + fc.b
+    assert target.item() == y.item()
 
 
 def test_linear():

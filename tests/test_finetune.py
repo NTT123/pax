@@ -1,23 +1,24 @@
-from typing import List
+from typing import Any, List
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
 import pax
-from pax.tree import Leaf
 
 
 def test_finetune():
     pax.seed_rng_key(42)
 
     class MLP(pax.Module):
-        layers: List[pax.Module]
+        layers: List[pax.nn.Linear]
 
         def __init__(self, dims: List[int]):
-            self.layers = []
+            super().__init__()
+            layers = []
             for in_dim, out_dim in zip(dims[:-1], dims[1:]):
-                self.layers.append(pax.nn.Linear(in_dim, out_dim))
+                layers.append(pax.nn.Linear(in_dim, out_dim))
+            self.register_module_subtree("layers", layers)
 
         def __call__(self, x):
             for f in self.layers:
@@ -35,12 +36,11 @@ def test_finetune():
 
     x = jax.random.normal(pax.next_rng_key(), (1, 10))
 
-    def freeze_filter(node: Leaf, model: MLP):
-        # freeze all layers except the last one.
-        freezed_layers = model.layers[0:-1]
-        return node.info["module"] not in freezed_layers
+    # make all layers non-trainable except the last layer.
+    for i in range(len(net.layers) - 1):
+        net.layers[i] = net.layers[i].freeze()
 
-    net = net.filter_parameters(freeze_filter)
+    # net.layers[-1] = pax.nn.Linear(2, 10)
     optimizer = pax.optim.from_optax(optax.adam(1e-2))(net.parameters())
 
     @jax.jit
