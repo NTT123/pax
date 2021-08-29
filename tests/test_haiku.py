@@ -82,16 +82,16 @@ def test_haiku_conv2d_transpose():
 def test_haiku_conv1d_online():
     import haiku as hk
 
-    Conv1D = pax.from_haiku(hk.Conv1D, delay=True)(4, 3, padding="VALID")
+    f = pax.from_haiku(hk.Conv1D)(4, 3, padding="VALID")
     x = np.zeros((3, 5, 3), dtype=np.float32)
-    y = Conv1D()(x)
+    y = f(x)
     assert y.shape == (3, 3, 4)
 
 
 def test_haiku_conv1d_online_jit():
     import haiku as hk
 
-    Conv1D = pax.from_haiku(hk.Conv1D, delay=True)(4, 3, padding="VALID")
+    f = pax.from_haiku(hk.Conv1D)(4, 3, padding="VALID")
     x = np.zeros((3, 5, 3), dtype=np.float32)
 
     @jax.jit
@@ -99,9 +99,34 @@ def test_haiku_conv1d_online_jit():
         model(x)
         return model
 
-    f = Conv1D()
     assert f._is_haiku_initialized == False
     f = init(x, f)
+    assert f._is_haiku_initialized == True
+    y = f(x)
+    assert y.shape == (3, 3, 4)
+
+
+def test_haiku_conv1d_hk_init():
+    import haiku as hk
+
+    f = pax.from_haiku(hk.Conv1D)(4, 3, padding="VALID")
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+
+    assert f._is_haiku_initialized == False
+    f = f.hk_init(x)
+    assert f._is_haiku_initialized == True
+    y = f(x)
+    assert y.shape == (3, 3, 4)
+
+
+def test_haiku_conv1d_hk_init_jit():
+    import haiku as hk
+
+    f = pax.from_haiku(hk.Conv1D)(4, 3, padding="VALID")
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+
+    assert f._is_haiku_initialized == False
+    f = f.hk_init(x, enable_jit=True)
     assert f._is_haiku_initialized == True
     y = f(x)
     assert y.shape == (3, 3, 4)
@@ -119,3 +144,12 @@ def test_haiku_max_pool():
     avg_pool = pax.haiku.avg_pool(2, 3, "SAME", -1)
     y = avg_pool(x)
     assert y.shape == (3, 2, 3)
+
+
+def test_from_haiku_linear():
+    x = np.zeros((2, 1), dtype=np.float32)
+    import haiku as hk
+
+    f = pax.from_haiku(hk.Linear)(32)
+    y = f(x)
+    assert y.shape == (2, 32)

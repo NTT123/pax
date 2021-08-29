@@ -200,3 +200,19 @@ class Module:
         model._properties["_parameter_subtrees"].clear()
 
         return model
+
+    def hk_init(self, *args, enable_jit=False, **kwargs):
+        """Return a new initialized module.
+
+        Arguments:
+        enable_jit: bool, if using `jax.jit` for the init function.
+        """
+
+        def init_fn(mod, args, kwargs):
+            mod = mod.copy()
+            mod(*args, **kwargs)
+            return mod
+
+        if enable_jit:
+            init_fn = jax.jit(init_fn)
+        return init_fn(self, args, kwargs)

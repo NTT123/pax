@@ -66,33 +66,19 @@ We intent to add new modules in the near future.
 Fortunately, Pax also provides the ``pax.from_haiku`` function that can convert most of modules from ``dm-haiku`` library to ``pax.Module``. For example, to convert a dm-haiku LSTM Module:
 ```python
 import haiku as hk
-PaxLSTM = pax.from_haiku(hk.LSTM)(hidden_dim=hidden_dim)
+mylstm = pax.from_haiku(hk.LSTM)(hidden_dim=hidden_dim)
 ```
-Similar to dm-haiku modules that needs a dummy input to infer parameters' shape in the initialization process. We also need to pass ``PaxLSTM`` a dummy input when creating new instances.
+Similar to dm-haiku modules that needs a dummy input to infer parameters' shape in the initialization process. We also need to pass ``mylstm`` a dummy input to initialize parameters.
 
 ```python
 dummy_x = np.empty((1, hidden_dim), dtype=np.float32)
 dummy_hx = hk.LSTMState(dummy_x, dummy_x)
-mylstm = PaxLSTM(dummy_x, dummy_hx)
+mylstm = mylstm.hk_init(dummy_x, dummy_hx)
 ```
+If your model uses these converted haiku modules, you have to call the `hk_init` method right after your model is created to make sure everything is initialized correctly.
 
-This is a bit inconvenient when we have to create these dummy inputs. Pax allows delaying these dummy inputs until a module is executed.
-However, you now have to execute your model once right after it is created to make sure everything is initialized correctly.
 
-```python
-PaxLSTM = pax.from_haiku(hk.LSTM, delay=True)(hidden_dim=hidden_dim)
-mylstm = PaxLSTM() # no dummy inputs here
-
-@jax.jit
-def init_module(inputs, module):
-    module(*inputs)
-    return module
-
-# execute the module for the first time
-mylstm = init_module( (x, hx), mylstm)
-```
-
-In additional, Pax provides many functions that avoid the dummy and delayed input problems: ``pax.haiku.{linear, layer_norm, batch_norm_2d, lstm, gru, embed, conv_1d, conv_2d, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
+In additional, Pax provides many functions that avoid the dummy input problems: ``pax.haiku.{linear, layer_norm, batch_norm_2d, lstm, gru, embed, conv_1d, conv_2d, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
 We intent to add more functions like this in the near futures.
 
 

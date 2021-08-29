@@ -17,7 +17,7 @@ HaikuParam = Dict[str, Dict[str, jnp.ndarray]]
 def from_haiku(
     cls,
     use_rng: bool = False,
-    delay: bool = False,
+    delay: bool = True,
     pass_is_training: bool = False,
 ):
 
@@ -26,11 +26,12 @@ def from_haiku(
     Arguments:
         cls: dm-haiku class. For example, hk.BatchNorm.
         use_rng: generate a new rng key for each call.
-        delay: bool, delay the initialization process until the module is exectied.
+        delay: bool, delay the initialization process until the module is executed.
         pass_is_training: pass `is_training` as an argument to module. `hk.BatchNorm` needs this.
 
     Returns:
-        haiku_module_builder, a function which creates Pax Module.
+        haiku_module_builder, a function which creates a Pax Module if `delay` is `False`,
+        or a Module's instance if `delay` is `True`.
     """
 
     def haiku_module_builder(*args, **kwargs):
@@ -87,7 +88,10 @@ def from_haiku(
                     self.state = hk.data_structures.to_mutable_dict(state)
                 return out
 
-        return HaikuModule
+        if delay:
+            return HaikuModule()
+        else:
+            return HaikuModule
 
     return haiku_module_builder
 
@@ -96,7 +100,7 @@ def batch_norm_2d(
     num_channels: int, axis: int = -1, decay_rate=0.99, cross_replica_axis=None
 ):
     """Return a BatchNorm module."""
-    BatchNorm = from_haiku(hk.BatchNorm, pass_is_training=True)(
+    BatchNorm = from_haiku(hk.BatchNorm, delay=False, pass_is_training=True)(
         create_scale=True,
         create_offset=True,
         decay_rate=decay_rate,
@@ -115,18 +119,18 @@ def layer_norm(num_channels: int, axis: int = -1):
     shape = [1, 1, 1, 1]
     shape[axis] = num_channels
     x = np.empty((num_channels,), dtype=np.float32).reshape(shape)
-    return LayerNorm(x)
+    return LayerNorm.hk_init(x)
 
 
 def linear(in_dim: int, out_dim: int, with_bias: bool = True):
     Linear = from_haiku(hk.Linear)(output_size=out_dim, with_bias=with_bias)
     shape = (1, in_dim)
     x = np.empty(shape, dtype=np.float32)
-    return Linear(x)
+    return Linear.hk_init(x)
 
 
 def lstm(hidden_dim: int):
-    LSTM = from_haiku(hk.LSTM)(hidden_size=hidden_dim)
+    LSTM = from_haiku(hk.LSTM, delay=False)(hidden_size=hidden_dim)
 
     def initial_state(o, batch_size):
         h0 = np.zeros((batch_size, hidden_dim), dtype=np.float32)
@@ -139,7 +143,7 @@ def lstm(hidden_dim: int):
 
 
 def gru(hidden_dim: int):
-    GRU = from_haiku(hk.GRU)(hidden_size=hidden_dim)
+    GRU = from_haiku(hk.GRU, delay=False)(hidden_size=hidden_dim)
 
     def initial_state(o, batch_size):
         h0 = np.zeros((batch_size, hidden_dim), dtype=np.float32)
@@ -153,7 +157,7 @@ def gru(hidden_dim: int):
 def embed(vocab_size: int, embed_dim: int):
     Embed = from_haiku(hk.Embed)(vocab_size=vocab_size, embed_dim=embed_dim)
     x = np.empty((1, 1), dtype=np.int32)
-    return Embed(x)
+    return Embed.hk_init(x)
 
 
 def conv_1d(
@@ -189,7 +193,7 @@ def conv_1d(
     elif data_format == "NCW":
         shape[1] = input_channels
     x = np.reshape(x, shape)
-    return Conv1D(x)
+    return Conv1D.hk_init(x)
 
 
 def conv_2d(
@@ -225,7 +229,7 @@ def conv_2d(
     elif data_format == "NCHW":
         shape[1] = input_channels
     x = np.reshape(x, shape)
-    return Conv2D(x)
+    return Conv2D.hk_init(x)
 
 
 def conv_1d_transpose(
@@ -261,7 +265,7 @@ def conv_1d_transpose(
     elif data_format == "NCW":
         shape[1] = input_channels
     x = np.reshape(x, shape)
-    return Conv1DTranspose(x)
+    return Conv1DTranspose.hk_init(x)
 
 
 def conv_2d_transpose(
@@ -297,7 +301,7 @@ def conv_2d_transpose(
     elif data_format == "NCHW":
         shape[1] = input_channels
     x = np.reshape(x, shape)
-    return Conv2DTranspose(x)
+    return Conv2DTranspose.hk_init(x)
 
 
 def avg_pool(window_shape, strides, padding, channel_axis=-1):
@@ -307,7 +311,7 @@ def avg_pool(window_shape, strides, padding, channel_axis=-1):
         padding=padding,
         channel_axis=channel_axis,
     )
-    return lambda x: AvgPool(x)(x)
+    return lambda x: AvgPool.hk_init(x)(x)
 
 
 def max_pool(window_shape, strides, padding, channel_axis=-1):
@@ -317,4 +321,4 @@ def max_pool(window_shape, strides, padding, channel_axis=-1):
         padding=padding,
         channel_axis=channel_axis,
     )
-    return lambda x: MaxPool(x)(x)
+    return lambda x: MaxPool.hk_init(x)(x)
