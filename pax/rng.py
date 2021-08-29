@@ -17,7 +17,7 @@ def seed_rng_key(seed: int = None):
     if seed is None:
         seed = 42
         logging.warn(
-            f"Seeding RNG key with seed {seed}. Use ` pax.seed_rng_key` function to avoid this warning."
+            f"Seeding RNG key with seed {seed}. Use `pax.seed_rng_key` function to avoid this warning."
         )
     state._rng_key = jax.random.PRNGKey(seed)
 
