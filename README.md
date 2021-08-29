@@ -49,7 +49,7 @@ There are a few important things in the above example:
 2. ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 3. ``model = model.update(params)`` has two purposes: (i) it causes ``model`` to use ``params`` in the forward computation, (ii) it returns a new version of ``model``, therefore, makes ``loss_fn`` a function without side effects.
 4. ``loss_fn`` returns the updated `model` in its output.
-5. ``net.parameters()`` keeps all trainable leaves intact while setting all other leaves to ``None``. This is needed to make sure that we only compute gradients w.r.t trainable parameters only.
+5. ``net.parameters()`` keeps all trainable leaves intact while setting all other leaves to ``None``. This is needed to make sure that we only compute gradients w.r.t trainable parameters.
 
 ## Examples
 
@@ -60,7 +60,7 @@ A good way to learn about ``Pax`` is to see examples in the ``examples/`` direct
 
 ## Modules
 
-At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, Conv1D, Conv2D, LayerNorm{``.
+At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, Conv1D, Conv2D, LayerNorm}``.
 We intent to add new modules in the near future.
 
 Fortunately, Pax also provides the ``pax.from_haiku`` function that can convert most of modules from ``dm-haiku`` library to ``pax.Module``. For example, to convert a dm-haiku LSTM Module:
@@ -68,7 +68,7 @@ Fortunately, Pax also provides the ``pax.from_haiku`` function that can convert 
 import haiku as hk
 PaxLSTM = pax.from_haiku(hk.LSTM)(hidden_dim=hidden_dim)
 ```
-Similar to dm-haiku modules that needs a dummy input to infer parameters' shape in the initialization process. We also need to input ``PaxLSTM`` a dummy input when creating new instances.
+Similar to dm-haiku modules that needs a dummy input to infer parameters' shape in the initialization process. We also need to pass ``PaxLSTM`` a dummy input when creating new instances.
 
 ```python
 dummy_x = np.empty((1, hidden_dim), dtype=np.float32)
@@ -77,6 +77,7 @@ mylstm = PaxLSTM(dummy_x, dummy_hx)
 ```
 
 This is a bit inconvenient when we have to create these dummy inputs. Pax allows delaying these dummy inputs until a module is executed.
+However, you now have to execute your model once right after it is created to make sure everything is initialized correctly.
 
 ```python
 PaxLSTM = pax.from_haiku(hk.LSTM, delay=True)(hidden_dim=hidden_dim)
@@ -91,9 +92,7 @@ def init_module(inputs, module):
 mylstm = init_module( (x, hx), mylstm)
 ```
 
-However, you now have to execute your model once right after it is created to make sure everything is initialized correctly.
-
-In additional, Pax provides a few functions that avoid the dummy and delayed input problems: ``pax.haiku.{linear, layer_norm, batch_norm_2d, lstm, gru, embed, conv_1d, conv_2d, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
+In additional, Pax provides many functions that avoid the dummy and delayed input problems: ``pax.haiku.{linear, layer_norm, batch_norm_2d, lstm, gru, embed, conv_1d, conv_2d, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
 We intent to add more functions like this in the near futures.
 
 
@@ -135,7 +134,7 @@ SGD = pax.optim.from_optax(
 )
 ```
 
-## Fine-tunning models.
+## Fine-tunning models
 
 Pax's Module provides the ``freeze`` method to convert all trainable parameters to non-trainable states.
 
