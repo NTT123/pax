@@ -34,9 +34,88 @@ def test_embed():
 
 def test_lstm():
     lstm = pax.haiku.lstm(32)
-    x = np.zeros((2, 32))
+    x = np.zeros((2, 32), dtype=np.float32)
     hx = lstm.initial_state(2)
     y, hx = lstm(x, hx)
     assert y.shape == (2, 32)
     assert hx.hidden.shape == (2, 32)
     assert hx.cell.shape == (2, 32)
+
+
+def test_haiku_gru():
+    lstm = pax.haiku.gru(32)
+    x = np.zeros((2, 32), dtype=np.float32)
+    hx = lstm.initial_state(2)
+    y, hx = lstm(x, hx)
+    assert y.shape == (2, 32)
+    assert hx.shape == (2, 32)
+
+
+def test_haiku_conv_1d():
+    conv1d = pax.haiku.conv_1d(3, 4, 2)
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+    y = conv1d(x)
+    assert y.shape == (3, 5, 4)
+
+
+def test_haiku_conv_2d():
+    conv = pax.haiku.conv_2d(3, 4, 2)
+    x = np.zeros((3, 5, 6, 3), dtype=np.float32)
+    y = conv(x)
+    assert y.shape == (3, 5, 6, 4)
+
+
+def test_haiku_conv1d_transpose():
+    conv_transpose = pax.haiku.conv_1d_transpose(3, 4, 2)
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+    y = conv_transpose(x)
+    assert y.shape == (3, 5, 4)
+
+
+def test_haiku_conv2d_transpose():
+    conv_transpose = pax.haiku.conv_2d_transpose(3, 4, 2)
+    x = np.zeros((3, 5, 6, 3), dtype=np.float32)
+    y = conv_transpose(x)
+    assert y.shape == (3, 5, 6, 4)
+
+
+def test_haiku_conv1d_online():
+    import haiku as hk
+
+    Conv1D = pax.from_haiku(hk.Conv1D, delay=True)(4, 3, padding="VALID")
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+    y = Conv1D()(x)
+    assert y.shape == (3, 3, 4)
+
+
+def test_haiku_conv1d_online_jit():
+    import haiku as hk
+
+    Conv1D = pax.from_haiku(hk.Conv1D, delay=True)(4, 3, padding="VALID")
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+
+    @jax.jit
+    def init(x, model):
+        model(x)
+        return model
+
+    f = Conv1D()
+    assert f._is_haiku_initialized == False
+    f = init(x, f)
+    assert f._is_haiku_initialized == True
+    y = f(x)
+    assert y.shape == (3, 3, 4)
+
+
+def test_haiku_avg_pool():
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+    avg_pool = pax.haiku.avg_pool(2, 2, "SAME", -1)
+    y = avg_pool(x)
+    assert y.shape == (3, 3, 3)
+
+
+def test_haiku_max_pool():
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+    avg_pool = pax.haiku.avg_pool(2, 3, "SAME", -1)
+    y = avg_pool(x)
+    assert y.shape == (3, 2, 3)
