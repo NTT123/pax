@@ -14,6 +14,7 @@ def test_finetune():
         layers: List[pax.nn.Linear]
 
         def __init__(self, dims: List[int]):
+            super().__init__()
             layers = []
             for in_dim, out_dim in zip(dims[:-1], dims[1:]):
                 layers.append(pax.nn.Linear(in_dim, out_dim))

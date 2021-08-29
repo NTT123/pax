@@ -35,6 +35,7 @@ class BatchNorm(Module):
         Arguments:
             input_shape: The shape of input tensor. For example `[None, None, 3]`. Use `None` to indicate unknown value.
         """
+        super().__init__()
 
         def fwd(x, is_training: bool):
             return hk.BatchNorm(
@@ -53,7 +54,7 @@ class BatchNorm(Module):
         rng_key = next_rng_key() if rng_key is None else rng_key
         x = np.empty([(1 if i is None else i) for i in input_shape], dtype=np.float32)
         self.params, self.state = self.fwd.init(rng_key, x, is_training=self.training)
-        self.register_param_subtree(
+        self.register_parameter_subtree(
             "params", hk.data_structures.to_mutable_dict(self.params)
         )
         self.register_state_subtree(

@@ -1,4 +1,4 @@
-"""Convert Haiku module to tx.Module"""
+"""Convert Haiku module to pax.Module"""
 from typing import Dict, Optional
 
 import jax
@@ -14,7 +14,7 @@ HaikuParam = Dict[str, Dict[str, jnp.ndarray]]
 
 
 def from_haiku(cls, use_rng: bool = False, pass_is_training: bool = False, **kwargs):
-    """Build a tx.Module class from haiku cls.
+    """Build a pax.Module class from haiku cls.
 
     Arguments:
         cls: dm-haiku class. For example, hk.BatchNorm.
@@ -22,7 +22,7 @@ def from_haiku(cls, use_rng: bool = False, pass_is_training: bool = False, **kwa
         pass_is_training: pass `is_training` as an argument to module. `hk.BatchNorm` needs this.
 
     Returns:
-        A tx.Module class.
+        A pax.Module class.
     """
     fwd = lambda *u, **v: cls(**kwargs)(*u, **v)
     hk_fwd = hk.transform_with_state(fwd)
@@ -33,6 +33,7 @@ def from_haiku(cls, use_rng: bool = False, pass_is_training: bool = False, **kwa
         rng_key: jnp.ndarray
 
         def __init__(self, *u, rng_key: Optional[jnp.ndarray] = None, **v) -> None:
+            super().__init__()
             rng_key = jax.random.PRNGKey(42) if rng_key is None else rng_key
             if pass_is_training:
                 v["is_training"] = self.training
@@ -40,7 +41,7 @@ def from_haiku(cls, use_rng: bool = False, pass_is_training: bool = False, **kwa
                 hk.data_structures.to_mutable_dict,
                 hk_fwd.init(rng_key, *u, **v),
             )
-            self.register_param_subtree("params", params)
+            self.register_parameter_subtree("params", params)
             self.register_state_subtree("state", state)
             self.register_state_subtree("rng_key", rng_key)
 

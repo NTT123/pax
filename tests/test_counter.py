@@ -9,6 +9,7 @@ def test_counter():
         bias: jnp.ndarray
 
         def __init__(self, start_value: int = 0):
+            super().__init__()
             self.register_state("counter", jnp.array(start_value))
             self.register_parameter("bias", jnp.array(0.0))
 

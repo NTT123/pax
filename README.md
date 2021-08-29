@@ -20,6 +20,7 @@ import pax
 
 class Counter(pax.Module):
     def __init__(self, start_value: int = 0):
+        super().__init__()
         self.register_state("counter", jnp.array(start_value))
         self.register_parameter("bias", jnp.array(0.0))
 
@@ -71,9 +72,9 @@ Pax implements optimizers in a stateful fashion. Bellow is a simple sgd optimize
 
 ```python
 class SGD(pax.Optimizer):
-    velocity: tx.Module
-    momentum: float 
+    velocity: pax.Module
     learning_rate: float
+    momentum: float 
     
     def __init__(self, params, learning_rate: float = 1e-2, momentum: float = 0.9):
         self.momentum = momentum
@@ -91,7 +92,7 @@ class SGD(pax.Optimizer):
         return model.update(new_params)
 ```
 
-Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally using the ``register_state_subtree`` method.
+Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally. Note that: ``self.register_state_subtree`` registers ``velocity`` as part of the pytree.
 
 Moreover, Pax provides the ``pax.optim.from_optax`` function that convert any [optax](https://optax.readthedocs.io/en/latest/) optimizer to a pax's Module.
 

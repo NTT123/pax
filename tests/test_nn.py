@@ -86,6 +86,14 @@ def test_layer_norm_init():
     chex.assert_equal_shape((layer_norm.offset, params["layer_norm"]["offset"]))
 
 
+def test_linear_computation():
+    fc = pax.nn.Linear(1, 1)
+    x = jnp.array([[5.0]], dtype=jnp.float32)
+    y = fc(x)
+    target = x * fc.W + fc.b
+    assert target.item() == y.item()
+
+
 def test_linear():
     fc = pax.nn.Linear(5, 7)
     x = jnp.zeros((32, 5), dtype=jnp.float32)

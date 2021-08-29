@@ -5,7 +5,8 @@ https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda807690385362
 which is under MIT License.
 """
 
-from typing import Any, Callable, List, Optional, Set, TypeVar
+import copy
+from typing import Any, Callable, Dict, TypeVar
 
 import jax
 import jax.numpy as jnp
@@ -18,53 +19,45 @@ FilterFn = Callable[[Any, T], bool]
 
 
 class Module:
-    _training = True
-    _parameters: Set[str] = set()
-    _states: Set[str] = set()
-    _param_subtrees: Set[str] = set()
-    _state_subtrees: Set[str] = set()
-    _module_subtrees: Set[str] = set()
-    _modules: Set[str] = set()
+    _properties: Dict[str, Any]
+
+    def __init__(self):
+        self._properties = dict()
+        self._properties["_training"] = True
+        self._properties["_parameters"] = set()
+        self._properties["_states"] = set()
+        self._properties["_modules"] = set()
+        self._properties["_parameter_subtrees"] = set()
+        self._properties["_state_subtrees"] = set()
+        self._properties["_module_subtrees"] = set()
 
     @property
     def training(self) -> bool:
-        return self._training
+        return self._properties["_training"]
 
     def register_parameter(self, name: str, value: jnp.ndarray):
-        if len(self._parameters) == 0:
-            self._parameters = set()
         setattr(self, name, value)
-        self._parameters.add(name)
+        self._properties["_parameters"].add(name)
 
     def register_state(self, name: str, value: jnp.ndarray):
-        if len(self._states) == 0:
-            self._states = set()
         setattr(self, name, value)
-        self._states.add(name)
+        self._properties["_states"].add(name)
 
-    def register_param_subtree(self, name: str, value: Any):
-        if len(self._param_subtrees) == 0:
-            self._param_subtrees = set()
+    def register_module(self, name: str, value: Any):
         setattr(self, name, value)
-        self._param_subtrees.add(name)
+        self._properties["_modules"].add(name)
 
-    def register_module_subtree(self, name: str, value: Any):
-        if len(self._module_subtrees) == 0:
-            self._module_subtrees = set()
+    def register_parameter_subtree(self, name: str, value: Any):
         setattr(self, name, value)
-        self._module_subtrees.add(name)
-
-    def register_module_subtree(self, name: str, value: Any):
-        if len(self._module_subtrees) == 0:
-            self._module_subtrees = set()
-        setattr(self, name, value)
-        self._module_subtrees.add(name)
+        self._properties["_parameter_subtrees"].add(name)
 
     def register_state_subtree(self, name: str, value: Any):
-        if len(self._state_subtrees) == 0:
-            self._state_subtrees = set()
         setattr(self, name, value)
-        self._state_subtrees.add(name)
+        self._properties["_state_subtrees"].add(name)
+
+    def register_module_subtree(self, name: str, value: Any):
+        setattr(self, name, value)
+        self._properties["_module_subtrees"].add(name)
 
     def tree_flatten(self):
         annotations = getattr(self.__class__, "__annotations__", {})
@@ -73,27 +66,23 @@ class Module:
         _tree = {}
         _not_tree = {}
 
+        all_tree_fields = set.union(
+            self._properties["_parameters"],
+            self._properties["_states"],
+            self._properties["_modules"],
+            self._properties["_parameter_subtrees"],
+            self._properties["_state_subtrees"],
+            self._properties["_module_subtrees"],
+        )
+
         for name, value in fields.items():
-            # `_training` is already in `props`.
-            if name in [
-                "_training",
-                "_parameters",
-                "_states",
-                "_modules",
-                "_param_subtrees",
-                "_state_subtrees",
-                "_module_subtrees",
-            ]:
+            if name == "_properties":
                 continue
 
-            if name in self._module_subtrees or name in self._modules:
-                _tree[name] = value
-            elif name in self._param_subtrees or name in self._parameters:
-                _tree[name] = value
-            elif name in self._state_subtrees or name in self._states:
+            if name in all_tree_fields:
                 _tree[name] = value
             elif isinstance(value, Module):
-                # when a field is module, it is automatically part of the pytree.
+                # when a field is Module's instance, it is automatically part of the pytree.
                 _tree[name] = value
             else:
                 _not_tree[name] = value
@@ -101,32 +90,19 @@ class Module:
         return tuple(_tree.values()), dict(
             tree=_tree.keys(),
             not_tree=_not_tree,
-            props=dict(
-                _training=self._training,
-                _parameters=set(self._parameters),
-                _states=set(self._states),
-                _modules=set(self._modules),
-                _param_subtrees=set(self._param_subtrees),
-                _state_subtrees=set(self._state_subtrees),
-                _module_subtrees=set(self._module_subtrees),
-            ),
+            _properties=copy.deepcopy(self._properties),
         )
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         module = cls.__new__(cls)
+        module._properties = copy.deepcopy(aux_data["_properties"])
 
         for i, k in enumerate(aux_data["tree"]):
             setattr(module, k, children[i])
 
         for k, v in aux_data["not_tree"].items():
             setattr(module, k, v)
-
-        for k, v in aux_data["props"].items():
-            if isinstance(v, set):
-                setattr(module, k, set(v))
-            else:
-                setattr(module, k, v)
 
         return module
 
@@ -143,19 +119,29 @@ class Module:
         cls = self.__class__
         module = cls.__new__(cls)
 
+        param_field_names = self._properties["_parameters"].union(
+            self._properties["_parameter_subtrees"]
+        )
+        state_field_names = self._properties["_states"].union(
+            self._properties["_state_subtrees"]
+        )
+        module_field_names = self._properties["_modules"].union(
+            self._properties["_module_subtrees"]
+        )
+
         for name, value in fields.items():
-            if name in self._module_subtrees or name in self._modules:
+            if name in module_field_names:
                 value = jax.tree_map(
                     lambda x: x.filter(keep),
                     value,
                     is_leaf=lambda x: isinstance(x, Module),
                 )
-            elif name in self._param_subtrees or name in self._parameters:
+            elif name in param_field_names:
                 fn1 = lambda x: x
                 fn2 = lambda x: None
                 fn = fn1 if keep == "parameter" else fn2
                 value = jax.tree_map(fn, value)
-            elif name in self._state_subtrees or name in self._states:
+            elif name in state_field_names:
                 fn1 = lambda x: x
                 fn2 = lambda x: None
                 fn = fn1 if keep == "state" else fn2
@@ -181,7 +167,7 @@ class Module:
             else:
                 new_submods.append(mod)
         model = jax.tree_unflatten(treedef, new_submods)
-        model._training = mode
+        model._properties["_training"] = mode
         return model
 
     def eval(self: T) -> T:
@@ -206,9 +192,11 @@ class Module:
             else:
                 new_submods.append(mod)
         model = jax.tree_unflatten(treedef, new_submods)
-        model._states.update(self._parameters)
-        model._parameters.clear()
-        model._state_subtrees.update(self._param_subtrees)
-        model._param_subtrees.clear()
+        model._properties["_states"].update(self._properties["_parameters"])
+        model._properties["_parameters"].clear()
+        model._properties["_state_subtrees"].update(
+            self._properties["_parameter_subtrees"]
+        )
+        model._properties["_parameter_subtrees"].clear()
 
         return model

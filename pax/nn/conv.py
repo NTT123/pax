@@ -43,6 +43,7 @@ class Conv1D(Module):
             kernel_shape: convolution kernel shape.
             rng_key: the random key for initialization.
         """
+        super().__init__()
         assert data_format in [
             "NCW",
             "NWC",
@@ -113,6 +114,7 @@ class Conv2D(Module):
             kernel_shape: convolution kernel shape.
             rng_key: the random key for initialization.
         """
+        super().__init__()
         assert data_format in [
             "NCHW",
             "NHWC",

@@ -6,7 +6,7 @@ from ..module import Module
 class Sequential(Module):
     """Execute layers in order.
 
-    Support tx.Module (callable pytree) and any jax functions. For example:
+    Support pax.Module (callable pytree) and any jax functions. For example:
         net = pax.nn.Sequential(
             pax.nn.Linear(2, 32),
             jax.nn.relu,
@@ -19,8 +19,9 @@ class Sequential(Module):
     functions: List[Optional[Callable]]
 
     def __init__(self, *layers):
+        super().__init__()
         filter_fn = lambda f: isinstance(f, Module)
-        self.register_param_subtree(
+        self.register_parameter_subtree(
             "modules", [(f if filter_fn(f) else None) for f in layers]
         )
         self.functions = [(f if not filter_fn(f) else None) for f in layers]

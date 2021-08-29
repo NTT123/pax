@@ -58,6 +58,7 @@ class LayerNorm(Module):
             formulation for computing variance.
           rng_key: RNG key.
         """
+        super().__init__()
         if not create_scale and scale_init is not None:
             raise ValueError("Cannot set `scale_init` if `create_scale=False`.")
         if not create_offset and offset_init is not None:

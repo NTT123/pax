@@ -20,8 +20,8 @@ class Optimizer(Module):
     state: Any
 
     @abstractmethod
-    def __init__(self, params: T, *args, **kwargs):
-        pass
+    def __init__(self, *args, **kwargs):
+        super().__init__()
 
     @abstractmethod
     def step(self, grads: T, model: T) -> T:
@@ -41,6 +41,7 @@ def from_optax(optax_obj: optax.GradientTransformation):
         state: OptaxState
 
         def __init__(self, params: T):
+            super().__init__()
             self.register_state_subtree("state", optax_obj.init(params))
 
         def step(self, grads: T, model: T) -> T:

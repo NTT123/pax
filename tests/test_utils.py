@@ -2,10 +2,11 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pax
+from pax.utils import LossFnOutput
 
 
 def test_util_update_fn():
-    def loss_fn(params: pax.nn.Linear, model: pax.nn.Linear, inputs):
+    def loss_fn(params: pax.nn.Linear, model: pax.nn.Linear, inputs) -> LossFnOutput:
         x, target = inputs
         model = model.update(params)
         y = model(x)
@@ -19,4 +20,4 @@ def test_util_update_fn():
     y = np.random.normal(size=(32, 1))
     for step in range(3):
         loss, net, opt = update_fn(net, opt, (x, y))
-        print(step, loss)
+    print(step, loss)

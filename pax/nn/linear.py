@@ -37,6 +37,7 @@ class Linear(Module):
             b_init: initializer function for the bias.
             rng_key: the key to generate initial parameters.
         """
+        super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.W = None
