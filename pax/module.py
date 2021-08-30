@@ -60,7 +60,6 @@ class Module:
         self._properties["_module_subtrees"].add(name)
 
     def tree_flatten(self):
-        annotations = getattr(self.__class__, "__annotations__", {})
         fields = vars(self)
 
         _tree = {}
@@ -88,16 +87,13 @@ class Module:
                 _not_tree[name] = value
 
         return tuple(_tree.values()), dict(
-            tree=_tree.keys(),
-            not_tree=_not_tree,
-            _properties=copy.deepcopy(self._properties),
+            tree=_tree.keys(), not_tree=_not_tree, properties=self._properties
         )
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         module = cls.__new__(cls)
-        module._properties = copy.deepcopy(aux_data["_properties"])
-
+        module._properties = aux_data["properties"]
         for i, k in enumerate(aux_data["tree"]):
             setattr(module, k, children[i])
 
@@ -192,6 +188,8 @@ class Module:
             else:
                 new_submods.append(mod)
         model = jax.tree_unflatten(treedef, new_submods)
+        # make a copy of `_properties` to avoid side effects on `self`.
+        model._properties = copy.deepcopy(model._properties)
         model._properties["_states"].update(self._properties["_parameters"])
         model._properties["_parameters"].clear()
         model._properties["_state_subtrees"].update(
