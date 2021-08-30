@@ -155,12 +155,7 @@ class LM(pax.Module):
         logits = self.output(x)
         return logits
 
-    def inference(self, prompt: List[int] = [], length=32):
-        start_idx = len(prompt) - 1
-        pad_len = length - len(prompt)
-        prompt = prompt + [0] * pad_len
-        total_len = length - 1
-
+    def inference(self, prompt: List[int] = [], length=1024, train_seq_len=256):
         @jax.jit
         def step(x):
             x = self.embed(x)
@@ -169,9 +164,21 @@ class LM(pax.Module):
             logits = self.output(x)
             return logits
 
-        for i in range(start_idx, total_len):
-            x = jnp.array([prompt], dtype=jnp.int32)
+        while True:
+            # `inputs` are slices of `prompt` with max length `train_seq_len`.
+            if len(prompt) > train_seq_len:
+                inputs = prompt[-train_seq_len:]
+            else:
+                inputs = prompt
+            pad_len = train_seq_len - len(inputs)
+            # predict what comes right after the last character of `prompt`.
+            prediction_idx = len(inputs) - 1
+            padded_inputs = inputs + [0] * pad_len
+            x = jnp.array([padded_inputs], dtype=jnp.int32)
             logits = step(x)
-            x = jnp.argmax(logits[0, i], axis=-1)
-            prompt[i + 1] = x.item()
+            x = jnp.argmax(logits[0, prediction_idx], axis=-1)
+            prompt.append(x.item())
+            if len(prompt) >= length:
+                break
+
         return prompt

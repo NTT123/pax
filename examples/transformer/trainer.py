@@ -33,7 +33,7 @@ if "COLAB_TPU_ADDR" in os.environ:
     seq_len = 256 + 1
     vocab_size = 256
     hidden_dim = 512
-    num_steps = 50_000
+    num_steps = 1_000
     num_layers = 6
 else:
     # CPU/GPU config
@@ -151,6 +151,7 @@ def train():
     data = inspect.getsource(LM)  # a _true_ AGI learns about itself.
     data_token = tokenize(data)
     test_prompt = data[:20]
+    data_token = [0] * seq_len + data_token
 
     tfdata = (
         tf.data.Dataset.from_tensors(data_token)
@@ -166,7 +167,7 @@ def train():
 
     tfdata = double_buffer(tfdata)
     losses = 0.0
-    tr = tqdm(range(0, 1 + num_steps * 100, steps_per_update), desc="training")
+    tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")
     for step in tr:
         batch = next(tfdata)
         # (num_devices,) is for jax.pmap, (steps_per_update,) is for jax.lax.scan
@@ -178,7 +179,9 @@ def train():
             # eval on a single device
             eval_net = jax.tree_map(lambda x: x[0], net.eval())
             out = eval_net.inference(
-                prompt=tokenize(test_prompt), length=(100 if step < num_steps else 1000)
+                prompt=tokenize(test_prompt),
+                length=(128 if step < num_steps else 1024),
+                train_seq_len=seq_len - 1,
             )
             text = detokenize(out)
             tr.write(
