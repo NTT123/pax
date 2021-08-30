@@ -121,7 +121,7 @@ def positional_encoding(x):
 
 
 class LM(pax.Module):
-    """A RNN language model."""
+    """A Transformer language model."""
 
     transformer: Transformer
     embed: pax.Module
@@ -130,7 +130,9 @@ class LM(pax.Module):
     vocab_size: int
     hidden_dim: int
 
-    def __init__(self, vocab_size: int, hidden_dim: int, num_layers: int):
+    def __init__(
+        self, vocab_size: int, hidden_dim: int, num_layers: int, dropout: float = 0.1
+    ):
         """
         Arguments:
             vocab_size: int, size of the alphabet.
@@ -145,7 +147,9 @@ class LM(pax.Module):
             hidden_dim,
             w_init=hk.initializers.VarianceScaling(mode="fan_out"),
         )
-        self.transformer = Transformer(hidden_dim, 8, num_layers, 0.1)
+        self.transformer = Transformer(
+            hidden_dim, hidden_dim // 64, num_layers, dropout_rate=dropout
+        )
         self.output = pax.haiku.linear(hidden_dim, vocab_size)
 
     def __call__(self, x):

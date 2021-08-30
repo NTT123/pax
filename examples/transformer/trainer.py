@@ -30,21 +30,23 @@ if "COLAB_TPU_ADDR" in os.environ:
     steps_per_update = 50
     num_devices = jax.device_count()
     batch_size = 32 * num_devices * steps_per_update
-    seq_len = 256 + 1
+    seq_len = 256
     vocab_size = 256
     hidden_dim = 512
     num_steps = 1_000
     num_layers = 6
+    dropout = 0.1
 else:
     # CPU/GPU config
     steps_per_update = 1
     num_devices = jax.device_count()
-    batch_size = 1 * num_devices * steps_per_update
-    seq_len = 64 + 1
+    batch_size = 8 * num_devices * steps_per_update
+    seq_len = 64
     vocab_size = 256
     hidden_dim = 256
     num_steps = 20_000
     num_layers = 2
+    dropout = 0.1
 
 pax.seed_rng_key(42)
 
@@ -79,7 +81,9 @@ def update_fn(model: LM, optimizer: Optimizer, multi_batch: jnp.ndarray):
     return jnp.sum(losses), model, optimizer
 
 
-net = LM(vocab_size=vocab_size, hidden_dim=hidden_dim, num_layers=num_layers)
+net = LM(
+    vocab_size=vocab_size, hidden_dim=hidden_dim, num_layers=num_layers, dropout=dropout
+)
 optimizer = pax.optim.from_optax(
     optax.chain(optax.clip_by_global_norm(1.0), optax.adam(1e-4))
 )(net.parameters())
@@ -157,7 +161,7 @@ def train():
         tf.data.Dataset.from_tensors(data_token)
         .repeat()
         .map(
-            lambda x: tf.image.random_crop(x, [seq_len]),
+            lambda x: tf.image.random_crop(x, [seq_len + 1]),
             num_parallel_calls=tf.data.AUTOTUNE,
         )
         .batch(batch_size)
@@ -181,7 +185,7 @@ def train():
             out = eval_net.inference(
                 prompt=tokenize(test_prompt),
                 length=(128 if step < num_steps else 1024),
-                train_seq_len=seq_len - 1,
+                train_seq_len=seq_len,
             )
             text = detokenize(out)
             tr.write(

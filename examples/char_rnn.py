@@ -29,7 +29,7 @@ if "COLAB_TPU_ADDR" in os.environ:
     steps_per_update = 50
     num_devices = jax.device_count()
     batch_size = 32 * num_devices * steps_per_update
-    seq_len = 128 + 1
+    seq_len = 128
     vocab_size = 256
     hidden_dim = 512
     num_steps = 50_000
@@ -38,7 +38,7 @@ else:
     steps_per_update = 1
     num_devices = jax.device_count()
     batch_size = 1 * num_devices * steps_per_update
-    seq_len = 64 + 1
+    seq_len = 64
     vocab_size = 256
     hidden_dim = 256
     num_steps = 20_000
@@ -162,7 +162,7 @@ tfdata = (
     tf.data.Dataset.from_tensors(data_token)
     .repeat()
     .map(
-        lambda x: tf.image.random_crop(x, [seq_len]),
+        lambda x: tf.image.random_crop(x, [seq_len + 1]),
         num_parallel_calls=tf.data.AUTOTUNE,
     )
     .batch(batch_size)
