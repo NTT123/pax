@@ -66,7 +66,8 @@ There are a few important things in the above example:
 
 A good way to learn about ``Pax`` is to see examples in the ``examples/`` directory:
 
-* ``char_rnn.py``: train a RNN Language model on TPU.
+* ``char_rnn.py``: train a RNN language model on TPU.
+* ``transformer/``: train a Transformer language model on TPU.
 * ``mnist.py``: train an image classifier on MNIST dataset.
 
 ## Modules

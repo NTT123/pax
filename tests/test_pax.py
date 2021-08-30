@@ -11,8 +11,9 @@ import pax
 def test_pax_next_rng_key():
     # seed 42
     pax.seed_rng_key(42)
+    assert pax.rng.state._rng_key is None
+    assert pax.rng.state._seed == 42
     expected_rng = jnp.array([0, 42], dtype=jnp.uint32)
-    np.testing.assert_array_equal(pax.rng.state._rng_key, expected_rng)
     rng1 = pax.next_rng_key()
     expected_rng_1, rng_internal = jax.random.split(expected_rng)
     np.testing.assert_array_equal(rng1, expected_rng_1)

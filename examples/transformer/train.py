@@ -23,6 +23,12 @@ def setup_tpu_device():
     print(jax.devices())
 
 
+# shared config
+dropout = 0.1
+learning_rate = 1e-4
+vocab_size = 256
+pax.seed_rng_key(42)
+
 if "COLAB_TPU_ADDR" in os.environ:
     # TPU config
     # need to config TPU cores _before_ calling `jax.device_count`.
@@ -31,24 +37,18 @@ if "COLAB_TPU_ADDR" in os.environ:
     num_devices = jax.device_count()
     batch_size = 32 * num_devices * steps_per_update
     seq_len = 256
-    vocab_size = 256
     hidden_dim = 512
     num_steps = 1_000
     num_layers = 6
-    dropout = 0.1
 else:
     # CPU/GPU config
     steps_per_update = 1
     num_devices = jax.device_count()
     batch_size = 8 * num_devices * steps_per_update
     seq_len = 64
-    vocab_size = 256
     hidden_dim = 256
     num_steps = 20_000
     num_layers = 2
-    dropout = 0.1
-
-pax.seed_rng_key(42)
 
 
 def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
@@ -74,23 +74,15 @@ def update_step(prev, batch: jnp.ndarray):
 
 
 @partial(jax.pmap, axis_name="i")
-def update_fn(model: LM, optimizer: Optimizer, multi_batch: jnp.ndarray):
+def update_fn(
+    model: LM, optimizer: Optimizer, multi_batch: jnp.ndarray, total_losses: jnp.ndarray
+):
     (model, optimizer), losses = jax.lax.scan(
         update_step, (model, optimizer), multi_batch
     )
-    return jnp.sum(losses), model, optimizer
 
-
-net = LM(
-    vocab_size=vocab_size, hidden_dim=hidden_dim, num_layers=num_layers, dropout=dropout
-)
-optimizer = pax.optim.from_optax(
-    optax.chain(optax.clip_by_global_norm(1.0), optax.adam(1e-4))
-)(net.parameters())
-
-# replicate on multiple devices
-net = jax.device_put_replicated(net, jax.devices())
-optimizer = jax.device_put_replicated(optimizer, jax.devices())
+    total_losses = total_losses + jnp.sum(losses)
+    return total_losses, model, optimizer
 
 
 def tokenize(text):
@@ -111,6 +103,7 @@ def _device_put_sharded(sharded_tree, devices):
     )
 
 
+# Source: https://github.com/deepmind/dm-haiku/blob/8fad8c7503c5f56fa9ea9b53f71b7082704e3a3e/examples/imagenet/dataset.py#L163
 def double_buffer(ds):
     """Keeps at least two batches on the accelerator.
     The current GPU allocator design reuses previous allocations. For a training
@@ -145,7 +138,7 @@ def double_buffer(ds):
 def train():
     net = LM(vocab_size=vocab_size, hidden_dim=hidden_dim, num_layers=num_layers)
     optimizer = pax.optim.from_optax(
-        optax.chain(optax.clip_by_global_norm(1.0), optax.adam(1e-4))
+        optax.chain(optax.clip_by_global_norm(1.0), optax.adam(learning_rate))
     )(net.parameters())
 
     # replicate on multiple devices
@@ -172,14 +165,14 @@ def train():
     tfdata = double_buffer(tfdata)
     losses = 0.0
     tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")
+    total_losses = jnp.array([0.0] * num_devices, dtype=jnp.float32)
     for step in tr:
         batch = next(tfdata)
         # (num_devices,) is for jax.pmap, (steps_per_update,) is for jax.lax.scan
-        loss, net, optimizer = update_fn(net, optimizer, batch)
-        losses = losses + loss
+        total_losses, net, optimizer = update_fn(net, optimizer, batch, total_losses)
         if step % 1000 == 0:
-            loss = jnp.mean(losses) / (1000 if step > 0 else steps_per_update)
-            losses = 0.0
+            loss = jnp.mean(total_losses) / (1000 if step > 0 else steps_per_update)
+            total_losses = jnp.zeros_like(total_losses)
             # eval on a single device
             eval_net = jax.tree_map(lambda x: x[0], net.eval())
             out = eval_net.inference(
@@ -193,4 +186,5 @@ def train():
             )
 
 
-train()
+if __name__ == "__main__":
+    train()
