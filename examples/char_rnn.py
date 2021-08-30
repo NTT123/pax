@@ -25,6 +25,7 @@ def setup_tpu_device():
 
 if "COLAB_TPU_ADDR" in os.environ:
     # TPU config
+    setup_tpu_device()
     steps_per_update = 50
     num_devices = jax.device_count()
     batch_size = 32 * num_devices * steps_per_update
@@ -32,7 +33,6 @@ if "COLAB_TPU_ADDR" in os.environ:
     vocab_size = 256
     hidden_dim = 512
     num_steps = 50_000
-    setup_tpu_device()
 else:
     # CPU/GPU config
     steps_per_update = 1
