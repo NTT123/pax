@@ -24,9 +24,9 @@ def next_rng_key() -> jnp.ndarray:
     if state._rng_key is None:
         if state._seed is None:
             seed = 42
-            logging.warn(
+            logging.warning(
                 f"Seeding RNG key with seed {seed}. "
-                "Use `pax.seed_rng_key` function to avoid this warning."
+                f"Use `pax.seed_rng_key` function to avoid this warning."
             )
             seed_rng_key(seed)
 

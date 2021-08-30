@@ -5,7 +5,8 @@ https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda807690385362
 which is under MIT License.
 """
 
-from typing import Any, Callable, NamedTuple, TypeVar, Tuple
+from enum import Enum
+from typing import Any, Callable, Dict, Tuple, TypeVar
 
 import jax
 import jax.numpy as jnp
@@ -16,45 +17,39 @@ B = TypeVar("B")
 T = TypeVar("T", bound="Module")
 FilterFn = Callable[[Any, T], bool]
 
-
-class ModuleProperties(NamedTuple):
-    training: bool
-    parameters: frozenset
-    states: frozenset
-    modules: frozenset
-    parameter_subtrees: frozenset
-    state_subtrees: frozenset
-    module_subtrees: frozenset
-
-
 # TODO: use NamedTuple, but, it is slower :-(
 ModuleAuxiliaryData = Tuple
 
+# All suportted module's field kinds
+class PaxFieldKind(Enum):
+    STATE: int = 1  # a non-trainable ndarray
+    PARAMETER: int = 2  # a trainable ndarray
+    MODULE: int = 3  # a Pax Module
+    STATE_SUBTREE: int = 4  # a non-trainable pytree
+    PARAMETER_SUBTREE: int = 5  # a trainable pytree
+    MODULE_SUBTREE: int = 6  # a tree of sub-modules
+    OTHERS: int = 7  # all other fields
+
 
 class Module:
-    _properties: ModuleProperties
+    # Field Name To Kind
+    _name_to_kind: Dict[str, PaxFieldKind]
+    _training: bool = True
 
     def __init__(self):
         super().__init__()
-        self.__dict__["_properties"] = ModuleProperties(
-            training=True,
-            parameters=frozenset(),
-            states=frozenset(),
-            modules=frozenset(),
-            parameter_subtrees=frozenset(),
-            state_subtrees=frozenset(),
-            module_subtrees=frozenset(),
-        )
+        self.__dict__["_name_to_kind"] = dict()
+        self.__dict__["_training"] = True
 
     @property
     def training(self) -> bool:
-        return self._properties.training
+        return self._training
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name == "_properties":
+        if name in ["_name_to_kind", "_training"]:
             raise RuntimeError(
-                "You SHOULD NOT modify `_properties`. "
-                "If you _really_ want to, use `self.__dict__[name] = value` instead."
+                f"You SHOULD NOT modify `{name}`. "
+                f"If you _really_ want to, use `self.__dict__[name] = value` instead."
             )
         self.__dict__[name] = value
         if isinstance(value, Module):
@@ -62,77 +57,48 @@ class Module:
 
     def register_parameter(self, name: str, value: jnp.ndarray):
         self.__dict__[name] = value
-        self.__dict__["_properties"] = self._properties._replace(
-            parameters=self._properties.parameters.union([name])
-        )
+        self._name_to_kind[name] = PaxFieldKind.PARAMETER
 
     def register_state(self, name: str, value: jnp.ndarray):
         self.__dict__[name] = value
-        self.__dict__["_properties"] = self._properties._replace(
-            states=self._properties.states.union([name])
-        )
+        self._name_to_kind[name] = PaxFieldKind.STATE
 
     def register_module(self, name: str, value: Any):
         self.__dict__[name] = value
-        self.__dict__["_properties"] = self._properties._replace(
-            modules=self._properties.modules.union([name])
-        )
+        self._name_to_kind[name] = PaxFieldKind.MODULE
 
     def register_parameter_subtree(self, name: str, value: Any):
         self.__dict__[name] = value
-        self.__dict__["_properties"] = self._properties._replace(
-            parameter_subtrees=self._properties.parameter_subtrees.union([name])
-        )
+        self._name_to_kind[name] = PaxFieldKind.PARAMETER_SUBTREE
 
     def register_state_subtree(self, name: str, value: Any):
         self.__dict__[name] = value
-        self.__dict__["_properties"] = self._properties._replace(
-            state_subtrees=self._properties.state_subtrees.union([name])
-        )
+        self._name_to_kind[name] = PaxFieldKind.STATE_SUBTREE
 
     def register_module_subtree(self, name: str, value: Any):
         self.__dict__[name] = value
-        self.__dict__["_properties"] = self._properties._replace(
-            module_subtrees=self._properties.module_subtrees.union([name])
-        )
+        self._name_to_kind[name] = PaxFieldKind.MODULE_SUBTREE
 
     def tree_flatten(self):
         fields = vars(self)
 
         _tree = {}
         _not_tree = {}
-
-        all_tree_fields = frozenset.union(
-            self._properties.parameters,
-            self._properties.states,
-            self._properties.modules,
-            self._properties.parameter_subtrees,
-            self._properties.state_subtrees,
-            self._properties.module_subtrees,
-        )
+        name_to_kind = self._name_to_kind
 
         for name, value in fields.items():
-            if name == "_properties":
-                continue
-            elif name in all_tree_fields:
-                _tree[name] = value
-            else:
-                _not_tree[name] = value
+            (_tree if name in name_to_kind else _not_tree)[name] = value
 
-        return _tree.values(), (_tree.keys(), _not_tree, self._properties)
+        return _tree.values(), (_tree.keys(), _not_tree)
 
     @classmethod
     def tree_unflatten(cls, aux_data: ModuleAuxiliaryData, children):
         module = cls.__new__(cls)
-        _tree, _not_tree, _properties = aux_data
-
-        module.__dict__["_properties"] = _properties
-
-        for k, v in _not_tree.items():
-            module.__dict__[k] = v
-
-        for i, k in enumerate(_tree):
-            module.__dict__[k] = children[i]
+        _tree, _not_tree = aux_data
+        md = module.__dict__
+        md.update(_not_tree)
+        md["_name_to_kind"] = dict(module._name_to_kind)
+        md.update(zip(_tree, children))
 
         return module
 
@@ -149,31 +115,28 @@ class Module:
         cls = self.__class__
         module = cls.__new__(cls)
 
-        param_field_names = (
-            self._properties.parameters | self._properties.parameter_subtrees
-        )
-        state_field_names = self._properties.states | self._properties.state_subtrees
-        module_field_names = self._properties.modules | self._properties.module_subtrees
-
         for name, value in fields.items():
-            if name in module_field_names:
+            field_type = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
+            if field_type in [PaxFieldKind.MODULE, PaxFieldKind.MODULE_SUBTREE]:
                 value = jax.tree_map(
                     lambda x: x.filter(keep),
                     value,
                     is_leaf=lambda x: isinstance(x, Module),
                 )
-            elif name in param_field_names:
+            elif field_type in [PaxFieldKind.PARAMETER, PaxFieldKind.PARAMETER_SUBTREE]:
                 fn1 = lambda x: x
                 fn2 = lambda x: None
                 fn = fn1 if keep == "parameter" else fn2
                 value = jax.tree_map(fn, value)
-            elif name in state_field_names:
+            elif field_type in [PaxFieldKind.STATE, PaxFieldKind.STATE_SUBTREE]:
                 fn1 = lambda x: x
                 fn2 = lambda x: None
                 fn = fn1 if keep == "state" else fn2
                 value = jax.tree_map(fn, value)
-            elif isinstance(value, Module):
-                value = value.filter(keep)
+            elif field_type == PaxFieldKind.OTHERS:
+                pass
+            else:
+                raise ValueError("Not expected this!")
             module.__dict__[name] = value
 
         return module
@@ -193,7 +156,7 @@ class Module:
             else:
                 new_submods.append(mod)
         model = jax.tree_unflatten(treedef, new_submods)
-        model.__dict__["_properties"] = model._properties._replace(training=mode)
+        model.__dict__["_training"] = mode
         return model
 
     def eval(self: T) -> T:
@@ -218,21 +181,15 @@ class Module:
             else:
                 new_submods.append(mod)
         model = jax.tree_unflatten(treedef, new_submods)
-        model.__dict__["_properties"] = model._properties._replace(
-            states=(model._properties.states | self._properties.parameters)
-        )
-        model.__dict__["_properties"] = model._properties._replace(
-            parameters=frozenset()
-        )
-        model.__dict__["_properties"] = model._properties._replace(
-            state_subtrees=(
-                model._properties.state_subtrees | self._properties.parameter_subtrees
-            )
-        )
-        model.__dict__["_properties"] = model._properties._replace(
-            parameter_subtrees=frozenset()
-        )
-
+        model.__dict__["_name_to_kind"] = dict(
+            model._name_to_kind
+        )  # copy to avoid side effects.
+        name_to_kind = model._name_to_kind
+        for k, v in name_to_kind.items():
+            if v == PaxFieldKind.PARAMETER:
+                name_to_kind[k] = PaxFieldKind.STATE
+            elif v == PaxFieldKind.PARAMETER_SUBTREE:
+                name_to_kind[k] = PaxFieldKind.STATE_SUBTREE
         return model
 
     def hk_init(self, *args, enable_jit=False, **kwargs):
