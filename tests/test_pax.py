@@ -147,16 +147,15 @@ def test_type_optional():
 def test_train_eval():
     net = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(3, 3))
 
-    assert net._properties["_training"] == True
-    net.modules[0]._properties["_training"] == True
+    assert net._properties.training == True
     net = net.eval()
-    assert net._properties["_training"] == False
-    net.modules[0]._properties["_training"] == False
-    net.modules[1]._properties["_training"] == False
+    assert net._properties.training == False
+    assert net.modules[0]._properties.training == False
+    assert net.modules[1]._properties.training == False
     net = net.train()
-    assert net._properties["_training"] == True
-    net.modules[0]._properties["_training"] == True
-    net.modules[1]._properties["_training"] == True
+    assert net._properties.training == True
+    assert net.modules[0]._properties.training == True
+    assert net.modules[1]._properties.training == True
 
 
 def test_state_of_param():
@@ -175,3 +174,13 @@ def test_state_of_param():
     m2 = M2(m1)
     assert len(jax.tree_leaves(m1.filter("state"))) == 0
     assert len(jax.tree_leaves(m2.filter("parameter"))) == 0
+
+
+def test_module_properties_modify():
+    fc = pax.nn.Linear(3, 3)
+    assert fc._properties.training == True
+    fc1 = fc.copy()
+    assert fc1._properties.training == True
+    fc = fc.eval()
+    assert fc._properties.training == False
+    assert fc1._properties.training == True
