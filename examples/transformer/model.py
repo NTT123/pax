@@ -160,29 +160,23 @@ class LM(pax.Module):
         return logits
 
     def inference(self, prompt: List[int] = [], length=1024, train_seq_len=256):
-        @jax.jit
-        def step(x):
-            x = self.embed(x)
+        def step(prev, _):
+            inputs = prev
+            x = self.embed(inputs)
             x = positional_encoding(x)
             x = self.transformer(x)
             logits = self.output(x)
-            return logits
+            x = jnp.argmax(logits[:, -1], axis=-1)
+            next_inputs = jnp.concatenate((inputs[:, 1:], x[:, None]), axis=-1)
+            return next_inputs, x
 
-        while True:
-            # `inputs` are slices of `prompt` with max length `train_seq_len`.
-            if len(prompt) > train_seq_len:
-                inputs = prompt[-train_seq_len:]
-            else:
-                inputs = prompt
-            pad_len = train_seq_len - len(inputs)
-            # predict what comes right after the last character of `prompt`.
-            prediction_idx = len(inputs) - 1
-            padded_inputs = inputs + [0] * pad_len
-            x = jnp.array([padded_inputs], dtype=jnp.int32)
-            logits = step(x)
-            x = jnp.argmax(logits[0, prediction_idx], axis=-1)
-            prompt.append(x.item())
-            if len(prompt) >= length:
-                break
-
-        return prompt
+        if len(prompt) > train_seq_len:
+            inputs = prompt[-train_seq_len:]
+        else:
+            inputs = prompt
+        pad_len = train_seq_len - len(inputs)
+        padded_inputs = [0] * pad_len + inputs
+        x = jnp.array([padded_inputs], dtype=jnp.int32)
+        L = length - len(prompt)
+        _, out = jax.lax.scan(step, x, None, length=L)
+        return prompt + out[:, 0].tolist()
