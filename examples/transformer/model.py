@@ -1,4 +1,5 @@
-from typing import Optional
+import math
+from typing import List, Optional
 
 import haiku as hk
 import jax
@@ -107,3 +108,70 @@ class Transformer(pax.Module):
         h = self.layer_norm_output(h)
 
         return h
+
+
+def positional_encoding(x):
+    B, L, D = x.shape
+    position = jnp.arange(0, L, dtype=x.dtype)[:, None]
+    div_term = jnp.exp(jnp.arange(0, D, 2, dtype=x.dtype) * (-math.log(10_000.0) / D))
+    x1 = jnp.sin(position * div_term[None, :])
+    x2 = jnp.cos(position * div_term[None, :])
+    x_pos = jnp.concatenate((x1, x2), axis=-1)
+    return x + x_pos[None, :, :]
+
+
+class LM(pax.Module):
+    """A RNN language model."""
+
+    transformer: Transformer
+    embed: pax.Module
+    output: pax.Module
+
+    vocab_size: int
+    hidden_dim: int
+
+    def __init__(self, vocab_size: int, hidden_dim: int, num_layers: int):
+        """
+        Arguments:
+            vocab_size: int, size of the alphabet.
+            hidden_dim: int, hidden dim.
+            num_layers: int, num transformer blocks.
+        """
+        super().__init__()
+        self.vocab_size = vocab_size
+        self.hidden_dim = hidden_dim
+        self.embed = pax.haiku.embed(
+            vocab_size,
+            hidden_dim,
+            w_init=hk.initializers.VarianceScaling(mode="fan_out"),
+        )
+        self.transformer = Transformer(hidden_dim, 8, num_layers, 0.1)
+        self.output = pax.haiku.linear(hidden_dim, vocab_size)
+
+    def __call__(self, x):
+        x = self.embed(x)
+        x = positional_encoding(x)
+        x = self.transformer(x)
+        logits = self.output(x)
+        return logits
+
+    def inference(self, prompt: List[int] = [], length=32):
+        start_idx = len(prompt) - 1
+        pad_len = length - len(prompt)
+        prompt = prompt + [0] * pad_len
+        total_len = length - 1
+
+        @jax.jit
+        def step(x):
+            x = self.embed(x)
+            x = positional_encoding(x)
+            x = self.transformer(x)
+            logits = self.output(x)
+            return logits
+
+        for i in range(start_idx, total_len):
+            x = jnp.array([prompt], dtype=jnp.int32)
+            logits = step(x)
+            x = jnp.argmax(logits[0, i], axis=-1)
+            prompt[i + 1] = x.item()
+        return prompt

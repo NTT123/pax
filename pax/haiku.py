@@ -1,6 +1,6 @@
 """Convert Haiku module to pax.Module"""
 import logging
-from typing import Dict, Optional, Sequence, Union
+from typing import Callable, Dict, Optional, Sequence, Union
 
 import jax
 import jax.numpy as jnp
@@ -154,8 +154,10 @@ def gru(hidden_dim: int):
     return GRU(x, GRU.initial_state(GRU, 1))
 
 
-def embed(vocab_size: int, embed_dim: int):
-    Embed = from_haiku(hk.Embed)(vocab_size=vocab_size, embed_dim=embed_dim)
+def embed(vocab_size: int, embed_dim: int, w_init: Optional[Callable] = None):
+    Embed = from_haiku(hk.Embed)(
+        vocab_size=vocab_size, embed_dim=embed_dim, w_init=w_init
+    )
     x = np.empty((1, 1), dtype=np.int32)
     return Embed.hk_init(x)
 
