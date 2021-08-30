@@ -63,6 +63,13 @@ def from_haiku(
                 if delay == False:
                     self.init_haiku_module(u, v)
 
+            def __repr__(self) -> str:
+                options = []
+                for k, v in kwargs.items():
+                    options.append(f"{k}={v}")
+                options = ", ".join(options)
+                return cls.__name__ + "@haiku" + f"[{options}]"
+
             def __call__(self, *args, **kwargs):
                 if not self._is_haiku_initialized:
                     logging.warning(

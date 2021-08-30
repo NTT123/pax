@@ -81,6 +81,7 @@ class LayerNorm(Module):
         self.scale_init = scale_init or initializers.ones
         self.offset_init = offset_init or initializers.zeros
         self.use_fast_variance = use_fast_variance
+        self.num_channels = num_channels
 
         param_shape = [num_channels]
         if rng_key is None:
@@ -151,3 +152,6 @@ class LayerNorm(Module):
         eps = jax.lax.convert_element_type(self.eps, variance.dtype)
         inv = scale * jax.lax.rsqrt(variance + eps)
         return inv * (inputs - mean) + offset
+
+    def __repr__(self) -> str:
+        return f"LayerNorm[num_channels={self.num_channels}, axis={self.axis}, create_scale={self.create_scale}, create_offset={self.create_offset}]"

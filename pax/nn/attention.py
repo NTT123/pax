@@ -71,3 +71,8 @@ class MultiHeadAttention(Module):
         # Concatenate attention matrix of all heads into a single vector.
         attn_vec = jnp.reshape(attn, (*query.shape[:-1], -1))
         return self.output_projection(attn_vec)
+
+    def __repr__(self) -> str:
+        return (
+            f"MultiHeadAttention[num_heads={self.num_heads}, key_size={self.key_size}]"
+        )

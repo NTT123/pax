@@ -141,6 +141,7 @@ optimizer = pax.optim.from_optax(
 
 # replicate on multiple devices
 net = jax.device_put_replicated(net, jax.devices())
+print("\n".join(net.summary()))
 optimizer = jax.device_put_replicated(optimizer, jax.devices())
 
 

@@ -6,7 +6,7 @@ which is under MIT License.
 """
 
 from enum import Enum
-from typing import Any, Callable, Dict, Tuple, TypeVar
+from typing import Any, Callable, Dict, List, Tuple, TypeVar
 
 import jax
 import jax.numpy as jnp
@@ -20,7 +20,7 @@ FilterFn = Callable[[Any, T], bool]
 # TODO: use NamedTuple, but, it is slower :-(
 ModuleAuxiliaryData = Tuple
 
-# All suportted module's field kinds
+# All supported module's field kinds
 class PaxFieldKind(Enum):
     STATE: int = 1  # a non-trainable ndarray
     PARAMETER: int = 2  # a trainable ndarray
@@ -31,9 +31,19 @@ class PaxFieldKind(Enum):
     OTHERS: int = 7  # all other fields
 
 
+class ForceModuleInitFakeDict(object):
+    """TODO: This is a hack. Fix this!"""
+
+    def __setitem__(self, _, __):
+        raise RuntimeError(
+            "You may forgot to call `super().__init__()`` "
+            "inside your pax.Module's ``__init__`` method."
+        )
+
+
 class Module:
     # Field Name To Kind
-    _name_to_kind: Dict[str, PaxFieldKind]
+    _name_to_kind: Dict[str, PaxFieldKind] = ForceModuleInitFakeDict()
     _training: bool = True
 
     def __init__(self):
@@ -207,3 +217,40 @@ class Module:
         if enable_jit:
             init_fn = jax.jit(init_fn)
         return init_fn(self, args, kwargs)
+
+    def sub_modules(self):
+        """Return a list of sub-modules."""
+        submods, _ = jax.tree_flatten(
+            self, is_leaf=lambda x: isinstance(x, Module) and x is not self
+        )
+        return [module for module in submods if isinstance(module, Module)]
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__
+
+    def summary(self) -> List[str]:
+        """This is the default summary method.
+        A module can customize its summary by overriding this function.
+
+
+        Expected output:
+        Sequential
+            Linear[32, 43]
+            Linear[5, 5]
+        """
+
+        output = [self.__repr__()]
+        sub_modules = self.sub_modules()
+
+        def indent(lines: List[str], s) -> List[str]:
+            return [s + l for l in lines]
+
+        for i, module in enumerate(sub_modules):
+            lines = module.summary()
+            if i + 1 < len(sub_modules):  # middle submodules
+                _lines = indent(lines[:1], "├── ") + indent(lines[1:], "│   ")
+            else:  # last submodule
+                _lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
+            output.extend(_lines)
+
+        return output

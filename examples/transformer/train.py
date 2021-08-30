@@ -137,6 +137,7 @@ def double_buffer(ds):
 
 def train():
     net = LM(vocab_size=vocab_size, hidden_dim=hidden_dim, num_layers=num_layers)
+    print("Model:\n" + "\n".join(net.summary()))
     optimizer = pax.optim.from_optax(
         optax.chain(optax.clip_by_global_norm(1.0), optax.adam(learning_rate))
     )(net.parameters())

@@ -121,6 +121,7 @@ class Conv2D(Module):
         ], f"data format {data_format} is not supported."
         self.in_features = in_features
         self.out_features = out_features
+        self.with_bias = with_bias
 
         def fwd(x):
             return hk.Conv2D(
@@ -150,3 +151,6 @@ class Conv2D(Module):
 
     def __call__(self, x):
         return self.fwd.apply({"conv2_d": {"w": self.w, "b": self.b}}, x)
+
+    def __repr__(self) -> str:
+        return f"Conv2D[in_features={self.in_features}, out_features={self.out_features}, with_bias={self.with_bias}]"
