@@ -1,6 +1,7 @@
 # Pax
 
 ## Introduction 
+
 ``Pax`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The central object of `Pax` is a `pax.Module`.
 
 A  `pax.Module` has two sides:
@@ -52,12 +53,13 @@ print(grads.bias) # 60.0
 ```
 
 There are a few important things in the above example:
-* ``__init__`` method call ``super().__init__()`` for initialization. This is required for any ``pax.Module``.
+* ``__init__`` method calls ``super().__init__()`` for initialization. This is required for any ``pax.Module``.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``model = model.update(params)`` causes ``model`` to use ``params`` in the forward computation.
 * ``loss_fn`` returns the updated `model` in its output.
 * ``net.parameters()`` return a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. This is needed to make sure that we only compute gradients w.r.t trainable parameters.
+
 ## Examples
 
 A good way to learn about ``Pax`` is to see examples in the ``examples/`` directory:
@@ -89,8 +91,6 @@ If your model uses these converted haiku modules, you have to call the `hk_init`
 In additional, Pax provides many functions that avoid the dummy input problems: ``pax.haiku.{linear, layer_norm, batch_norm_2d, lstm, gru, embed, conv_1d, conv_2d, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
 We intent to add more functions like this in the near futures.
 
-
-
 ## Optimizers
 
 Pax implements optimizers in a stateful fashion. Bellow is a simple sgd optimizer with momentum.
@@ -102,6 +102,7 @@ class SGD(pax.Optimizer):
     momentum: float 
     
     def __init__(self, params, learning_rate: float = 1e-2, momentum: float = 0.9):
+        super().__init__()
         self.momentum = momentum
         self.learning_rate = learning_rate
         self.register_state_subtree('velocity', jax.tree_map(lambda x: jnp.zeros_like(x), params))
