@@ -6,7 +6,7 @@ which is under MIT License.
 """
 
 from enum import Enum
-from typing import Any, Callable, Dict, List, Tuple, TypeVar
+from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
@@ -228,10 +228,12 @@ class Module:
     def __repr__(self) -> str:
         return self.__class__.__name__
 
-    def summary(self) -> List[str]:
+    def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         """This is the default summary method.
         A module can customize its summary by overriding this function.
 
+        Arguments:
+            - return_list: bool, return a list of lines instead of a joined string.
 
         Expected output:
         Sequential
@@ -246,11 +248,13 @@ class Module:
             return [s + l for l in lines]
 
         for i, module in enumerate(sub_modules):
-            lines = module.summary()
+            lines = module.summary(return_list=True)
             if i + 1 < len(sub_modules):  # middle submodules
                 _lines = indent(lines[:1], "├── ") + indent(lines[1:], "│   ")
             else:  # last submodule
                 _lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
             output.extend(_lines)
-
-        return output
+        if return_list:
+            return output
+        else:
+            return "\n".join(output)

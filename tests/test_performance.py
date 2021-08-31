@@ -17,7 +17,6 @@ def test_transformer_flatten_unflatten():
             )
 
     f = MyTransformer(16)
-    print("\n" + "\n".join(f.summary()))
 
     start = time.perf_counter()
     n_iters = 10_000
