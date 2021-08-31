@@ -230,15 +230,20 @@ class Module:
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         """This is the default summary method.
-        A module can customize its summary by overriding this function.
+        A module can customize its summary by overriding this method.
 
         Arguments:
             - return_list: bool, return a list of lines instead of a joined string.
 
-        Expected output:
-        Sequential
-            Linear[32, 43]
-            Linear[5, 5]
+
+        Example:
+        ```
+        >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
+            Sequential
+            ├── Linear[in_dim=2, out_dim=3, with_bias=True]
+            ├── x => relu(x)
+            └── Linear[in_dim=3, out_dim=4, with_bias=True]
+        ```
         """
 
         output = [self.__repr__()]
@@ -250,10 +255,10 @@ class Module:
         for i, module in enumerate(sub_modules):
             lines = module.summary(return_list=True)
             if i + 1 < len(sub_modules):  # middle submodules
-                _lines = indent(lines[:1], "├── ") + indent(lines[1:], "│   ")
+                indented_lines = indent(lines[:1], "├── ") + indent(lines[1:], "│   ")
             else:  # last submodule
-                _lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
-            output.extend(_lines)
+                indented_lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
+            output.extend(indented_lines)
         if return_list:
             return output
         else:
