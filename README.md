@@ -9,7 +9,7 @@ A  `pax.Module` has two sides:
 
 ``pax.Module`` manages the pytree and executes functions that depends on the pytree. As a pytree object, `pax.Module` can be input and output to jax functions running on CPU/GPU/TPU cores.
 
-## Install
+## Installation
 
 ```bash
 pip3 install git+https://github.com/ntt123/pax.git
