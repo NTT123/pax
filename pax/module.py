@@ -65,7 +65,7 @@ class Module:
         self.__dict__[name] = value
 
         if isinstance(value, Module):
-            self._name_to_kind[name] = PaxFieldKind.STATE_SUBTREE
+            self._name_to_kind[name] = PaxFieldKind.MODULE
 
         # this may be slow but we should do it at any cost.
         self._deep_scan(fields={name: value})
