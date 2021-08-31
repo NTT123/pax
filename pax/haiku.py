@@ -8,7 +8,9 @@ import numpy as np
 
 import haiku as hk
 from haiku import LSTMState, dropout, dynamic_unroll
-from pax.module import Module
+
+from .module import Module
+from .utils import Lambda
 
 HaikuState = Dict[str, Dict[str, jnp.ndarray]]
 HaikuParam = Dict[str, Dict[str, jnp.ndarray]]
@@ -120,20 +122,22 @@ def batch_norm_2d(
 
 
 def layer_norm(num_channels: int, axis: int = -1):
-    LayerNorm = from_haiku(hk.LayerNorm)(
+    LayerNorm = from_haiku(hk.LayerNorm, delay=False)(
         axis=axis, create_scale=True, create_offset=True
     )
     shape = [1, 1, 1, 1]
     shape[axis] = num_channels
     x = np.empty((num_channels,), dtype=np.float32).reshape(shape)
-    return LayerNorm.hk_init(x)
+    return LayerNorm(x)
 
 
 def linear(in_dim: int, out_dim: int, with_bias: bool = True):
-    Linear = from_haiku(hk.Linear)(output_size=out_dim, with_bias=with_bias)
+    Linear = from_haiku(hk.Linear, delay=False)(
+        output_size=out_dim, with_bias=with_bias
+    )
     shape = (1, in_dim)
     x = np.empty(shape, dtype=np.float32)
-    return Linear.hk_init(x)
+    return Linear(x)
 
 
 def lstm(hidden_dim: int):
@@ -162,11 +166,11 @@ def gru(hidden_dim: int):
 
 
 def embed(vocab_size: int, embed_dim: int, w_init: Optional[Callable] = None):
-    Embed = from_haiku(hk.Embed)(
+    Embed = from_haiku(hk.Embed, delay=False)(
         vocab_size=vocab_size, embed_dim=embed_dim, w_init=w_init
     )
     x = np.empty((1, 1), dtype=np.int32)
-    return Embed.hk_init(x)
+    return Embed(x)
 
 
 def conv_1d(
@@ -182,7 +186,7 @@ def conv_1d(
     data_format="NWC",
     feature_group_count=1,
 ):
-    Conv1D = from_haiku(hk.Conv1D)(
+    Conv1D = from_haiku(hk.Conv1D, delay=False)(
         output_channels=output_channels,
         kernel_shape=kernel_shape,
         stride=stride,
@@ -202,7 +206,7 @@ def conv_1d(
     elif data_format == "NCW":
         shape[1] = input_channels
     x = np.reshape(x, shape)
-    return Conv1D.hk_init(x)
+    return Conv1D(x)
 
 
 def conv_2d(
@@ -218,7 +222,7 @@ def conv_2d(
     data_format="NHWC",
     feature_group_count=1,
 ):
-    Conv2D = from_haiku(hk.Conv2D)(
+    Conv2D = from_haiku(hk.Conv2D, delay=False)(
         output_channels=output_channels,
         kernel_shape=kernel_shape,
         stride=stride,
@@ -238,7 +242,7 @@ def conv_2d(
     elif data_format == "NCHW":
         shape[1] = input_channels
     x = np.reshape(x, shape)
-    return Conv2D.hk_init(x)
+    return Conv2D(x)
 
 
 def conv_1d_transpose(
@@ -254,7 +258,7 @@ def conv_1d_transpose(
     data_format="NWC",
     mask=None,
 ):
-    Conv1DTranspose = from_haiku(hk.Conv1DTranspose)(
+    Conv1DTranspose = from_haiku(hk.Conv1DTranspose, delay=False)(
         output_channels=output_channels,
         kernel_shape=kernel_shape,
         stride=stride,
@@ -274,7 +278,7 @@ def conv_1d_transpose(
     elif data_format == "NCW":
         shape[1] = input_channels
     x = np.reshape(x, shape)
-    return Conv1DTranspose.hk_init(x)
+    return Conv1DTranspose(x)
 
 
 def conv_2d_transpose(
@@ -290,7 +294,7 @@ def conv_2d_transpose(
     data_format="NHWC",
     mask=None,
 ):
-    Conv2DTranspose = from_haiku(hk.Conv2DTranspose)(
+    Conv2DTranspose = from_haiku(hk.Conv2DTranspose, delay=False)(
         output_channels=output_channels,
         kernel_shape=kernel_shape,
         stride=stride,
@@ -310,7 +314,7 @@ def conv_2d_transpose(
     elif data_format == "NCHW":
         shape[1] = input_channels
     x = np.reshape(x, shape)
-    return Conv2DTranspose.hk_init(x)
+    return Conv2DTranspose(x)
 
 
 def avg_pool(window_shape, strides, padding, channel_axis=-1):
@@ -320,14 +324,22 @@ def avg_pool(window_shape, strides, padding, channel_axis=-1):
         padding=padding,
         channel_axis=channel_axis,
     )
-    return lambda x: AvgPool.hk_init(x)(x)
-
-
-def max_pool(window_shape, strides, padding, channel_axis=-1):
-    MaxPool = from_haiku(hk.MaxPool)(
+    f = lambda x: hk.avg_pool(
+        x,
         window_shape=window_shape,
         strides=strides,
         padding=padding,
         channel_axis=channel_axis,
     )
-    return lambda x: MaxPool.hk_init(x)(x)
+    return Lambda(f)
+
+
+def max_pool(window_shape, strides, padding, channel_axis=-1):
+    f = lambda x: hk.avg_pool(
+        x,
+        window_shape=window_shape,
+        strides=strides,
+        padding=padding,
+        channel_axis=channel_axis,
+    )
+    return Lambda(f)

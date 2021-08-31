@@ -195,3 +195,14 @@ def test_clone_no_side_effect():
     assert (
         "new_module" not in fc2._name_to_kind
     )  # fc2._name_to_kind is different from fc1._name_to_kind
+
+
+def test_lambda_module():
+    f = pax.utils.Lambda(jax.nn.relu)
+    x = jnp.array(5.0)
+    y = f(x)
+    assert x.item() == y.item()
+
+    x = jnp.array(-4.0)
+    y = f(x)
+    assert y.item() == 0.0

@@ -3,26 +3,7 @@ from typing import Callable, List, Optional, Union
 import jax
 
 from ..module import Module
-
-
-class Lambda(Module):
-    def __init__(self, f: Callable):
-        super().__init__()
-        self.f = f
-
-    def __call__(self, x):
-        return self.f(x)
-
-    def __repr__(self) -> str:
-        return f"Fx[{self.f}]"
-
-    def summary(self, return_list: bool = False) -> Union[str, List[str]]:
-        if self.f == jax.nn.relu:
-            name = "relu"
-        else:
-            name = f"{self.f}"
-        output = f"x => {name}(x)"
-        return [output] if return_list else output
+from ..utils import Lambda
 
 
 class Sequential(Module):
