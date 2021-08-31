@@ -67,5 +67,5 @@ class Linear(Module):
         """
         return self.f.apply({"linear": {"w": self.W, "b": self.b}}, x)
 
-    def __str__(self):
+    def __repr__(self):
         return f"Linear[in_dim={self.in_dim}, out_dim={self.out_dim}, with_bias={self.with_bias}]"

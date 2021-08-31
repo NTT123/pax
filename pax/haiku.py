@@ -1,6 +1,6 @@
 """Convert Haiku module to pax.Module"""
 import logging
-from typing import Dict, Optional, Sequence, Union
+from typing import Callable, Dict, Optional, Sequence, Union
 
 import jax
 import jax.numpy as jnp
@@ -62,6 +62,13 @@ def from_haiku(
 
                 if delay == False:
                     self.init_haiku_module(u, v)
+
+            def __repr__(self) -> str:
+                options = []
+                for k, v in kwargs.items():
+                    options.append(f"{k}={v}")
+                options = ", ".join(options)
+                return cls.__name__ + "@haiku" + f"[{options}]"
 
             def __call__(self, *args, **kwargs):
                 if not self._is_haiku_initialized:
@@ -154,8 +161,10 @@ def gru(hidden_dim: int):
     return GRU(x, GRU.initial_state(GRU, 1))
 
 
-def embed(vocab_size: int, embed_dim: int):
-    Embed = from_haiku(hk.Embed)(vocab_size=vocab_size, embed_dim=embed_dim)
+def embed(vocab_size: int, embed_dim: int, w_init: Optional[Callable] = None):
+    Embed = from_haiku(hk.Embed)(
+        vocab_size=vocab_size, embed_dim=embed_dim, w_init=w_init
+    )
     x = np.empty((1, 1), dtype=np.int32)
     return Embed.hk_init(x)
 

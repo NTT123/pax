@@ -10,22 +10,31 @@ import jax.tree_util
 
 state = threading.local()
 state._rng_key = None
+state._seed = None
 
 
-def seed_rng_key(seed: int = None):
-    """Seed state.rng_key with [0, seed]"""
-    if seed is None:
-        seed = 42
-        logging.warn(
-            f"Seeding RNG key with seed {seed}. Use ` pax.seed_rng_key` function to avoid this warning."
-        )
-    state._rng_key = jax.random.PRNGKey(seed)
+def seed_rng_key(seed: int):
+    """Set state._seed"""
+    state._seed = seed
+    state._rng_key = None  # reset `_rng_key`
 
 
 def next_rng_key() -> jnp.ndarray:
     """Return a random RNG key."""
     if state._rng_key is None:
-        seed_rng_key()
+        if state._seed is None:
+            seed = 42
+            logging.warning(
+                f"Seeding RNG key with seed {seed}. "
+                f"Use `pax.seed_rng_key` function to avoid this warning."
+            )
+            seed_rng_key(seed)
+
+        # Delay the generating of state._rng_key until `next_rng_key` is called.
+        # This helps to avoid the problem when `seed_rng_key` is called
+        # before jax found TPU cores.
+        state._rng_key = jax.random.PRNGKey(state._seed)
+
     key, state._rng_key = jax.random.split(state._rng_key)
 
     return key

@@ -75,6 +75,7 @@ def update_fn(model: ConvNet, optimizer: pax.Optimizer, batch: Batch):
 
 
 net = ConvNet()
+print(net.summary())
 optimizer = pax.optim.from_optax(
     optax.chain(
         optax.clip_by_global_norm(1.0),

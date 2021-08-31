@@ -11,8 +11,9 @@ import pax
 def test_pax_next_rng_key():
     # seed 42
     pax.seed_rng_key(42)
+    assert pax.rng.state._rng_key is None
+    assert pax.rng.state._seed == 42
     expected_rng = jnp.array([0, 42], dtype=jnp.uint32)
-    np.testing.assert_array_equal(pax.rng.state._rng_key, expected_rng)
     rng1 = pax.next_rng_key()
     expected_rng_1, rng_internal = jax.random.split(expected_rng)
     np.testing.assert_array_equal(rng1, expected_rng_1)
@@ -147,16 +148,15 @@ def test_type_optional():
 def test_train_eval():
     net = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(3, 3))
 
-    assert net._properties["_training"] == True
-    net.modules[0]._properties["_training"] == True
+    assert net._training == True
     net = net.eval()
-    assert net._properties["_training"] == False
-    net.modules[0]._properties["_training"] == False
-    net.modules[1]._properties["_training"] == False
+    assert net._training == False
+    assert net.modules[0]._training == False
+    assert net.modules[1]._training == False
     net = net.train()
-    assert net._properties["_training"] == True
-    net.modules[0]._properties["_training"] == True
-    net.modules[1]._properties["_training"] == True
+    assert net._training == True
+    assert net.modules[0]._training == True
+    assert net.modules[1]._training == True
 
 
 def test_state_of_param():
@@ -175,3 +175,23 @@ def test_state_of_param():
     m2 = M2(m1)
     assert len(jax.tree_leaves(m1.filter("state"))) == 0
     assert len(jax.tree_leaves(m2.filter("parameter"))) == 0
+
+
+def test_module_properties_modify():
+    fc = pax.nn.Linear(3, 3)
+    assert fc._training == True
+    fc1 = fc.copy()
+    assert fc1._training == True
+    fc = fc.eval()
+    assert fc._training == False
+    assert fc1._training == True
+
+
+def test_clone_no_side_effect():
+    fc1 = pax.nn.Linear(3, 3)
+    fc2 = fc1.copy()
+    fc1.new_module = pax.nn.Linear(5, 5)
+    assert "new_module" in fc1._name_to_kind  # registered 'new_modules' as part of fc1
+    assert (
+        "new_module" not in fc2._name_to_kind
+    )  # fc2._name_to_kind is different from fc1._name_to_kind

@@ -1,25 +1,21 @@
 # Pax
 
 ## Introduction 
-``Pax`` is a stateful pytree library for training neural networks. The central object of `Pax` is a `pax.Module`.
+``Pax`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The central object of `Pax` is a `pax.Module`.
 
-A  `pax.Module` has two faces:
-* It is a python object which can be executed (it has ``__call__`` method).
-* It is a pytree object whose leaves are `ndarray`'s.
+A  `pax.Module` has two sides:
+* It is a _normal_ python object which can be modified and called (it has ``__call__`` method).
+* It is a _pytree_ object whose leaves are `ndarray`'s.
 
-``pax.Module`` manages the pytree and executes functions that depends on the pytree. While, as a  pytree object  `pax.Module` can also be input and output to jax functions.
+``pax.Module`` manages the pytree and executes functions that depends on the pytree. As a pytree object, `pax.Module` can be input and output to jax functions running on CPU/GPU/TPU cores.
 
-The art of ``Pax`` programming:
-
-> To use copies of `pax.Module` as input to a function to make sure the function has no side effects.
-
-## Install
+## Installation
 
 ```bash
-pip3 install git+https://github.com/NTT123/pax.git#egg=pax
+pip3 install git+https://github.com/ntt123/pax.git
 
 ## or test mode to run tests and examples
-pip install git+https://github.com/NTT123/pax.git#egg=pax[test]
+pip3 install git+https://github.com/ntt123/pax.git#egg=pax[test]
 ```
 
 ## Getting started
@@ -50,23 +46,24 @@ grad_fn = jax.grad(loss_fn, has_aux=True)
 
 net = Counter(3)
 x = jnp.array(10.)
-grads, (loss, net) = grad_fn(net.parameters(), net.copy(), x)
+grads, (loss, net) = grad_fn(net.parameters(), net, x)
 print(grads.counter) # None
 print(grads.bias) # 60.0
 ```
 
 There are a few important things in the above example:
+* ``__init__`` method call ``super().__init__()`` for initialization. This is required for any ``pax.Module``.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``model = model.update(params)`` causes ``model`` to use ``params`` in the forward computation.
 * ``loss_fn`` returns the updated `model` in its output.
 * ``net.parameters()`` return a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. This is needed to make sure that we only compute gradients w.r.t trainable parameters.
-* `net.copy()` returns a copy of `net`, however, in this case, it is redundant because ``model.update(params)`` also returns a copy of `net`.
 ## Examples
 
 A good way to learn about ``Pax`` is to see examples in the ``examples/`` directory:
 
-* ``char_rnn.py``: train a RNN Language model on TPU.
+* ``char_rnn.py``: train a RNN language model on TPU.
+* ``transformer/``: train a Transformer language model on TPU.
 * ``mnist.py``: train an image classifier on MNIST dataset.
 
 ## Modules

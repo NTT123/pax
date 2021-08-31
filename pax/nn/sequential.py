@@ -1,6 +1,28 @@
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
+
+import jax
 
 from ..module import Module
+
+
+class Lambda(Module):
+    def __init__(self, f: Callable):
+        super().__init__()
+        self.f = f
+
+    def __call__(self, x):
+        return self.f(x)
+
+    def __repr__(self) -> str:
+        return f"Fx[{self.f}]"
+
+    def summary(self, return_list: bool = False) -> Union[str, List[str]]:
+        if self.f == jax.nn.relu:
+            name = "relu"
+        else:
+            name = f"{self.f}"
+        output = f"x => {name}(x)"
+        return [output] if return_list else output
 
 
 class Sequential(Module):
@@ -15,6 +37,7 @@ class Sequential(Module):
     """
 
     # Note: we cannot mix pax.Module and jax functions (e.g., jax.nn.relu) in the same list.
+    # therefore, we have to convert a jax function to ``Lambda`` module first.
     modules: List[Optional[Module]]
     functions: List[Optional[Callable]]
 
@@ -22,11 +45,10 @@ class Sequential(Module):
         super().__init__()
         filter_fn = lambda f: isinstance(f, Module)
         self.register_parameter_subtree(
-            "modules", [(f if filter_fn(f) else None) for f in layers]
+            "modules", [(f if isinstance(f, Module) else Lambda(f)) for f in layers]
         )
-        self.functions = [(f if not filter_fn(f) else None) for f in layers]
 
     def __call__(self, x):
-        for f1, f2 in zip(self.modules, self.functions):
-            x = f1(x) if f2 is None else f2(x)
+        for f in self.modules:
+            x = f(x)
         return x
