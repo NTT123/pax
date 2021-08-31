@@ -2,7 +2,7 @@
 
 import logging
 from abc import abstractmethod
-from typing import Any, List, TypeVar, cast
+from typing import Any, List, TypeVar
 
 import jax
 import jax.tree_util
@@ -11,9 +11,7 @@ import optax
 from .module import Module
 
 T = TypeVar("T", bound="Module")
-_OptaxState = List[Any]
-# TODO: remove cast trick.
-OptaxState = cast(List[optax.OptState], _OptaxState)
+OptaxState = List[optax.OptState]
 
 
 class Optimizer(Module):
