@@ -46,24 +46,25 @@ def from_haiku(
             rng_key: jnp.ndarray
             _is_haiku_initialized: bool = False
 
-            def init_haiku_module(self, u, v):
+            def init_haiku_module(self, u, v, rng_key=None):
+                rng_key = jax.random.PRNGKey(42) if rng_key is None else rng_key
+                rng_key_1, rng_key_2 = jax.random.split(rng_key)
                 params, state = map(
                     hk.data_structures.to_mutable_dict,
-                    hk_fwd.init(self.rng_key, *u, **v),
+                    hk_fwd.init(rng_key_1, *u, **v),
                 )
                 self.register_parameter_subtree("params", params)
                 self.register_state_subtree("state", state)
-                self.register_state_subtree("rng_key", self.rng_key)
+                self.register_state("rng_key", rng_key_2)
                 self._is_haiku_initialized = True
 
             def __init__(self, *u, rng_key: Optional[jnp.ndarray] = None, **v) -> None:
                 super().__init__()
-                self.rng_key = jax.random.PRNGKey(42) if rng_key is None else rng_key
                 if pass_is_training:
                     v["is_training"] = self.training
 
                 if delay == False:
-                    self.init_haiku_module(u, v)
+                    self.init_haiku_module(u, v, rng_key=rng_key)
 
             def __repr__(self) -> str:
                 options = []

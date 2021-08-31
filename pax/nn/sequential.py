@@ -24,8 +24,7 @@ class Sequential(Module):
 
     def __init__(self, *layers):
         super().__init__()
-        filter_fn = lambda f: isinstance(f, Module)
-        self.register_parameter_subtree(
+        self.register_module_subtree(
             "modules", [(f if isinstance(f, Module) else Lambda(f)) for f in layers]
         )
 
