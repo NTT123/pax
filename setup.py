@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-__version__ = "0.2.2-dev"
+__version__ = "0.2.2"
 url = "https://github.com/ntt123/pax"
 
 install_requires = ["dm-haiku", "jax", "optax"]
