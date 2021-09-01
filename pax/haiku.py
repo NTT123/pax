@@ -10,6 +10,7 @@ import haiku as hk
 from haiku import LSTMState, dropout, dynamic_unroll
 
 from .module import Module
+from .rng import next_rng_key
 from .utils import Lambda
 
 HaikuState = Dict[str, Dict[str, jnp.ndarray]]
@@ -46,16 +47,15 @@ def from_haiku(
             rng_key: jnp.ndarray
             _is_haiku_initialized: bool = False
 
-            def init_haiku_module(self, u, v, rng_key=None):
-                rng_key = jax.random.PRNGKey(42) if rng_key is None else rng_key
-                rng_key_1, rng_key_2 = jax.random.split(rng_key)
+            def init_haiku_module(self, u, v):
+                rng_key_1, rng_key_2 = jax.random.split(self.rng_key)
                 params, state = map(
                     hk.data_structures.to_mutable_dict,
                     hk_fwd.init(rng_key_1, *u, **v),
                 )
                 self.register_parameter_subtree("params", params)
                 self.register_state_subtree("state", state)
-                self.register_state("rng_key", rng_key_2)
+                self.rng_key = rng_key_2
                 self._is_haiku_initialized = True
 
             def __init__(self, *u, rng_key: Optional[jnp.ndarray] = None, **v) -> None:
@@ -63,8 +63,12 @@ def from_haiku(
                 if pass_is_training:
                     v["is_training"] = self.training
 
+                self.register_state(
+                    "rng_key", next_rng_key() if rng_key is None else rng_key
+                )
+
                 if delay == False:
-                    self.init_haiku_module(u, v, rng_key=rng_key)
+                    self.init_haiku_module(u, v)
 
             def __repr__(self) -> str:
                 options = []

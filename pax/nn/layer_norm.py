@@ -84,8 +84,7 @@ class LayerNorm(Module):
         self.num_channels = num_channels
 
         param_shape = [num_channels]
-        if rng_key is None:
-            rng_key = next_rng_key()
+        rng_key = next_rng_key() if rng_key is None else rng_key
         rng1, rng2 = jax.random.split(rng_key)
         if create_scale:
             self.register_parameter(
