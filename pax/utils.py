@@ -11,7 +11,7 @@ from .optim import Optimizer
 
 T = TypeVar("T", bound="Module")
 
-LossFnOutput = Tuple[jnp.ndarray, Tuple[jnp.ndarray, T]]
+LossFnOutput = Tuple[jnp.ndarray, Tuple[Any, T]]
 LossFn = Callable[[T, T, Any], LossFnOutput]
 UpdateFn = Callable[[T, Optimizer, Any], Tuple[Any, T, Optimizer]]
 
@@ -81,14 +81,3 @@ class Lambda(Module):
             name = f"{self.f}"
         output = f"x => {name}(x)"
         return [output] if return_list else output
-
-
-def _issubclass(a, b):
-    """Determines if ``a`` is a subclass of ``b``.
-    Similar to issubclass, but returns False instead of an exception if `a` is not
-    a class.
-    """
-    try:
-        return issubclass(a, b)
-    except TypeError:
-        return False

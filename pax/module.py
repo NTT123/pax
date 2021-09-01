@@ -6,16 +6,13 @@ which is under MIT License.
 """
 
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Dict, List, Sequence, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
 
-A = TypeVar("A")
-B = TypeVar("B")
 T = TypeVar("T", bound="Module")
-FilterFn = Callable[[Any, T], bool]
 
 # TODO: use NamedTuple, but, it is slower :-(
 ModuleAuxiliaryData = Tuple
@@ -67,8 +64,7 @@ class Module:
         if isinstance(value, Module):
             self._name_to_kind[name] = PaxFieldKind.MODULE
 
-        # this may be slow but we should do it at any cost.
-        self._deep_scan(fields={name: value})
+        self._scan_fields(fields={name: value})
 
     def register_parameter(self, name: str, value: jnp.ndarray):
         self._name_to_kind[name] = PaxFieldKind.PARAMETER
@@ -269,14 +265,19 @@ class Module:
         else:
             return "\n".join(output)
 
-    def _deep_scan(self, fields: Optional[Dict] = None):
-        """Scan a module recursively to find any potential bug."""
+    def deep_scan(self):
+        """Scan a module recursively to find any _potential_ bug."""
+
+        fields = vars(self)
+        self._scan_fields(fields)
+
+        for mod in self.sub_modules():
+            mod.deep_scan()
+
+    def _scan_fields(self, fields: Sequence[Any]):
+        """Scan fields for _potential_ bugs."""
+
         from jax.dtypes import issubdtype as isdt
-
-        from .utils import _issubclass
-
-        if fields is None:
-            fields = vars(self)
 
         for name, value in fields.items():
             kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
@@ -321,6 +322,3 @@ class Module:
                             f"Field ``{self}.{name}`` of kind `{kind.name}` "
                             f"SHOULD NOT contains a pax.Module instance: {mod}"
                         )
-
-        for mod in self.sub_modules():
-            mod._deep_scan()
