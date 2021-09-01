@@ -53,13 +53,11 @@ class BatchNorm(Module):
         self.fwd = hk.without_apply_rng(hk.transform_with_state(fwd))
         rng_key = next_rng_key() if rng_key is None else rng_key
         x = np.empty([(1 if i is None else i) for i in input_shape], dtype=np.float32)
-        self.params, self.state = self.fwd.init(rng_key, x, is_training=self.training)
+        params, state = self.fwd.init(rng_key, x, is_training=self.training)
         self.register_parameter_subtree(
-            "params", hk.data_structures.to_mutable_dict(self.params)
+            "params", hk.data_structures.to_mutable_dict(params)
         )
-        self.register_state_subtree(
-            "state", hk.data_structures.to_mutable_dict(self.state)
-        )
+        self.register_state_subtree("state", hk.data_structures.to_mutable_dict(state))
 
     def __call__(self, x):
         x, state = self.fwd.apply(self.params, self.state, x, is_training=self.training)

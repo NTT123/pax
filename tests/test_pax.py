@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pax
+import pytest
 
 
 def test_pax_next_rng_key():
@@ -191,7 +192,27 @@ def test_clone_no_side_effect():
     fc1 = pax.nn.Linear(3, 3)
     fc2 = fc1.copy()
     fc1.new_module = pax.nn.Linear(5, 5)
-    assert "new_module" in fc1._name_to_kind  # registered 'new_modules' as part of fc1
+    assert "new_module" in fc1._name_to_kind, "registered 'new_modules' as part of fc1"
     assert (
         "new_module" not in fc2._name_to_kind
-    )  # fc2._name_to_kind is different from fc1._name_to_kind
+    ), "fc2._name_to_kind is different from fc1._name_to_kind"
+
+
+def test_lambda_module():
+    f = pax.utils.Lambda(jax.nn.relu)
+    x = jnp.array(5.0)
+    y = f(x)
+    assert x.item() == y.item()
+
+    x = jnp.array(-4.0)
+    y = f(x)
+    assert y.item() == 0.0
+
+
+def test_forget_call_super_at_init():
+    class M(pax.Module):
+        def __init__(self):
+            self.fc = pax.nn.Linear(3, 3)
+
+    with pytest.raises(RuntimeError):
+        m = M()

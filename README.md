@@ -67,6 +67,7 @@ A good way to learn about ``Pax`` is to see examples in the ``examples/`` direct
 * ``char_rnn.py``: train a RNN language model on TPU.
 * ``transformer/``: train a Transformer language model on TPU.
 * ``mnist.py``: train an image classifier on MNIST dataset.
+* ``notebooks/VAE.ipynb``: train a variational autoencoder.
 
 ## Modules
 

@@ -6,16 +6,13 @@ which is under MIT License.
 """
 
 from enum import Enum
-from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
+from typing import Any, Dict, List, Sequence, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
 
-A = TypeVar("A")
-B = TypeVar("B")
 T = TypeVar("T", bound="Module")
-FilterFn = Callable[[Any, T], bool]
 
 # TODO: use NamedTuple, but, it is slower :-(
 ModuleAuxiliaryData = Tuple
@@ -61,33 +58,37 @@ class Module:
                 f"You SHOULD NOT modify `{name}`. "
                 f"If you _really_ want to, use `self.__dict__[name] = value` instead."
             )
+
         self.__dict__[name] = value
+
         if isinstance(value, Module):
-            self.register_module(name, value)
+            self._name_to_kind[name] = PaxFieldKind.MODULE
+
+        self._scan_fields(fields={name: value})
 
     def register_parameter(self, name: str, value: jnp.ndarray):
-        self.__dict__[name] = value
         self._name_to_kind[name] = PaxFieldKind.PARAMETER
+        setattr(self, name, value)
 
     def register_state(self, name: str, value: jnp.ndarray):
-        self.__dict__[name] = value
         self._name_to_kind[name] = PaxFieldKind.STATE
+        setattr(self, name, value)
 
     def register_module(self, name: str, value: Any):
-        self.__dict__[name] = value
         self._name_to_kind[name] = PaxFieldKind.MODULE
+        setattr(self, name, value)
 
     def register_parameter_subtree(self, name: str, value: Any):
-        self.__dict__[name] = value
         self._name_to_kind[name] = PaxFieldKind.PARAMETER_SUBTREE
+        setattr(self, name, value)
 
     def register_state_subtree(self, name: str, value: Any):
-        self.__dict__[name] = value
         self._name_to_kind[name] = PaxFieldKind.STATE_SUBTREE
+        setattr(self, name, value)
 
     def register_module_subtree(self, name: str, value: Any):
-        self.__dict__[name] = value
         self._name_to_kind[name] = PaxFieldKind.MODULE_SUBTREE
+        setattr(self, name, value)
 
     def tree_flatten(self):
         fields = vars(self)
@@ -230,15 +231,20 @@ class Module:
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         """This is the default summary method.
-        A module can customize its summary by overriding this function.
+        A module can customize its summary by overriding this method.
 
         Arguments:
             - return_list: bool, return a list of lines instead of a joined string.
 
-        Expected output:
-        Sequential
-            Linear[32, 43]
-            Linear[5, 5]
+
+        Example:
+        ```
+        >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
+            Sequential
+            ├── Linear[in_dim=2, out_dim=3, with_bias=True]
+            ├── x => relu(x)
+            └── Linear[in_dim=3, out_dim=4, with_bias=True]
+        ```
         """
 
         output = [self.__repr__()]
@@ -250,11 +256,69 @@ class Module:
         for i, module in enumerate(sub_modules):
             lines = module.summary(return_list=True)
             if i + 1 < len(sub_modules):  # middle submodules
-                _lines = indent(lines[:1], "├── ") + indent(lines[1:], "│   ")
+                indented_lines = indent(lines[:1], "├── ") + indent(lines[1:], "│   ")
             else:  # last submodule
-                _lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
-            output.extend(_lines)
+                indented_lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
+            output.extend(indented_lines)
         if return_list:
             return output
         else:
             return "\n".join(output)
+
+    def deep_scan(self):
+        """Scan a module recursively to find any _potential_ bug."""
+
+        fields = vars(self)
+        self._scan_fields(fields)
+
+        for mod in self.sub_modules():
+            mod.deep_scan()
+
+    def _scan_fields(self, fields: Sequence[Any]):
+        """Scan fields for _potential_ bugs."""
+
+        from jax.dtypes import issubdtype as isdt
+
+        for name, value in fields.items():
+            kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
+            leaves = jax.tree_leaves(value)
+            # Check if a parameter or parameter subtree
+            # contains non-differentiable ndarray (e.g., uint32 array)
+            if kind in [PaxFieldKind.PARAMETER, PaxFieldKind.PARAMETER_SUBTREE]:
+                for leaf in leaves:
+                    if hasattr(leaf, "dtype") and not (
+                        isdt(leaf.dtype, jnp.complexfloating)
+                        or isdt(leaf.dtype, jnp.floating)
+                    ):
+                        raise ValueError(
+                            f"Field ``{self}.{name}`` of kind `{kind.name}` contains a non-differentiable leaf "
+                            f"(type={leaf.dtype}, value={leaf})."
+                        )
+
+            # Check if a field contains unregistered ndarray
+            if kind == PaxFieldKind.OTHERS:
+                for leaf in leaves:
+                    if isinstance(leaf, jnp.ndarray):
+                        raise ValueError(
+                            f"Unregistered field ``{self}.{name}`` of kind `{kind.name}` contains a ndarray "
+                            f"(type={leaf.dtype}, value={leaf}). "
+                            f"This is usually not a good idea. "
+                            f"Consider registering it as a STATE or STATE_SUBTREE."
+                        )
+
+            # Check if an unregistered field contains pax.Module instance
+            if kind not in [
+                PaxFieldKind.MODULE,
+                PaxFieldKind.MODULE_SUBTREE,
+                PaxFieldKind.STATE,
+                PaxFieldKind.STATE_SUBTREE,
+            ]:
+                mods, _ = jax.tree_flatten(
+                    value, is_leaf=lambda x: isinstance(x, Module)
+                )
+                for mod in mods:
+                    if isinstance(mod, Module):
+                        raise ValueError(
+                            f"Field ``{self}.{name}`` of kind `{kind.name}` "
+                            f"SHOULD NOT contains a pax.Module instance: {mod}"
+                        )

@@ -1,7 +1,7 @@
 """Useful functions."""
 
 import inspect
-from typing import Any, Callable, Tuple, TypeVar
+from typing import Any, Callable, List, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
@@ -11,7 +11,7 @@ from .optim import Optimizer
 
 T = TypeVar("T", bound="Module")
 
-LossFnOutput = Tuple[jnp.ndarray, Tuple[jnp.ndarray, T]]
+LossFnOutput = Tuple[jnp.ndarray, Tuple[Any, T]]
 LossFn = Callable[[T, T, Any], LossFnOutput]
 UpdateFn = Callable[[T, Optimizer, Any], Tuple[Any, T, Optimizer]]
 
@@ -55,3 +55,29 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         return loss, model, optimizer
 
     return _update_fn
+
+
+class Lambda(Module):
+    """A pure functional module.
+
+
+    Note: We put ``Lambda`` module definition here so both ``haiku.*`` and ``nn.*`` modules can use it.
+    """
+
+    def __init__(self, f: Callable):
+        super().__init__()
+        self.f = f
+
+    def __call__(self, x):
+        return self.f(x)
+
+    def __repr__(self) -> str:
+        return f"Fx[{self.f}]"
+
+    def summary(self, return_list: bool = False) -> Union[str, List[str]]:
+        if self.f == jax.nn.relu:
+            name = "relu"
+        else:
+            name = f"{self.f}"
+        output = f"x => {name}(x)"
+        return [output] if return_list else output
