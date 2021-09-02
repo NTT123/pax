@@ -152,4 +152,4 @@ class Conv2D(Module):
         return self.fwd.apply({"conv2_d": {"w": self.w, "b": self.b}}, x)
 
     def __repr__(self) -> str:
-        return f"Conv2D[in_features={self.in_features}, out_features={self.out_features}, with_bias={self.with_bias}]"
+        return f"{self.__class__.__name__}[in_features={self.in_features}, out_features={self.out_features}, with_bias={self.with_bias}]"

@@ -3,7 +3,12 @@ from setuptools import find_packages, setup
 __version__ = "0.2.3"
 url = "https://github.com/ntt123/pax"
 
-install_requires = ["dm-haiku", "jax", "optax"]
+install_requires = [
+    "dm-haiku",
+    "jax",
+    "optax",
+    "jmp@git+https://github.com/deepmind/jmp",
+]
 setup_requires = []
 tests_require = ["tensorflow", "tensorflow_datasets", "tqdm", "chex", "pytest"]
 

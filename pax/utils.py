@@ -73,7 +73,7 @@ class Lambda(Module):
         return self.f(x)
 
     def __repr__(self) -> str:
-        return f"Fx[{self.f}]"
+        return f"{self.__class__.__name__}[{self.f}]"
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         if self.f == jax.nn.relu:

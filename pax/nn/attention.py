@@ -73,6 +73,4 @@ class MultiHeadAttention(Module):
         return self.output_projection(attn_vec)
 
     def __repr__(self) -> str:
-        return (
-            f"MultiHeadAttention[num_heads={self.num_heads}, key_size={self.key_size}]"
-        )
+        return f"{self.__class__.__name__}[num_heads={self.num_heads}, key_size={self.key_size}]"

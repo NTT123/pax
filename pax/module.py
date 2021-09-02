@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Sequence, Tuple, TypeVar, Union
 import jax
 import jax.numpy as jnp
 import jax.tree_util
+import jmp
 
 T = TypeVar("T", bound="Module")
 
@@ -322,3 +323,44 @@ class Module:
                             f"Field ``{self}.{name}`` of kind `{kind.name}` "
                             f"SHOULD NOT contains a pax.Module instance: {mod}"
                         )
+
+    def mixed_precision(self, mp_policy: jmp.Policy, method_name="__call__"):
+        casted_self = mp_policy.cast_to_param(self)
+
+        cls = casted_self.__class__
+
+        class MixedPrecisionWrapper(cls):
+            def unwrap_mixed_precision(self):
+                back = cls.__new__(cls)
+                back.__dict__.update(self.__dict__)
+                return back
+
+        def mp_call(self, *args, **kwargs):
+            casted_self, casted_args, casted_kwargs = mp_policy.cast_to_compute(
+                (self, args, kwargs)
+            )
+            output = getattr(cls, method_name)(
+                casted_self, *casted_args, **casted_kwargs
+            )
+            output = mp_policy.cast_to_output(output)
+            return output
+
+        setattr(MixedPrecisionWrapper, method_name, mp_call)
+        MixedPrecisionWrapper.__name__ = self.__class__.__name__ + "@MixedPrecision"
+        new = MixedPrecisionWrapper.__new__(MixedPrecisionWrapper)
+        new.__dict__.update(casted_self.__dict__)
+        return new
+
+    def apply(self, apply_fn):
+        """Apply a function to all submodule."""
+
+        def rec_fn(x):
+            if isinstance(x, Module):
+                return x.apply(apply_fn)
+            else:
+                return x
+
+        new_self = jax.tree_map(
+            rec_fn, self, is_leaf=lambda x: isinstance(x, Module) and x is not self
+        )
+        return apply_fn(new_self)
