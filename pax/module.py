@@ -153,8 +153,19 @@ class Module:
 
         return module
 
-    def update(self: T, other: T) -> T:
-        return jax.tree_map(lambda s, o: (s if o is None else o), self, other)
+    def update(self: T, other: T, in_place: bool = False) -> T:
+        """Use parameters/state from `other`.
+
+        Arguments:
+            other: parameter/state tree.
+            in_place: modify the `self` object instead of copying.
+        """
+        new_self = jax.tree_map(lambda s, o: (s if o is None else o), self, other)
+        if in_place:
+            self.__dict__.update(new_self.__dict__)
+            return self
+        else:
+            return new_self
 
     def train(self: T, mode=True):
         """Rebuild a new model recursively and set `self._training = mode`."""
@@ -324,24 +335,28 @@ class Module:
                             f"SHOULD NOT contains a pax.Module instance: {mod}"
                         )
 
-    def mixed_precision(self, mp_policy: jmp.Policy, method_name="__call__"):
+    def mixed_precision(self: T, mp_policy: jmp.Policy, method_name="__call__"):
         casted_self = mp_policy.cast_to_param(self)
 
         cls = casted_self.__class__
 
         class MixedPrecisionWrapper(cls):
             def unwrap_mixed_precision(self):
+                """Recreate the original class.
+
+                Note: No guarantee that the parameter/state's dtype will be the same
+                as the original module.
+                """
                 back = cls.__new__(cls)
                 back.__dict__.update(self.__dict__)
                 return back
 
-        def mp_call(self, *args, **kwargs):
+        def mp_call(self_: T, *args, **kwargs):
             casted_self, casted_args, casted_kwargs = mp_policy.cast_to_compute(
-                (self, args, kwargs)
+                (self_, args, kwargs)
             )
-            output = getattr(cls, method_name)(
-                casted_self, *casted_args, **casted_kwargs
-            )
+            self_.update(casted_self, in_place=True)
+            output = getattr(cls, method_name)(self_, *casted_args, **casted_kwargs)
             output = mp_policy.cast_to_output(output)
             return output
 
