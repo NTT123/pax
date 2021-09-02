@@ -10,7 +10,7 @@ tests_require = ["tensorflow", "tensorflow_datasets", "tqdm", "chex", "pytest"]
 setup(
     name="pax",
     version=__version__,
-    description="A Pytree <3 Jax Framework.",
+    description="A stateful pytree library for training neural networks.",
     author="Thông Nguyễn",
     url=url,
     keywords=[
