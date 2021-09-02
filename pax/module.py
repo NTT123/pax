@@ -40,11 +40,16 @@ class ForceModuleInitFakeDict(object):
 
 
 class Module:
+    """Module is the central object of Pax.
+    
+    A module manages all information related to the structure of the pytree.
+    """
     # Field Name To Kind
     _name_to_kind: Dict[str, PaxFieldKind] = ForceModuleInitFakeDict()
     _training: bool = True
 
     def __init__(self):
+        """Initialize the ``_training`` flag and ``_name_to_kind`` dictionary."""
         super().__init__()
         self.__dict__["_name_to_kind"] = dict()
         self.__dict__["_training"] = True
@@ -154,7 +159,7 @@ class Module:
         return module
 
     def update(self: T, other: T, in_place: bool = False) -> T:
-        """Use parameters/state from `other`.
+        """Use parameters/state from ``other``.
 
         Arguments:
             other: parameter/state tree.
@@ -167,7 +172,7 @@ class Module:
         else:
             return new_self
 
-    def train(self: T, mode=True):
+    def train(self: T, mode: bool =True):
         """Rebuild a new model recursively and set `self._training = mode`."""
         submods, treedef = jax.tree_flatten(
             self, is_leaf=lambda x: isinstance(x, Module) and x is not self
@@ -250,13 +255,11 @@ class Module:
 
 
         Example:
-        ```
-        >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
-            Sequential
-            ├── Linear[in_dim=2, out_dim=3, with_bias=True]
-            ├── x => relu(x)
-            └── Linear[in_dim=3, out_dim=4, with_bias=True]
-        ```
+            >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
+                Sequential
+                ├── Linear[in_dim=2, out_dim=3, with_bias=True]
+                ├── x => relu(x)
+                └── Linear[in_dim=3, out_dim=4, with_bias=True]
         """
 
         output = [self.__repr__()]
@@ -367,7 +370,7 @@ class Module:
         return new
 
     def apply(self, apply_fn):
-        """Apply a function to all submodule."""
+        """Apply a function to all sub-modules."""
 
         def rec_fn(x):
             if isinstance(x, Module):

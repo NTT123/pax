@@ -13,8 +13,8 @@ state._rng_key = None
 state._seed = None
 
 
-def seed_rng_key(seed: int):
-    """Set state._seed"""
+def seed_rng_key(seed: int) -> None:
+    """Set ``state._seed = seed`` and reset ``_rng_key``."""
     state._seed = seed
     state._rng_key = None  # reset `_rng_key`
 

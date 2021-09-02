@@ -13,7 +13,7 @@ from ..module import Module
 class MultiHeadAttention(Module):
     """Multi-headed attention mechanism.
     As described in the vanilla Transformer paper:
-      "Attention is all you need" https://arxiv.org/abs/1706.03762
+    "Attention is all you need" https://arxiv.org/abs/1706.03762
     """
 
     def __init__(

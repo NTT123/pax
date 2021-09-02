@@ -15,6 +15,7 @@ OptaxState = List[optax.OptState]
 
 
 class Optimizer(Module):
+    """The base class for all Pax's Optimizers."""
     state: Any
 
     @abstractmethod
@@ -69,6 +70,8 @@ def from_optax(optax_obj: optax.GradientTransformation):
 def adamw(
     params: T, learning_rate: float = 1e-4, weight_decay: float = 1e-4
 ) -> Optimizer:
+    """Create an adam optimizer from optax.
+    """
     return from_optax(
         optax.adamw(learning_rate=learning_rate, weight_decay=weight_decay)
     )(params)

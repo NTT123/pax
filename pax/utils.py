@@ -60,9 +60,8 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
 class Lambda(Module):
     """A pure functional module.
-
-
-    Note: We put ``Lambda`` module definition here so both ``haiku.*`` and ``nn.*`` modules can use it.
+    
+     Note: We put ``Lambda`` module definition here so both ``haiku`` and ``nn`` modules can use it.
     """
 
     def __init__(self, f: Callable):
