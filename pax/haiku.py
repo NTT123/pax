@@ -71,9 +71,7 @@ def from_haiku(
                     self.init_haiku_module(u, v)
 
             def __repr__(self) -> str:
-                options = []
-                for k, v in kwargs.items():
-                    options.append(f"{k}={v}")
+                options = [f"{k}={v}" for (k, v) in kwargs.items() if v is not None]
                 options = ", ".join(options)
                 return cls.__name__ + "@haiku" + f"[{options}]"
 
