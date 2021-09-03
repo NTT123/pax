@@ -7,7 +7,7 @@
 | [**Optimizers**](#optimizers)
 | [**Fine-tuning**](#finetune)
 | [**Mixed Precision**](#todo)
-| [**Documentation**](https://pax.readthedocs.io/en/latest)
+| [**Documentation**](https://pax.readthedocs.io/en/main)
 
 ![pytest](https://github.com/ntt123/pax/workflows/pytest/badge.svg)
 ![docs](https://readthedocs.org/projects/pax/badge/?version=main)
