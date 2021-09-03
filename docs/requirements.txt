@@ -13,10 +13,10 @@ matplotlib==3.3.3
 seaborn==0.11.1
 Jinja2==2.11.3
 
-# jax requirements
+# pax requirements
+dm-haiku
 jax==0.2.17
 jaxlib==0.1.69
-
-# others
+optax
 jmp>=0.0.2
 numpy>=1.18.0
