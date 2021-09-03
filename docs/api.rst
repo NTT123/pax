@@ -38,28 +38,6 @@ Pax's Module
 .. currentmodule:: pax.haiku
 
 
-Haiku
------
-
-.. autosummary::
-
-    dynamic_unroll
-    from_haiku
-
-
-from_haiku
-~~~~~~~~~~
-
-.. autofunction:: from_haiku
-
-    
-dynamic_unroll
-~~~~~~~~~~~~~~
-
-.. autofunction:: dynamic_unroll
-
-
-
 
 Common Modules
 ==============
