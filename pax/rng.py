@@ -1,5 +1,5 @@
 """
-Manage a global `state.rng_key`. Generate new rng_key if needed.
+Manage the global variable ``state._rng_key``. Generate new ``rng_key`` if requested.
 """
 import logging
 import threading
@@ -14,13 +14,23 @@ state._seed = None
 
 
 def seed_rng_key(seed: int) -> None:
-    """Set ``state._seed = seed`` and reset ``_rng_key``."""
+    """Set ``state._seed = seed`` and reset ``_rng_key``.
+
+    ``_rng_key`` is reset to ``None`` to signal generating a new ``rng_key`` from ``seed``.
+
+    Arguments:
+        seed: an interger seed.
+
+    """
     state._seed = seed
     state._rng_key = None  # reset `_rng_key`
 
 
 def next_rng_key() -> jnp.ndarray:
-    """Return a random RNG key."""
+    """Return a random RNG key. Also, renew the global random key.
+
+    If ``state._rng_key`` is ``None``, generate a new ``_rng_key`` from ``state._seed``.
+    """
     if state._rng_key is None:
         if state._seed is None:
             seed = 42

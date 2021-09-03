@@ -127,12 +127,11 @@ def linkcode_resolve(domain, info):
     )
 
 
-
 # -- nbsphinx configuration --------------------------------------------------
 
-nbsphinx_execute = 'never'
-nbsphinx_codecell_lexer = 'ipython'
-nbsphinx_kernel_name = 'python'
+nbsphinx_execute = "never"
+nbsphinx_codecell_lexer = "ipython"
+nbsphinx_kernel_name = "python"
 nbsphinx_timeout = 180
 nbsphinx_prolog = r"""
 {% set docname = 'docs/' + env.doc2path(env.docname, base=None) %}

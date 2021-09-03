@@ -35,7 +35,11 @@ Pax's Module
    :members:
 
 
-.. currentmodule:: pax.haiku
+.. autoclass:: PaxFieldKind
+   :members:
+   :undoc-members:
+
+
 
 
 

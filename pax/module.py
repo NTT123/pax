@@ -6,7 +6,7 @@ which is under MIT License.
 """
 
 from enum import Enum
-from typing import Any, Dict, List, Sequence, Tuple, TypeVar, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
@@ -29,28 +29,30 @@ class PaxFieldKind(Enum):
     OTHERS: int = 7  # all other fields
 
 
-class ForceModuleInitFakeDict(object):
-    """TODO: This is a hack. Fix this!"""
-
-    def __setitem__(self, _, __):
-        raise RuntimeError(
-            "You may forgot to call `super().__init__()`` "
-            "inside your pax.Module's ``__init__`` method."
-        )
-
-
 class Module:
     """Module is the central object of Pax.
 
-    A module manages all information related to the structure of the pytree.
+    It manages all information related to the pytree.
+    It also includes methods (usually, ``__call__``) that can be exected to compute functions on the pytree.
+
+    The two important methods: ``flatten`` and ``unflatten`` specify how a module can be converted to a ``(leaves, treedef)``,
+    and otherwise from ``(treedef, leaves)`` back to a module.
+
+    In short, a module maintains a ``_name_to_kind`` dictionary that tells if an attribute is part of
+    the pytree and the kind of the tree part (parameter, state, module, etc.).
     """
 
     # Field Name To Kind
-    _name_to_kind: Dict[str, PaxFieldKind] = ForceModuleInitFakeDict()
+    _name_to_kind: Optional[Dict[str, PaxFieldKind]] = None
     _training: bool = True
 
     def __init__(self):
-        """Initialize the ``_training`` flag and ``_name_to_kind`` dictionary."""
+        """Initialize the ``_training`` flag (the default is ``True``)
+        and the **very** important ``_name_to_kind`` dictionary.
+
+        It is required that any subclass of ``Module`` has to call ``super().__init__()`` for initialization.
+        We implement a safeguard mechanism to enforce that by checking if ``_name_to_kind`` is ``None`` in the ``__setattr__`` method.
+        """
         super().__init__()
         self.__dict__["_name_to_kind"] = dict()
         self.__dict__["_training"] = True
@@ -60,6 +62,20 @@ class Module:
         return self._training
 
     def __setattr__(self, name: str, value: Any) -> None:
+        """Whenever an user sets ``value`` to attribute ``name``, we will check the assignment.
+
+        * Setting ``_name_to_kind`` and ``_training`` are forbidden.
+
+        * Setting ``value`` to a wrong kind attribute is also forbidden.
+
+        * If ``value`` is a ``Module``'s instance and ``name`` is not in ``_name_to_kind``, it will be assigned of kind ``PaxFieldKind.MODULE``.
+        """
+        if self._name_to_kind is None:
+            raise RuntimeError(
+                "You forgot to call `super().__init__()`` "
+                "inside your pax.Module's ``__init__`` method."
+            )
+
         if name in ["_name_to_kind", "_training"]:
             raise RuntimeError(
                 f"You SHOULD NOT modify `{name}`. "
@@ -68,36 +84,49 @@ class Module:
 
         self.__dict__[name] = value
 
-        if isinstance(value, Module):
+        if isinstance(value, Module) and name not in self._name_to_kind:
             self._name_to_kind[name] = PaxFieldKind.MODULE
 
         self._scan_fields(fields={name: value})
 
     def register_parameter(self, name: str, value: jnp.ndarray):
+        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
+
         self._name_to_kind[name] = PaxFieldKind.PARAMETER
         setattr(self, name, value)
 
     def register_state(self, name: str, value: jnp.ndarray):
+        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
+
         self._name_to_kind[name] = PaxFieldKind.STATE
         setattr(self, name, value)
 
     def register_module(self, name: str, value: Any):
+        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.MODULE`` in the ``_name_to_kind`` dictionary."""
+
         self._name_to_kind[name] = PaxFieldKind.MODULE
         setattr(self, name, value)
 
     def register_parameter_subtree(self, name: str, value: Any):
+        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.PARAMETER_SUBTREE`` in the ``_name_to_kind`` dictionary."""
+
         self._name_to_kind[name] = PaxFieldKind.PARAMETER_SUBTREE
         setattr(self, name, value)
 
     def register_state_subtree(self, name: str, value: Any):
+        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.STATE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
+
         self._name_to_kind[name] = PaxFieldKind.STATE_SUBTREE
         setattr(self, name, value)
 
     def register_module_subtree(self, name: str, value: Any):
+        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.MODULE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
+
         self._name_to_kind[name] = PaxFieldKind.MODULE_SUBTREE
         setattr(self, name, value)
 
     def tree_flatten(self):
+        """Convert a module to a list of ``children`` and treedef."""
         fields = vars(self)
 
         _tree = {}
@@ -111,6 +140,7 @@ class Module:
 
     @classmethod
     def tree_unflatten(cls, aux_data: ModuleAuxiliaryData, children):
+        """Recreate a module from its ``children`` and treedef."""
         module = cls.__new__(cls)
         _tree, _not_tree = aux_data
         md = module.__dict__
@@ -121,13 +151,20 @@ class Module:
         return module
 
     def __init_subclass__(cls):
+        """Make sure any subclass of ``Module`` is also registered as pytree."""
         jax.tree_util.register_pytree_node_class(cls)
 
     def copy(self: T) -> T:
+        """Return a copy of current module."""
         return jax.tree_map(lambda x: x, self)
 
     def filter(self: T, keep: str = "parameter") -> T:
-        """Filtering a module"""
+        """Filtering a module by parameter or state.
+
+        Arguments:
+            keep: type of leaves that will be kept ("parameter" or "state").
+
+        """
         assert keep in ["parameter", "state"]
         fields = vars(self)
         cls = self.__class__
@@ -189,12 +226,11 @@ class Module:
         return model
 
     def eval(self: T) -> T:
+        """Return a new module in ``eval`` mode."""
         return self.train(False)
 
     def parameters(self):
-        """Return trainable parameters of the module.
-
-        Apply `self.param_filter_fn` if available."""
+        """Return trainable parameters of the module."""
         params = self.filter("parameter")
         return params
 
@@ -221,11 +257,11 @@ class Module:
                 name_to_kind[k] = PaxFieldKind.STATE_SUBTREE
         return model
 
-    def hk_init(self, *args, enable_jit=False, **kwargs):
+    def hk_init(self, *args, enable_jit: bool = False, **kwargs):
         """Return a new initialized module.
 
         Arguments:
-        enable_jit: bool, if using `jax.jit` for the init function.
+            enable_jit: if using `jax.jit` for the init function.
         """
 
         def init_fn(mod, args, kwargs):
@@ -282,7 +318,7 @@ class Module:
             return "\n".join(output)
 
     def deep_scan(self):
-        """Scan a module recursively to find any _potential_ bug."""
+        """Scan a module recursively to find any *potential* bug."""
 
         fields = vars(self)
         self._scan_fields(fields)
@@ -291,7 +327,7 @@ class Module:
             mod.deep_scan()
 
     def _scan_fields(self, fields: Sequence[Any]):
-        """Scan fields for _potential_ bugs."""
+        """Scan fields for *potential* bugs."""
 
         from jax.dtypes import issubdtype as isdt
 
@@ -340,6 +376,7 @@ class Module:
                         )
 
     def mixed_precision(self: T, mp_policy: jmp.Policy, method_name="__call__"):
+        """Convert the module to a MixedPrecision module."""
         casted_self = mp_policy.cast_to_param(self)
 
         cls = casted_self.__class__
