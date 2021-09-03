@@ -130,10 +130,109 @@ Convolution
 Haiku Modules
 =============
 
-.. automodule:: pax.haiku
+
+.. currentmodule:: pax.haiku
+
+.. autosummary::
+    from_haiku
+    batch_norm_2d
+    layer_norm
+    linear
+    lstm
+    gru
+    embed
+    conv_1d
+    conv_2d
+    conv_1d_transpose
+    conv_2d_transpose
+    avg_pool
+    max_pool
 
 
+    
+from_haiku
+----------
 
+.. autofunction:: from_haiku
+
+
+    
+batch_norm_2d
+-------------
+
+.. autofunction:: batch_norm_2d
+
+    
+layer_norm
+----------
+
+.. autofunction:: layer_norm
+
+    
+linear
+------
+
+.. autofunction:: linear
+
+    
+lstm
+----
+
+.. autofunction:: lstm
+
+
+    
+gru
+---
+
+.. autofunction:: gru
+
+    
+embed
+-----
+
+.. autofunction:: embed
+
+    
+conv_1d
+-------
+
+.. autofunction:: conv_1d
+
+
+    
+conv_2d
+-------
+
+.. autofunction:: conv_2d
+
+    
+conv_1d_transpose
+-----------------
+
+.. autofunction:: conv_1d_transpose
+
+
+    
+conv_2d_transpose
+-----------------
+
+.. autofunction:: conv_2d_transpose
+
+    
+avg_pool
+--------
+
+.. autofunction:: avg_pool
+
+
+    
+max_pool
+--------
+
+.. autofunction:: max_pool
+
+    
 
 Optimizer
 =========

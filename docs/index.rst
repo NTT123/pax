@@ -46,6 +46,14 @@ To install::
 
 
 .. toctree::
+   :caption: Guides
+   :maxdepth: 1
+
+   notebooks/getting_started
+
+
+
+.. toctree::
    :caption: API Documentation
    :maxdepth: 1
 

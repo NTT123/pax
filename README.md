@@ -87,7 +87,7 @@ Pax is what you can get if you build [pytorch] on top of [jax]. Pax has several 
 
 Pax learns a lot from other libraries:
 - Pax borrows the idea that __a module is also a pytree__ from [treex] and [equinox]. 
-- Pax uses the concept of _trainable parameters_ and _non-trainable states_ from [dm-haiku]
+- Pax uses the concept of _trainable parameters_ and _non-trainable states_ from [dm-haiku].
 - Pax uses [objax]'s approach to implement optimizers as modules. 
 - Pax uses [dm-haiku] and [optax] as backends for filling in current missing modules and optimizers. 
 - Pax uses [jmp] library for supporting mixed precision. 
@@ -96,7 +96,7 @@ Pax learns a lot from other libraries:
 
 ## Examples<a id="examples"></a>
 
-A good way to learn about ``Pax`` is to see examples in the ``examples/`` directory:
+A good way to learn about ``Pax`` is to see examples in the [examples/](./examples) directory:
 
 * ``char_rnn.py``: train a RNN language model on TPU.
 * ``transformer/``: train a Transformer language model on TPU.
@@ -111,7 +111,7 @@ A good way to learn about ``Pax`` is to see examples in the ``examples/`` direct
 
 ## Modules<a id="modules"></a>
 
-At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, Conv1D, Conv2D, LayerNorm}``.
+At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, BatchNorm1D, BatchNorm2D, Conv1D, Conv2D, LayerNorm, Sequential}``.
 We intent to add new modules in the near future.
 
 Fortunately, Pax also provides the ``pax.from_haiku`` function that can convert most of modules from ``dm-haiku`` library to ``pax.Module``. For example, to convert a dm-haiku LSTM Module:
