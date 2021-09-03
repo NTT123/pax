@@ -18,6 +18,30 @@ def test_batchnorm_train():
     assert y.shape == (1, 10, 3)
 
 
+def test_batchnorm1D_train():
+    bn = pax.nn.BatchNorm1D(3, True, True, 0.9)
+    bn = bn.train()
+    x = jnp.ones((1, 10, 3))
+    old_state = bn.state
+    y = bn(x)
+    new_state = bn.state
+    chex.assert_tree_all_equal_shapes(old_state, new_state)
+    chex.assert_tree_all_finite(new_state)
+    assert y.shape == (1, 10, 3)
+
+
+def test_batchnorm2D_train():
+    bn = pax.nn.BatchNorm2D(3, True, True, 0.9)
+    bn = bn.train()
+    x = jnp.ones((1, 10, 8, 3))
+    old_state = bn.state
+    y = bn(x)
+    new_state = bn.state
+    chex.assert_tree_all_equal_shapes(old_state, new_state)
+    chex.assert_tree_all_finite(new_state)
+    assert y.shape == (1, 10, 8, 3)
+
+
 def test_batchnorm_eval():
     bn = pax.nn.BatchNorm((None, None, 3), True, True, 0.9)
     bn = bn.eval()

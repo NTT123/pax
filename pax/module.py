@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Sequence, Tuple, TypeVar, Union
 import jax
 import jax.numpy as jnp
 import jax.tree_util
+import jmp
 
 T = TypeVar("T", bound="Module")
 
@@ -39,11 +40,17 @@ class ForceModuleInitFakeDict(object):
 
 
 class Module:
+    """Module is the central object of Pax.
+
+    A module manages all information related to the structure of the pytree.
+    """
+
     # Field Name To Kind
     _name_to_kind: Dict[str, PaxFieldKind] = ForceModuleInitFakeDict()
     _training: bool = True
 
     def __init__(self):
+        """Initialize the ``_training`` flag and ``_name_to_kind`` dictionary."""
         super().__init__()
         self.__dict__["_name_to_kind"] = dict()
         self.__dict__["_training"] = True
@@ -152,10 +159,21 @@ class Module:
 
         return module
 
-    def update(self: T, other: T) -> T:
-        return jax.tree_map(lambda s, o: (s if o is None else o), self, other)
+    def update(self: T, other: T, in_place: bool = False) -> T:
+        """Use parameters/state from ``other``.
 
-    def train(self: T, mode=True):
+        Arguments:
+            other: parameter/state tree.
+            in_place: modify the `self` object instead of copying.
+        """
+        new_self = jax.tree_map(lambda s, o: (s if o is None else o), self, other)
+        if in_place:
+            self.__dict__.update(new_self.__dict__)
+            return self
+        else:
+            return new_self
+
+    def train(self: T, mode: bool = True):
         """Rebuild a new model recursively and set `self._training = mode`."""
         submods, treedef = jax.tree_flatten(
             self, is_leaf=lambda x: isinstance(x, Module) and x is not self
@@ -238,13 +256,11 @@ class Module:
 
 
         Example:
-        ```
-        >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
-            Sequential
-            ├── Linear[in_dim=2, out_dim=3, with_bias=True]
-            ├── x => relu(x)
-            └── Linear[in_dim=3, out_dim=4, with_bias=True]
-        ```
+            >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
+                Sequential
+                ├── Linear[in_dim=2, out_dim=3, with_bias=True]
+                ├── x => relu(x)
+                └── Linear[in_dim=3, out_dim=4, with_bias=True]
         """
 
         output = [self.__repr__()]
@@ -322,3 +338,48 @@ class Module:
                             f"Field ``{self}.{name}`` of kind `{kind.name}` "
                             f"SHOULD NOT contains a pax.Module instance: {mod}"
                         )
+
+    def mixed_precision(self: T, mp_policy: jmp.Policy, method_name="__call__"):
+        casted_self = mp_policy.cast_to_param(self)
+
+        cls = casted_self.__class__
+
+        class MixedPrecisionWrapper(cls):
+            def unwrap_mixed_precision(self):
+                """Recreate the original class.
+
+                Note: No guarantee that the parameter/state's dtype will be the same
+                as the original module.
+                """
+                back = cls.__new__(cls)
+                back.__dict__.update(self.__dict__)
+                return back
+
+        def mp_call(self_: T, *args, **kwargs):
+            casted_self, casted_args, casted_kwargs = mp_policy.cast_to_compute(
+                (self_, args, kwargs)
+            )
+            self_.update(casted_self, in_place=True)
+            output = getattr(cls, method_name)(self_, *casted_args, **casted_kwargs)
+            output = mp_policy.cast_to_output(output)
+            return output
+
+        setattr(MixedPrecisionWrapper, method_name, mp_call)
+        MixedPrecisionWrapper.__name__ = self.__class__.__name__ + "@MixedPrecision"
+        new = MixedPrecisionWrapper.__new__(MixedPrecisionWrapper)
+        new.__dict__.update(casted_self.__dict__)
+        return new
+
+    def apply(self, apply_fn):
+        """Apply a function to all sub-modules."""
+
+        def rec_fn(x):
+            if isinstance(x, Module):
+                return x.apply(apply_fn)
+            else:
+                return x
+
+        new_self = jax.tree_map(
+            rec_fn, self, is_leaf=lambda x: isinstance(x, Module) and x is not self
+        )
+        return apply_fn(new_self)

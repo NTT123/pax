@@ -13,7 +13,7 @@ from ..module import Module
 class MultiHeadAttention(Module):
     """Multi-headed attention mechanism.
     As described in the vanilla Transformer paper:
-      "Attention is all you need" https://arxiv.org/abs/1706.03762
+    "Attention is all you need" https://arxiv.org/abs/1706.03762
     """
 
     def __init__(
@@ -73,6 +73,4 @@ class MultiHeadAttention(Module):
         return self.output_projection(attn_vec)
 
     def __repr__(self) -> str:
-        return (
-            f"MultiHeadAttention[num_heads={self.num_heads}, key_size={self.key_size}]"
-        )
+        return f"{self.__class__.__name__}[num_heads={self.num_heads}, key_size={self.key_size}]"

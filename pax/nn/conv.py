@@ -139,8 +139,7 @@ class Conv2D(Module):
             )(x)
 
         self.fwd = hk.without_apply_rng(hk.transform(fwd))
-
-        rng_key = rng_key or next_rng_key()
+        rng_key = next_rng_key() if rng_key is None else rng_key
         if data_format == "NCHW":
             x = np.empty(shape=(1, in_features, 1, 1), dtype=jnp.float32)
         elif data_format == "NHWC":
@@ -153,4 +152,4 @@ class Conv2D(Module):
         return self.fwd.apply({"conv2_d": {"w": self.w, "b": self.b}}, x)
 
     def __repr__(self) -> str:
-        return f"Conv2D[in_features={self.in_features}, out_features={self.out_features}, with_bias={self.with_bias}]"
+        return f"{self.__class__.__name__}[in_features={self.in_features}, out_features={self.out_features}, with_bias={self.with_bias}]"

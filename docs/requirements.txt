@@ -1,0 +1,22 @@
+sphinx==3.3.0
+sphinx_rtd_theme==0.5.0
+sphinxcontrib-katex==0.7.1
+sphinxcontrib-bibtex==1.0.0
+sphinx-autodoc-typehints==1.11.1
+nbsphinx==0.8.0
+IPython==7.16.1
+ipykernel==5.3.4
+pandoc==1.0.2
+pygments==2.7.4
+jq==1.1.1
+matplotlib==3.3.3
+seaborn==0.11.1
+Jinja2==2.11.3
+
+# pax requirements
+dm-haiku
+jax==0.2.17
+jaxlib==0.1.69
+optax
+jmp>=0.0.2
+numpy>=1.18.0

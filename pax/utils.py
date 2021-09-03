@@ -6,6 +6,7 @@ from typing import Any, Callable, List, Tuple, TypeVar, Union
 import jax
 import jax.numpy as jnp
 
+from . import rng
 from .module import Module
 from .optim import Optimizer
 
@@ -60,8 +61,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 class Lambda(Module):
     """A pure functional module.
 
-
-    Note: We put ``Lambda`` module definition here so both ``haiku.*`` and ``nn.*`` modules can use it.
+    Note: We put ``Lambda`` module definition here so both ``haiku`` and ``nn`` modules can use it.
     """
 
     def __init__(self, f: Callable):
@@ -72,7 +72,7 @@ class Lambda(Module):
         return self.f(x)
 
     def __repr__(self) -> str:
-        return f"Fx[{self.f}]"
+        return f"{self.__class__.__name__}[{self.f}]"
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         if self.f == jax.nn.relu:
@@ -81,3 +81,31 @@ class Lambda(Module):
             name = f"{self.f}"
         output = f"x => {name}(x)"
         return [output] if return_list else output
+
+
+class RngSeq(Module):
+    """A module which genenerates an infinite sequence of rng keys."""
+
+    _rng_key: jnp.ndarray
+
+    def __init__(self, seed: int = None, rng_key: jnp.ndarray = None):
+        super().__init__()
+        if rng_key is not None:
+            rng_key = rng_key
+        elif seed is not None:
+            rng_key = jax.random.PRNGKey(seed)
+        else:
+            rng_key = rng.next_rng_key()
+
+        self.register_state("_rng_key", rng_key)
+
+    def next_rng_key(self, num_keys: int = 1):
+        _rng_key, *rng_keys = jax.random.split(self._rng_key, num_keys + 1)
+
+        # only update internal state in `train` mode.
+        if self.training:
+            self._rng_key = _rng_key
+        if num_keys == 1:
+            return rng_keys[0]
+        else:
+            return rng_keys

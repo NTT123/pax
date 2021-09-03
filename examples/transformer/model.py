@@ -56,7 +56,7 @@ class Transformer(pax.Module):
         self._num_heads = num_heads
         self._dropout_rate = dropout_rate
 
-        self.register_state("rng_key", pax.next_rng_key())
+        self.rng_seq = pax.utils.RngSeq()
 
         init_scale = 2.0 / self._num_layers
         layers = []
@@ -94,8 +94,7 @@ class Transformer(pax.Module):
 
         # Note: names chosen to approximately match those used in the GPT-2 code;
         # see https://github.com/openai/gpt-2/blob/master/src/model.py.
-        rng_key, self.rng_key = jax.random.split(self.rng_key)
-        rngs = jax.random.split(rng_key, self._num_layers * 2)
+        rngs = self.rng_seq.next_rng_key(self._num_layers * 2)
         for i in range(self._num_layers):
             h_norm = self.layers[i]["attn_layer_norm"](h)
             h_attn = self.layers[i]["attention"](h_norm, mask=mask)

@@ -1,16 +1,21 @@
 from setuptools import find_packages, setup
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 url = "https://github.com/ntt123/pax"
 
-install_requires = ["dm-haiku", "jax", "optax"]
+install_requires = [
+    "dm-haiku",
+    "jax",
+    "optax",
+    "jmp@git+https://github.com/deepmind/jmp",
+]
 setup_requires = []
 tests_require = ["tensorflow", "tensorflow_datasets", "tqdm", "chex", "pytest"]
 
 setup(
     name="pax",
     version=__version__,
-    description="A Pytree <3 Jax Framework.",
+    description="A stateful pytree library for training neural networks.",
     author="Thông Nguyễn",
     url=url,
     keywords=[

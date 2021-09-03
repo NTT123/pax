@@ -9,12 +9,15 @@ from ..utils import Lambda
 class Sequential(Module):
     """Execute layers in order.
 
-    Support pax.Module (callable pytree) and any jax functions. For example:
-        net = pax.nn.Sequential(
-            pax.nn.Linear(2, 32),
-            jax.nn.relu,
-            pax.nn.Linear(32, 2)
-        )
+    Support pax.Module (callable pytree) and any jax functions.
+
+    For example:
+
+        >>> net = pax.nn.Sequential(
+        ...              pax.nn.Linear(2, 32),
+        ...              jax.nn.relu,
+        ...              pax.nn.Linear(32, 2)
+        ... )
     """
 
     # Note: we cannot mix pax.Module and jax functions (e.g., jax.nn.relu) in the same list.
