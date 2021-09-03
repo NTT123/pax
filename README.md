@@ -10,7 +10,7 @@
 | [**Documentation**](https://pax.readthedocs.io/en/latest)
 
 ![pytest](https://github.com/ntt123/pax/workflows/pytest/badge.svg)
-![docs](https://readthedocs.org/projects/pax/badge/?version=latest)
+![docs](https://readthedocs.org/projects/pax/badge/?version=main)
 ![pypi](https://img.shields.io/pypi/v/pax-j)
 
 
