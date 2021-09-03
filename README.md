@@ -1,6 +1,21 @@
 # Pax
 
-## Introduction 
+[**Introduction**](#introduction)
+| [**Installation**](#installation)
+| [**Getting started**](#gettingstarted)
+| [**Examples**](https://github.com/ntt123/pax/tree/main/examples/)
+| [**Optimizers**](#optimizers)
+| [**Fine-tuning**](#finetune)
+| [**Mixed Precision**](#todo)
+| [**Documentation**](https://pax.readthedocs.io/en/latest)
+
+![pytest](https://github.com/ntt123/pax/workflows/pytest/badge.svg)
+![docs](https://readthedocs.org/projects/pax/badge/?version=latest)
+![pypi](https://img.shields.io/pypi/v/pax-j)
+
+
+
+## Introduction<a id="introduction"></a>
 
 ``Pax`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The central object of `Pax` is a `pax.Module`.
 
@@ -10,7 +25,7 @@ A  `pax.Module` has two sides:
 
 ``pax.Module`` manages the pytree and executes functions that depends on the pytree. As a pytree object, `pax.Module` can be input and output to jax functions running on CPU/GPU/TPU cores.
 
-## Installation
+## Installation<a id="installation"></a>
 
 ```bash
 pip3 install git+https://github.com/ntt123/pax.git
@@ -19,7 +34,7 @@ pip3 install git+https://github.com/ntt123/pax.git
 pip3 install git+https://github.com/ntt123/pax.git#egg=pax[test]
 ```
 
-## Getting started
+## Getting started<a id="gettingstarted"></a>
 
 ```python
 import jax
@@ -60,7 +75,7 @@ There are a few important things in the above example:
 * ``loss_fn`` returns the updated `model` in its output.
 * ``net.parameters()`` return a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. This is needed to make sure that we only compute gradients w.r.t trainable parameters.
 
-## Examples
+## Examples<a id="examples"></a>
 
 A good way to learn about ``Pax`` is to see examples in the ``examples/`` directory:
 
@@ -69,7 +84,7 @@ A good way to learn about ``Pax`` is to see examples in the ``examples/`` direct
 * ``mnist.py``: train an image classifier on MNIST dataset.
 * ``notebooks/VAE.ipynb``: train a variational autoencoder.
 
-## Modules
+## Modules<a id="modules"></a>
 
 At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, Conv1D, Conv2D, LayerNorm}``.
 We intent to add new modules in the near future.
@@ -92,7 +107,7 @@ If your model uses these converted haiku modules, you have to call the `hk_init`
 In additional, Pax provides many functions that avoid the dummy input problems: ``pax.haiku.{linear, layer_norm, batch_norm_2d, lstm, gru, embed, conv_1d, conv_2d, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
 We intent to add more functions like this in the near futures.
 
-## Optimizers
+## Optimizers<a id="optimizers"></a>
 
 Pax implements optimizers in a stateful fashion. Bellow is a simple sgd optimizer with momentum.
 
@@ -130,7 +145,7 @@ SGD = pax.optim.from_optax(
 )
 ```
 
-## Fine-tunning models
+## Fine-tunning models<a id="finetune"></a>
 
 Pax's Module provides the ``freeze`` method to convert all trainable parameters to non-trainable states.
 

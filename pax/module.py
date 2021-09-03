@@ -41,9 +41,10 @@ class ForceModuleInitFakeDict(object):
 
 class Module:
     """Module is the central object of Pax.
-    
+
     A module manages all information related to the structure of the pytree.
     """
+
     # Field Name To Kind
     _name_to_kind: Dict[str, PaxFieldKind] = ForceModuleInitFakeDict()
     _training: bool = True
@@ -172,7 +173,7 @@ class Module:
         else:
             return new_self
 
-    def train(self: T, mode: bool =True):
+    def train(self: T, mode: bool = True):
         """Rebuild a new model recursively and set `self._training = mode`."""
         submods, treedef = jax.tree_flatten(
             self, is_leaf=lambda x: isinstance(x, Module) and x is not self

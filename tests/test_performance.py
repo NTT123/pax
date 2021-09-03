@@ -26,4 +26,4 @@ def test_transformer_flatten_unflatten():
     end = time.perf_counter()
     iters_per_second = n_iters / (end - start)
     print(iters_per_second, "iters/second")
-    assert iters_per_second > 4000
+    assert iters_per_second > 3000
