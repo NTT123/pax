@@ -83,6 +83,8 @@ A good way to learn about ``Pax`` is to see examples in the ``examples/`` direct
 * ``transformer/``: train a Transformer language model on TPU.
 * ``mnist.py``: train an image classifier on MNIST dataset.
 * ``notebooks/VAE.ipynb``: train a variational autoencoder.
+* ``notebooks/DCGAN.ipynb``: train a DCGAN model on Celeb-A dataset.
+* ``mnist_mixed_precision.py``: train an image classifier with mixed precision (experimental).
 
 ## Modules<a id="modules"></a>
 

@@ -12,9 +12,6 @@ import pax
 import tensorflow_datasets as tfds
 from tqdm.auto import tqdm
 
-half = jnp.float16  # On TPU this should be jnp.bfloat16.
-full = jnp.float32
-
 Batch = Mapping[str, jnp.ndarray]
 
 # config
@@ -81,22 +78,23 @@ def update_fn(model: ConvNet, optimizer: pax.Optimizer, batch: Batch):
 net = ConvNet()
 
 
+half = jnp.float16  # On TPU this should be jnp.bfloat16.
+full = jnp.float32
 linear_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=full)
+batchnorm_policy = jmp.Policy(compute_dtype=full, param_dtype=full, output_dtype=full)
 
-batchnorm_policy = jmp.Policy(compute_dtype=full, param_dtype=full, output_dtype=half)
 
-
-def policy_fn(mod):
-    if isinstance(mod, pax.nn.Linear):
+def mp_policy_fn(mod):
+    if isinstance(mod, pax.nn.Conv2D):
         return mod.mixed_precision(linear_policy)
-    elif isinstance(mod, pax.nn.BatchNorm2D):
+    elif mod.__class__.__name__.startswith("BatchNorm"):
         return mod.mixed_precision(batchnorm_policy)
     else:
         # unchanged
         return mod
 
 
-net = net.apply(policy_fn)
+net = net.apply(mp_policy_fn)
 
 print(net.summary())
 optimizer = pax.optim.from_optax(
@@ -117,31 +115,7 @@ train_data = load_dataset("train").shuffle(10 * batch_size).batch(batch_size)
 test_data = load_dataset("test").shuffle(10 * batch_size).batch(batch_size)
 
 
-def save_ckpt(epoch: int, model: pax.Module, path: Path):
-    model = jax.tree_map(lambda x: jax.device_get(x), model)
-    leaves, treedef = jax.tree_flatten(model)
-    del treedef
-    with open(path, "wb") as f:
-        pickle.dump({"epoch": epoch, "leaves": leaves}, f)
-
-
-def load_ckpt(model, path: Path):
-    """Load model from saved tree leaves"""
-    leaves, treedef = jax.tree_flatten(model)
-    with open(path, "rb") as f:
-        dic = pickle.load(f)
-    return dic["epoch"], jax.tree_unflatten(treedef, dic["leaves"])
-
-
-# resume from the latest checkpoint
-ckpts = sorted(Path("/tmp").glob("pax_mnist_ckpt_*.pickle"))
-if len(ckpts) > 0:
-    print("loading checkpoint at", ckpts[-1])
-    last_epoch, net = load_ckpt(net, ckpts[-1])
-else:
-    last_epoch = -1
-
-for epoch in range(last_epoch + 1, 10):
+for epoch in range(0, 10):
     losses = 0.0
     for batch in tqdm(train_data, desc="train", leave=False):
         batch = jax.tree_map(lambda x: x.numpy(), batch)
@@ -154,7 +128,5 @@ for epoch in range(last_epoch + 1, 10):
         batch = jax.tree_map(lambda x: x.numpy(), batch)
         test_losses = test_losses + test_loss_fn(net, batch)
     test_loss = test_losses / len(test_data)
-
-    save_ckpt(epoch, net, Path(f"/tmp/pax_mnist_ckpt_{epoch:02d}.pickle"))
 
     print(f"[Epoch {epoch}]  train loss {loss:.3f}  test loss {test_loss:.3f}")

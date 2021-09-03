@@ -73,7 +73,7 @@ def from_haiku(
             def __repr__(self) -> str:
                 options = [f"{k}={v}" for (k, v) in kwargs.items() if v is not None]
                 options = ", ".join(options)
-                return cls.__name__ + "@haiku" + f"[{options}]"
+                return self.__class__.__name__ + f"[{options}]"
 
             def __call__(self, *args, **kwargs):
                 if not self._is_haiku_initialized:
@@ -100,6 +100,7 @@ def from_haiku(
                     self.state = hk.data_structures.to_mutable_dict(state)
                 return out
 
+        HaikuModule.__name__ = cls.__name__ + "_haiku"
         if delay:
             return HaikuModule()
         else:
