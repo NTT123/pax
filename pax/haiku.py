@@ -120,7 +120,7 @@ def batch_norm_2d(
     )
     shape = [1, 1, 1, 1]
     shape[axis] = num_channels
-    x = np.empty((num_channels,), dtype=np.float32).reshape(shape)
+    x = np.ones((num_channels,), dtype=np.float32).reshape(shape)
     return BatchNorm(x)
 
 
