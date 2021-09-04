@@ -76,7 +76,7 @@ There are a few important things in the above example:
 
 ## Pax and other libraries <a id="paxandfriends"></a>
 
-Pax has several methods that are similar to Pytorch users. 
+Pax has several methods that are similar to Pytorch. 
 
 - ``self.parameters()`` returns parameters of the module.
 - ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameters.
