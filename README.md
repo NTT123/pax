@@ -1,12 +1,11 @@
 # Pax
 
 [**Introduction**](#introduction)
-| [**Installation**](#installation)
 | [**Getting started**](#gettingstarted)
+| [**Pax and others**](#paxandfriends)
 | [**Examples**](https://github.com/ntt123/pax/tree/main/examples/)
-| [**Optimizers**](#optimizers)
+| [**Modules**](#modules)
 | [**Fine-tuning**](#finetune)
-| [**Mixed Precision**](#todo)
 | [**Documentation**](https://pax.readthedocs.io/en/main)
 
 ![pytest](https://github.com/ntt123/pax/workflows/pytest/badge.svg)
@@ -75,9 +74,29 @@ There are a few important things in the above example:
 * ``loss_fn`` returns the updated `model` in its output.
 * ``net.parameters()`` return a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. This is needed to make sure that we only compute gradients w.r.t trainable parameters.
 
+## Pax and other libraries. <a id="paxandfriends"></a>
+
+Pax is what you can get if you build [pytorch] on top of [jax]. Pax has several methods that similar to Pytorch users. 
+
+- ``self.parameters()`` returns parameters of the module.
+- ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameters.
+- ``self.register_module(name, mod)`` registers ``mod`` as a submodule of ``self``.
+- ``self.apply(func)`` applies ``func`` on all modules of ``self`` recursively.
+- ``self.train()`` and ``self.eval()`` returns a new module in ``train/eval`` mode.
+- ``self.training`` returns if ``self`` is in training mode.
+
+Pax learns a lot from other libraries:
+- Pax borrows the idea that __a module is also a pytree__ from [treex] and [equinox]. 
+- Pax uses the concept of _trainable parameters_ and _non-trainable states_ from [dm-haiku].
+- Pax uses [objax]'s approach to implement optimizers as modules. 
+- Pax uses [dm-haiku] and [optax] as backends for filling in current missing modules and optimizers. 
+- Pax uses [jmp] library for supporting mixed precision. 
+- And of course, Pax is heavily influenced by [jax] functional programming approach.
+
+
 ## Examples<a id="examples"></a>
 
-A good way to learn about ``Pax`` is to see examples in the ``examples/`` directory:
+A good way to learn about ``Pax`` is to see examples in the [examples/](./examples) directory:
 
 * ``char_rnn.py``: train a RNN language model on TPU.
 * ``transformer/``: train a Transformer language model on TPU.
@@ -86,9 +105,13 @@ A good way to learn about ``Pax`` is to see examples in the ``examples/`` direct
 * ``notebooks/DCGAN.ipynb``: train a DCGAN model on Celeb-A dataset.
 * ``mnist_mixed_precision.py``: train an image classifier with mixed precision (experimental).
 
+
+
+
+
 ## Modules<a id="modules"></a>
 
-At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, Conv1D, Conv2D, LayerNorm}``.
+At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, BatchNorm1D, BatchNorm2D, Conv1D, Conv2D, LayerNorm, Sequential}``.
 We intent to add new modules in the near future.
 
 Fortunately, Pax also provides the ``pax.from_haiku`` function that can convert most of modules from ``dm-haiku`` library to ``pax.Module``. For example, to convert a dm-haiku LSTM Module:
@@ -164,3 +187,13 @@ net.modules[2] = pax.nn.Linear(64, 2)
 net.modules[0] = net.modules[0].freeze() 
 ```
 ``net.parameters()`` will now only returns parameters of the last layer.
+
+
+[jax]: https://github.com/google/jax
+[objax]: https://github.com/google/objax
+[dm-haiku]: https://github.com/deepmind/dm-haiku
+[optax]: https://github.com/deepmind/optax
+[jmp]: https://github.com/deepmind/jmp
+[pytorch]: https://github.com/pytorch/pytorch
+[treex]: https://github.com/cgarciae/treex
+[equinox]: https://github.com/patrick-kidger/equinox

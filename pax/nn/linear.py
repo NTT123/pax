@@ -8,7 +8,7 @@ from ..rng import next_rng_key
 
 
 class Linear(Module):
-    """A linear transformation applied over the last dimension of the input."""
+    """A linear transformation is applied over the last dimension of the input."""
 
     W: jnp.ndarray
     b: jnp.ndarray

@@ -35,28 +35,16 @@ Pax's Module
    :members:
 
 
-.. currentmodule:: pax.haiku
-
-
-Haiku
------
-
-.. autosummary::
-
-    dynamic_unroll
-    from_haiku
-
-
-from_haiku
-~~~~~~~~~~
-
-.. autofunction:: from_haiku
-
-    
-dynamic_unroll
-~~~~~~~~~~~~~~
-
-.. autofunction:: dynamic_unroll
+.. autoclass:: PaxFieldKind
+   :members:
+   
+   .. autoattribute:: STATE
+   .. autoattribute:: PARAMETER
+   .. autoattribute:: MODULE
+   .. autoattribute:: STATE_SUBTREE
+   .. autoattribute:: PARAMETER_SUBTREE
+   .. autoattribute:: MODULE_SUBTREE
+   .. autoattribute:: OTHERS
 
 
 
@@ -83,8 +71,9 @@ Common Modules
 Linear
 ------
 
-    
+
 .. autoclass:: Linear
+   :members:
 
 
 Sequential
@@ -92,7 +81,7 @@ Sequential
 
 
 .. autoclass:: Sequential
-
+   :members:
 
 
 LayerNorm
@@ -100,6 +89,7 @@ LayerNorm
 
     
 .. autoclass:: LayerNorm
+   :members:
 
 
 
@@ -107,33 +97,137 @@ MultiHeadAttention
 ------------------
 
 .. autoclass:: MultiHeadAttention
+   :members:
 
 
 BatchNorm
 ---------
 
 .. autoclass:: BatchNorm
+   :members:
 
 .. autoclass:: BatchNorm1D
+   :members:
 
 .. autoclass:: BatchNorm2D
+   :members:
 
 
 Convolution
 -----------
 
 .. autoclass:: Conv1D
+   :members:
 
 .. autoclass:: Conv2D
+   :members:
 
 
 Haiku Modules
 =============
 
-.. automodule:: pax.haiku
+
+.. currentmodule:: pax.haiku
+
+.. autosummary::
+    from_haiku
+    batch_norm_2d
+    layer_norm
+    linear
+    lstm
+    gru
+    embed
+    conv_1d
+    conv_2d
+    conv_1d_transpose
+    conv_2d_transpose
+    avg_pool
+    max_pool
+
+    
+from_haiku
+----------
+
+.. autofunction:: from_haiku
 
 
+See https://dm-haiku.readthedocs.io/en/latest/api.html#common-modules for more information about converted modules.
 
+batch_norm_2d
+-------------
+
+.. autofunction:: batch_norm_2d
+
+    
+layer_norm
+----------
+
+.. autofunction:: layer_norm
+
+    
+linear
+------
+
+.. autofunction:: linear
+
+    
+lstm
+----
+
+.. autofunction:: lstm
+
+
+gru
+---
+
+.. autofunction:: gru
+
+    
+embed
+-----
+
+.. autofunction:: embed
+
+    
+conv_1d
+-------
+
+.. autofunction:: conv_1d
+
+
+    
+conv_2d
+-------
+
+.. autofunction:: conv_2d
+
+    
+conv_1d_transpose
+-----------------
+
+.. autofunction:: conv_1d_transpose
+
+
+    
+conv_2d_transpose
+-----------------
+
+.. autofunction:: conv_2d_transpose
+
+    
+avg_pool
+--------
+
+.. autofunction:: avg_pool
+
+
+    
+max_pool
+--------
+
+.. autofunction:: max_pool
+
+    
 
 Optimizer
 =========
@@ -192,8 +286,8 @@ Lambda
 
 .. autoclass:: Lambda
 
-
 RngSeq
 ------
 
 .. autoclass:: RngSeq
+   :members:

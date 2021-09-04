@@ -40,9 +40,18 @@ and easy to use while preserving benefits from Jax.
 Installation
 ------------
 
-To install::
+To install the latest version::
 
    $ pip3 install git+https://github.com/ntt123/pax.git
+
+
+.. toctree::
+   :caption: Guides
+   :maxdepth: 1
+
+   notebooks/basics
+   notebooks/training
+
 
 
 .. toctree::

@@ -1,7 +1,7 @@
 """Useful functions."""
 
 import inspect
-from typing import Any, Callable, List, Tuple, TypeVar, Union
+from typing import Any, Callable, List, Sequence, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
@@ -18,7 +18,32 @@ UpdateFn = Callable[[T, Optimizer, Any], Tuple[Any, T, Optimizer]]
 
 
 def build_update_fn(loss_fn: LossFn) -> UpdateFn:
-    """Build a simple update function."""
+    """Build a simple update function.
+
+    This function can be very useful. However, you have to follow its requirements *exactly*.
+    This is to make sure you know exactly what you are doing.
+
+    * The input ``loss_fn`` function has three parameters with names: ``params``, ``model``, ``inputs``.
+    * ``loss_fn``'s output be annotated with type ``LossFnOutput``.
+
+    Example:
+
+    >>> def mse_loss(params, model, inputs) -> pax.utils.LossFnOutput:
+    ...     model = model.update(params)
+    ...     x, y = inputs
+    ...     y_hat = model(x)
+    ...     loss = jnp.mean(jnp.square(y - y_hat))
+    ...     return loss, (loss, model)
+
+    The returned ``update_fn`` function is:
+
+    >>> def _update_fn(model: T, optimizer: Optimizer, inputs: Any):
+    ...     grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(
+    ...         model.parameters(), model, inputs
+    ...     )
+    ...     model = optimizer.step(grads, model)
+    ...     return loss, model, optimizer
+    """
 
     sig = inspect.signature(loss_fn)
     parameters = sig.parameters
@@ -84,11 +109,19 @@ class Lambda(Module):
 
 
 class RngSeq(Module):
-    """A module which genenerates an infinite sequence of rng keys."""
+    """A module which generates an infinite sequence of rng keys."""
 
     _rng_key: jnp.ndarray
 
     def __init__(self, seed: int = None, rng_key: jnp.ndarray = None):
+        """Initialize a random key sequence.
+
+        **Note**: ``rng_key`` has higher priority than ``seed``.
+
+        Arguments:
+            seed: an integer seed.
+            rng_key: a jax random key.
+        """
         super().__init__()
         if rng_key is not None:
             rng_key = rng_key
@@ -99,7 +132,20 @@ class RngSeq(Module):
 
         self.register_state("_rng_key", rng_key)
 
-    def next_rng_key(self, num_keys: int = 1):
+    def next_rng_key(
+        self, num_keys: int = 1
+    ) -> Union[jnp.ndarray, Sequence[jnp.ndarray]]:
+        """Return the next random key of the sequence.
+
+        **Note**:
+
+            * Return a key if ``num_keys`` is ``1``,
+            * Return a list of keys if ``num_keys`` is greater than ``1``.
+            * This is not a deterministic sequence if values of ``num_keys`` is mixed randomly.
+
+        Arguments:
+            num_keys: return more than one key.
+        """
         _rng_key, *rng_keys = jax.random.split(self._rng_key, num_keys + 1)
 
         # only update internal state in `train` mode.

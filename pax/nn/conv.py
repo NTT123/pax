@@ -11,7 +11,7 @@ from ..rng import next_rng_key
 
 
 class Conv1D(Module):
-    """A proxy for dm-haiku Conv1D."""
+    """Conv1D Module."""
 
     w: jnp.ndarray
     b: jnp.ndarray
@@ -36,7 +36,8 @@ class Conv1D(Module):
         *,
         rng_key: jnp.ndarray = None,
     ):
-        """
+        """See https://dm-haiku.readthedocs.io/en/latest/api.html#conv1d for detail.
+
         Arguments:
             in_features: the number of input features.
             out_features: the number of output features.
@@ -78,11 +79,12 @@ class Conv1D(Module):
         self.register_parameter("b", params["conv1_d"]["b"] if with_bias else None)
 
     def __call__(self, x):
+        """Apply convolution."""
         return self.fwd.apply({"conv1_d": {"w": self.w, "b": self.b}}, x)
 
 
 class Conv2D(Module):
-    """A proxy for dm-haiku Conv2D."""
+    """Conv2D module."""
 
     w: jnp.ndarray
     b: jnp.ndarray
@@ -107,7 +109,8 @@ class Conv2D(Module):
         *,
         rng_key: jnp.ndarray = None,
     ):
-        """
+        """See https://dm-haiku.readthedocs.io/en/latest/api.html#conv2d for detail.
+
         Arguments:
             in_features: the number of input features.
             out_features: the number of output features.
@@ -149,6 +152,7 @@ class Conv2D(Module):
         self.register_parameter("b", params["conv2_d"]["b"] if with_bias else None)
 
     def __call__(self, x):
+        """Apply convolution."""
         return self.fwd.apply({"conv2_d": {"w": self.w, "b": self.b}}, x)
 
     def __repr__(self) -> str:

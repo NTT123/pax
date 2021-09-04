@@ -23,7 +23,6 @@ def from_haiku(
     delay: bool = True,
     pass_is_training: bool = False,
 ):
-
     """Build a pax.Module class from haiku cls.
 
     Arguments:
@@ -112,7 +111,7 @@ def from_haiku(
 def batch_norm_2d(
     num_channels: int, axis: int = -1, decay_rate=0.99, cross_replica_axis=None
 ):
-    """Return a BatchNorm module."""
+    """Return a converted BatchNorm module."""
     BatchNorm = from_haiku(hk.BatchNorm, delay=False, pass_is_training=True)(
         create_scale=True,
         create_offset=True,
@@ -126,6 +125,7 @@ def batch_norm_2d(
 
 
 def layer_norm(num_channels: int, axis: int = -1):
+    """Return a converted LayerNorm module."""
     LayerNorm = from_haiku(hk.LayerNorm, delay=False)(
         axis=axis, create_scale=True, create_offset=True
     )
@@ -136,6 +136,7 @@ def layer_norm(num_channels: int, axis: int = -1):
 
 
 def linear(in_dim: int, out_dim: int, with_bias: bool = True):
+    """Return a converted Linear module."""
     Linear = from_haiku(hk.Linear, delay=False)(
         output_size=out_dim, with_bias=with_bias
     )
@@ -145,6 +146,7 @@ def linear(in_dim: int, out_dim: int, with_bias: bool = True):
 
 
 def lstm(hidden_dim: int):
+    """Return a converted LSTM module."""
     LSTM = from_haiku(hk.LSTM, delay=False)(hidden_size=hidden_dim)
 
     def initial_state(o, batch_size):
@@ -158,6 +160,7 @@ def lstm(hidden_dim: int):
 
 
 def gru(hidden_dim: int):
+    """Return a converted GRU module."""
     GRU = from_haiku(hk.GRU, delay=False)(hidden_size=hidden_dim)
 
     def initial_state(o, batch_size):
@@ -170,6 +173,7 @@ def gru(hidden_dim: int):
 
 
 def embed(vocab_size: int, embed_dim: int, w_init: Optional[Callable] = None):
+    """Return a converted Embed module."""
     Embed = from_haiku(hk.Embed, delay=False)(
         vocab_size=vocab_size, embed_dim=embed_dim, w_init=w_init
     )
@@ -190,6 +194,7 @@ def conv_1d(
     data_format="NWC",
     feature_group_count=1,
 ):
+    """Return a converted Conv1D module."""
     Conv1D = from_haiku(hk.Conv1D, delay=False)(
         output_channels=output_channels,
         kernel_shape=kernel_shape,
@@ -226,6 +231,7 @@ def conv_2d(
     data_format="NHWC",
     feature_group_count=1,
 ):
+    """Return a converted Conv2D module."""
     Conv2D = from_haiku(hk.Conv2D, delay=False)(
         output_channels=output_channels,
         kernel_shape=kernel_shape,
@@ -262,6 +268,7 @@ def conv_1d_transpose(
     data_format="NWC",
     mask=None,
 ):
+    """Return a converted Conv1DTranspose module."""
     Conv1DTranspose = from_haiku(hk.Conv1DTranspose, delay=False)(
         output_channels=output_channels,
         kernel_shape=kernel_shape,
@@ -298,6 +305,7 @@ def conv_2d_transpose(
     data_format="NHWC",
     mask=None,
 ):
+    """Return a converted Conv2DTranspose module."""
     Conv2DTranspose = from_haiku(hk.Conv2DTranspose, delay=False)(
         output_channels=output_channels,
         kernel_shape=kernel_shape,
@@ -322,6 +330,7 @@ def conv_2d_transpose(
 
 
 def avg_pool(window_shape, strides, padding, channel_axis=-1):
+    """Return a converted AvgPool module."""
     AvgPool = from_haiku(hk.AvgPool)(
         window_shape=window_shape,
         strides=strides,
@@ -339,6 +348,7 @@ def avg_pool(window_shape, strides, padding, channel_axis=-1):
 
 
 def max_pool(window_shape, strides, padding, channel_axis=-1):
+    """Return a converted MaxPool module."""
     f = lambda x: hk.avg_pool(
         x,
         window_shape=window_shape,
