@@ -49,8 +49,8 @@ To install::
    :caption: Guides
    :maxdepth: 1
 
-   notebooks/getting_started
-   notebooks/train_image_classifier
+   notebooks/basics
+   notebooks/training
 
 
 
