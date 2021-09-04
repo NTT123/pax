@@ -42,21 +42,17 @@ class LayerNorm(Module):
         rng_key: Optional[jnp.ndarray] = None,
     ):
         """Constructs a LayerNorm module.
-        Args:
-          num_channels: Interger, size of the last dimension. The data format is ``[N, ..., C]``.
-          axis: Integer, list of integers, or slice indicating which axes to
-            normalize over.
-          create_scale: Bool, defines whether to create a trainable scale
-            per channel applied after the normalization.
-          create_offset: Bool, defines whether to create a trainable offset
-            per channel applied after normalization and scaling.
-          eps: Small epsilon to avoid division by zero variance. Defaults ``1e-5``,
-            as in the paper and Sonnet.
-          scale_init: Optional initializer for gain (aka scale). By default, one.
-          offset_init: Optional initializer for bias (aka offset). By default, zero.
-          use_fast_variance: If true, use a faster but less numerically stable
-            formulation for computing variance.
-          rng_key: RNG key.
+
+        Arguments:
+            num_channels: Interger, size of the last dimension. The data format is ``[N, ..., C]``.
+            axis: Integer, list of integers, or slice indicating which axes to normalize over.
+            create_scale: Bool, defines whether to create a trainable scale per channel applied after the normalization.
+            create_offset: Bool, defines whether to create a trainable offset per channel applied after normalization and scaling.
+            eps: Small epsilon to avoid division by zero variance. Defaults ``1e-5``, as in the paper and Sonnet.
+            scale_init: Optional initializer for gain (aka scale). By default, one.
+            offset_init: Optional initializer for bias (aka offset). By default, zero.
+            use_fast_variance: If true, use a faster but less numerically stable formulation for computing variance.
+            rng_key: RNG key.
         """
         super().__init__()
         if not create_scale and scale_init is not None:
@@ -102,18 +98,20 @@ class LayerNorm(Module):
         offset: Optional[jnp.ndarray] = None,
     ) -> jnp.ndarray:
         """Connects the layer norm.
-        Args:
-          inputs: An array, where the data format is ``[N, ..., C]``.
-          scale: An array up to n-D. The shape of this tensor must be broadcastable
-            to the shape of ``inputs``. This is the scale applied to the normalized
-            inputs. This cannot be passed in if the module was constructed with
-            ``create_scale=True``.
-          offset: An array up to n-D. The shape of this tensor must be broadcastable
-            to the shape of ``inputs``. This is the offset applied to the normalized
-            inputs. This cannot be passed in if the module was constructed with
-            ``create_offset=True``.
+
+        Arguments:
+            inputs: An array, where the data format is ``[N, ..., C]``.
+            scale: An array up to n-D. The shape of this tensor must be broadcastable
+                to the shape of ``inputs``. This is the scale applied to the normalized
+                inputs. This cannot be passed in if the module was constructed with
+                ``create_scale=True``.
+            offset: An array up to n-D. The shape of this tensor must be broadcastable
+                to the shape of ``inputs``. This is the offset applied to the normalized
+                inputs. This cannot be passed in if the module was constructed with
+                ``create_offset=True``.
+
         Returns:
-          The array, normalized.
+            The array, normalized.
         """
         if self.create_scale and scale is not None:
             raise ValueError("Cannot pass `scale` at call time if `create_scale=True`.")

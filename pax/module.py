@@ -33,12 +33,12 @@ class Module:
     """Module is the central object of Pax.
 
     It manages all information related to the pytree.
-    It also includes methods (usually, ``__call__``) that can be exected to compute functions on the pytree.
+    It also includes methods (usually, ``__call__``) that can be executed to compute functions on the pytree.
 
     The two important methods: ``flatten`` and ``unflatten`` specify how a module can be converted to a ``(leaves, treedef)``,
     and otherwise from ``(treedef, leaves)`` back to a module.
 
-    In short, a module maintains a ``_name_to_kind`` dictionary that tells if an attribute is part of
+    A module maintains a ``_name_to_kind`` dictionary that tells if an attribute is part of
     the pytree and the kind of the tree part (parameter, state, module, etc.).
     """
 
@@ -126,7 +126,7 @@ class Module:
         setattr(self, name, value)
 
     def tree_flatten(self):
-        """Convert a module to a list of ``children`` and treedef."""
+        """Convert a module to ``(children, treedef)``."""
         fields = vars(self)
 
         _tree = {}
@@ -140,7 +140,7 @@ class Module:
 
     @classmethod
     def tree_unflatten(cls, aux_data: ModuleAuxiliaryData, children):
-        """Recreate a module from its ``children`` and treedef."""
+        """Recreate a module from its ``(children, treedef)``."""
         module = cls.__new__(cls)
         _tree, _not_tree = aux_data
         md = module.__dict__
@@ -159,7 +159,7 @@ class Module:
         return jax.tree_map(lambda x: x, self)
 
     def filter(self: T, keep: str = "parameter") -> T:
-        """Filtering a module by parameter or state.
+        """Filtering a module by trainable parameters and non-trainable states.
 
         Arguments:
             keep: type of leaves that will be kept ("parameter" or "state").
@@ -201,7 +201,7 @@ class Module:
 
         Arguments:
             other: parameter/state tree.
-            in_place: modify the `self` object instead of copying.
+            in_place: modify the ``self`` object instead of copying it.
         """
         new_self = jax.tree_map(lambda s, o: (s if o is None else o), self, other)
         if in_place:
@@ -211,7 +211,13 @@ class Module:
             return new_self
 
     def train(self: T, mode: bool = True):
-        """Rebuild a new model recursively and set `self._training = mode`."""
+        """Rebuild a new model recursively and set ``self._training = mode``.
+
+        The default behavior is to create a new module in ``train`` mode.
+
+        Arguments:
+            mode: return a copy module in ``train`` mode module if ``True``.
+        """
         submods, treedef = jax.tree_flatten(
             self, is_leaf=lambda x: isinstance(x, Module) and x is not self
         )
@@ -226,7 +232,7 @@ class Module:
         return model
 
     def eval(self: T) -> T:
-        """Return a new module in ``eval`` mode."""
+        """Return a copy module in ``eval`` mode."""
         return self.train(False)
 
     def parameters(self):
@@ -235,7 +241,7 @@ class Module:
         return params
 
     def freeze(self: T) -> T:
-        """Convert all trainable parameters to non-trainable states."""
+        """Return a copy module with all trainable parameters are converted to non-trainable states."""
         submods, treedef = jax.tree_flatten(
             self, is_leaf=lambda x: isinstance(x, Module) and x is not self
         )
@@ -260,8 +266,11 @@ class Module:
     def hk_init(self, *args, enable_jit: bool = False, **kwargs):
         """Return a new initialized module.
 
+        **Note**: This function is only useful if a module is or includes a converted module from haiku library.
+
         Arguments:
-            enable_jit: if using `jax.jit` for the init function.
+            args, kwargs: dummy inputs to the module.
+            enable_jit: to use `jax.jit` for the init function.
         """
 
         def init_fn(mod, args, kwargs):
@@ -285,10 +294,11 @@ class Module:
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         """This is the default summary method.
+
         A module can customize its summary by overriding this method.
 
         Arguments:
-            - return_list: bool, return a list of lines instead of a joined string.
+            - return_list: return a list of lines instead of a joined string.
 
 
         Example:
@@ -376,7 +386,14 @@ class Module:
                         )
 
     def mixed_precision(self: T, mp_policy: jmp.Policy, method_name="__call__"):
-        """Convert the module to a MixedPrecision module."""
+        """Convert the module to a MixedPrecision module.
+
+        It operates by creating a new clone object that has one method be wrapped to enforce mixed precision policy.
+
+        Arguments:
+            mp_policy: a ``jmp`` mixed precision policy.
+            method_name: name of the method that will be affected.
+        """
         casted_self = mp_policy.cast_to_param(self)
 
         cls = casted_self.__class__
@@ -408,7 +425,13 @@ class Module:
         return new
 
     def apply(self, apply_fn):
-        """Apply a function to all sub-modules."""
+        """Apply a function to all sub-modules.
+
+        **Note**: this function returns a transformed copy of the current object.
+
+        Arguments:
+            apply_fn: a function which inputs a module and outputs a new module.
+        """
 
         def rec_fn(x):
             if isinstance(x, Module):

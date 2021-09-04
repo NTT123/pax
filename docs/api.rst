@@ -65,8 +65,9 @@ Common Modules
 Linear
 ------
 
-    
+
 .. autoclass:: Linear
+   :members:
 
 
 Sequential
@@ -74,7 +75,7 @@ Sequential
 
 
 .. autoclass:: Sequential
-
+   :members:
 
 
 LayerNorm
@@ -82,6 +83,7 @@ LayerNorm
 
     
 .. autoclass:: LayerNorm
+   :members:
 
 
 
@@ -89,24 +91,30 @@ MultiHeadAttention
 ------------------
 
 .. autoclass:: MultiHeadAttention
+   :members:
 
 
 BatchNorm
 ---------
 
 .. autoclass:: BatchNorm
+   :members:
 
 .. autoclass:: BatchNorm1D
+   :members:
 
 .. autoclass:: BatchNorm2D
+   :members:
 
 
 Convolution
 -----------
 
 .. autoclass:: Conv1D
+   :members:
 
 .. autoclass:: Conv2D
+   :members:
 
 
 Haiku Modules
@@ -130,7 +138,6 @@ Haiku Modules
     avg_pool
     max_pool
 
-
     
 from_haiku
 ----------
@@ -138,7 +145,8 @@ from_haiku
 .. autofunction:: from_haiku
 
 
-    
+See https://dm-haiku.readthedocs.io/en/latest/api.html#common-modules for more information about converted modules.
+
 batch_norm_2d
 -------------
 
@@ -273,8 +281,8 @@ Lambda
 
 .. autoclass:: Lambda
 
-
 RngSeq
 ------
 
 .. autoclass:: RngSeq
+   :members:

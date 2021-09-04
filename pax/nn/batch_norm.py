@@ -11,7 +11,7 @@ from ..rng import next_rng_key
 
 
 class BatchNorm(Module):
-    """BatchNorm proxy."""
+    """BatchNorm Module."""
 
     params: HaikuParam = None
     state: HaikuState = None
@@ -31,9 +31,29 @@ class BatchNorm(Module):
         *,
         rng_key: Optional[jnp.ndarray] = None,
     ):
-        """
+        """Create a new BatchNorm module.
+
         Arguments:
-            input_shape: The shape of input tensor. For example `[None, None, 3]`. Use `None` to indicate unknown value.
+            input_shape: The shape of input tensor. For example ``[None, None, 3]``. Use ``None`` to indicate unknown value.
+            create_scale: Whether to include a trainable scaling factor.
+            create_offset: Whether to include a trainable offset.
+            decay_rate: Decay rate for EMA.
+            eps: Small epsilon to avoid division by zero variance. Defaults ``1e-5``,
+                as in the paper and Sonnet.
+            scale_init: Optional initializer for gain (aka scale). Can only be set
+                if ``create_scale=True``. By default, ``1``.
+            offset_init: Optional initializer for bias (aka offset). Can only be set
+                if ``create_offset=True``. By default, ``0``.
+            axis: Which axes to reduce over. The default (``None``) signifies that all
+                but the channel axis should be normalized. Otherwise this is a list of
+                axis indices which will have normalization statistics calculated.
+            cross_replica_axis: If not ``None``, it should be a string representing
+                the axis name over which this module is being run within a ``jax.pmap``.
+                Supplying this argument means that batch statistics are calculated
+                across all replicas on that axis.
+            data_format: The data format of the input. Can be either
+                ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
+                default it is ``channels_last``.
         """
         assert data_format in ["channels_first", "channels_last", "N...C", "NC..."]
         super().__init__()
