@@ -74,9 +74,9 @@ There are a few important things in the above example:
 * ``loss_fn`` returns the updated `model` in its output.
 * ``net.parameters()`` return a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. This is needed to make sure that we only compute gradients w.r.t trainable parameters.
 
-## Pax and other libraries. <a id="paxandfriends"></a>
+## Pax and other libraries <a id="paxandfriends"></a>
 
-Pax is what you can get if you build [pytorch] on top of [jax]. Pax has several methods that similar to Pytorch users. 
+Pax has several methods that are similar to Pytorch users. 
 
 - ``self.parameters()`` returns parameters of the module.
 - ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameters.
@@ -85,8 +85,8 @@ Pax is what you can get if you build [pytorch] on top of [jax]. Pax has several 
 - ``self.train()`` and ``self.eval()`` returns a new module in ``train/eval`` mode.
 - ``self.training`` returns if ``self`` is in training mode.
 
-Pax learns a lot from other libraries:
-- Pax borrows the idea that __a module is also a pytree__ from [treex] and [equinox]. 
+Pax learns a lot from other libraries too:
+- Pax borrows the idea that _a module is also a pytree_ from [treex] and [equinox]. 
 - Pax uses the concept of _trainable parameters_ and _non-trainable states_ from [dm-haiku].
 - Pax uses [objax]'s approach to implement optimizers as modules. 
 - Pax uses [dm-haiku] and [optax] as backends for filling in current missing modules and optimizers. 
@@ -186,7 +186,7 @@ net.modules[2] = pax.nn.Linear(64, 2)
 # freeze the first layer.
 net.modules[0] = net.modules[0].freeze() 
 ```
-``net.parameters()`` will now only returns parameters of the last layer.
+After this, ``net.parameters()`` will only return trainable parameters of the last layer.
 
 
 [jax]: https://github.com/google/jax
