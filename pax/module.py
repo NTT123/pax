@@ -62,7 +62,7 @@ class Module:
         return self._training
 
     def __setattr__(self, name: str, value: Any) -> None:
-        """Whenever an user sets ``value`` to attribute ``name``, we will check the assignment.
+        """Whenever a user sets ``value`` to attribute ``name``, we will check the assignment.
 
         * Setting ``_name_to_kind`` and ``_training`` are forbidden.
 
@@ -266,7 +266,7 @@ class Module:
     def hk_init(self, *args, enable_jit: bool = False, **kwargs):
         """Return a new initialized module.
 
-        **Note**: This function is only useful if a module is or includes a converted module from haiku library.
+        **Note**: This function is only useful if a module is or includes a converted module from the haiku library.
 
         Arguments:
             args, kwargs: dummy inputs to the module.
@@ -388,7 +388,7 @@ class Module:
     def mixed_precision(self: T, mp_policy: jmp.Policy, method_name="__call__"):
         """Convert the module to a MixedPrecision module.
 
-        It operates by creating a new clone object that has one method be wrapped to enforce mixed precision policy.
+        It operates by creating a new clone object that has one method be wrapped to enforce the mixed-precision policy.
 
         Arguments:
             mp_policy: a ``jmp`` mixed precision policy.
