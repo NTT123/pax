@@ -37,8 +37,14 @@ Pax's Module
 
 .. autoclass:: PaxFieldKind
    :members:
-   :undoc-members:
-
+   
+   .. autoattribute:: STATE
+   .. autoattribute:: PARAMETER
+   .. autoattribute:: MODULE
+   .. autoattribute:: STATE_SUBTREE
+   .. autoattribute:: PARAMETER_SUBTREE
+   .. autoattribute:: MODULE_SUBTREE
+   .. autoattribute:: OTHERS
 
 
 
@@ -171,7 +177,6 @@ lstm
 .. autofunction:: lstm
 
 
-    
 gru
 ---
 

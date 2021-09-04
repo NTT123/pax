@@ -20,13 +20,24 @@ ModuleAuxiliaryData = Tuple
 
 # All supported module's field kinds
 class PaxFieldKind(Enum):
-    STATE: int = 1  # a non-trainable ndarray
-    PARAMETER: int = 2  # a trainable ndarray
-    MODULE: int = 3  # a Pax Module
-    STATE_SUBTREE: int = 4  # a non-trainable pytree
-    PARAMETER_SUBTREE: int = 5  # a trainable pytree
-    MODULE_SUBTREE: int = 6  # a tree of sub-modules
-    OTHERS: int = 7  # all other fields
+    """``PaxFieldKind`` lists all supported attribute kinds in ``pax.Module``.
+
+    An attribute will be considered as part of the pytree structure if its kind is one of ``STATE_*``, ``PARAMETER_*``, ``MODULE_*``.
+
+    * A ``STATE`` attribute is a non-trainable leaf of the pytree.
+    * A ``STATE_SUBTREE`` attribute is a non-trainable subtree.
+    * A ``PARAMETER`` attribute is a trainable leaf of the pytree.
+    * A ``PARAMETER_SUBTREE`` attribute is a trainable subtree.
+    * A ``MODULE`` or ``MODULE_SUBTREE`` attribute is a generic subtree.
+    """
+
+    STATE: int = 1
+    PARAMETER: int = 2
+    MODULE: int = 3
+    STATE_SUBTREE: int = 4
+    PARAMETER_SUBTREE: int = 5
+    MODULE_SUBTREE: int = 6
+    OTHERS: int = 7
 
 
 class Module:
