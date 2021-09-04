@@ -50,6 +50,7 @@ To install::
    :maxdepth: 1
 
    notebooks/getting_started
+   notebooks/train_image_classifier
 
 
 
