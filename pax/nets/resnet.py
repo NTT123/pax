@@ -1,4 +1,4 @@
-# Follow resnet implementation at: 
+# Follow resnet implementation at:
 # https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/nets/resnet.py
 # which is under Apache License, Version 2.0.
 
