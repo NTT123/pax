@@ -13,7 +13,6 @@
 ![pypi](https://img.shields.io/pypi/v/pax-j)
 
 
-
 ## Introduction<a id="introduction"></a>
 
 ``Pax`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The central object of `Pax` is a `pax.Module`.
@@ -25,6 +24,7 @@ A  `pax.Module` has two sides:
 
 ``pax.Module`` manages the pytree and executes functions that depends on the pytree. As a pytree object, `pax.Module` can be input and output to jax functions running on CPU/GPU/TPU cores.
 
+
 ## Installation<a id="installation"></a>
 
 ```bash
@@ -33,6 +33,7 @@ pip3 install git+https://github.com/ntt123/pax.git
 ## or test mode to run tests and examples
 pip3 install git+https://github.com/ntt123/pax.git#egg=pax[test]
 ```
+
 
 ## Getting started<a id="gettingstarted"></a>
 
@@ -77,9 +78,10 @@ There are a few important things in the above example:
 * ``net.parameters()`` returns a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. 
 This is needed to make sure that we only compute gradients w.r.t trainable parameters.
 
-## Pax and other libraries. <a id="paxandfriends"></a>
 
-Pax is what you can get if you build [pytorch] on top of [jax]. Pax has several methods that similar to Pytorch users. 
+## Pax and other libraries <a id="paxandfriends"></a>
+
+Pax has several methods that are similar to Pytorch. 
 
 - ``self.parameters()`` returns parameters of the module.
 - ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameters.
@@ -88,8 +90,8 @@ Pax is what you can get if you build [pytorch] on top of [jax]. Pax has several 
 - ``self.train()`` and ``self.eval()`` returns a new module in ``train/eval`` mode.
 - ``self.training`` returns if ``self`` is in training mode.
 
-Pax learns a lot from other libraries:
-- Pax borrows the idea that __a module is also a pytree__ from [treex] and [equinox]. 
+Pax learns a lot from other libraries too:
+- Pax borrows the idea that _a module is also a pytree_ from [treex] and [equinox]. 
 - Pax uses the concept of _trainable parameters_ and _non-trainable states_ from [dm-haiku].
 - Pax uses [objax]'s approach to implement optimizers as modules. 
 - Pax uses [dm-haiku] and [optax] as backends for filling in current missing modules and optimizers. 
@@ -107,9 +109,6 @@ A good way to learn about ``Pax`` is to see examples in the [examples/](./exampl
 * ``notebooks/VAE.ipynb``: train a variational autoencoder.
 * ``notebooks/DCGAN.ipynb``: train a DCGAN model on Celeb-A dataset.
 * ``mnist_mixed_precision.py``: train an image classifier with mixed precision (experimental).
-
-
-
 
 
 ## Modules<a id="modules"></a>
@@ -134,6 +133,7 @@ If your model uses these converted haiku modules, you have to call the `hk_init`
 
 In additional, Pax provides many functions that avoid the dummy input problems: ``pax.haiku.{linear, layer_norm, batch_norm_2d, lstm, gru, embed, conv_1d, conv_2d, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
 We intent to add more functions like this in the near futures.
+
 
 ## Optimizers<a id="optimizers"></a>
 
@@ -173,6 +173,7 @@ SGD = pax.optim.from_optax(
 )
 ```
 
+
 ## Fine-tunning models<a id="finetune"></a>
 
 Pax's Module provides the ``freeze`` method to convert all trainable parameters to non-trainable states.
@@ -190,7 +191,7 @@ net.modules[2] = pax.nn.Linear(64, 2)
 net.modules[0] = net.modules[0].freeze() 
 ```
 
-``net.parameters()`` will now only returns parameters of the last layer.
+After this, ``net.parameters()`` will only return trainable parameters of the last layer.
 
 
 [jax]: https://github.com/google/jax
