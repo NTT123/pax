@@ -79,11 +79,11 @@ class BatchNorm(Module):
             "params", hk.data_structures.to_mutable_dict(params)
         )
         self.register_state_subtree("state", hk.data_structures.to_mutable_dict(state))
-        
+
         if data_format in ["channels_last", "N...C"]:
-            num_channels = input_shape[-1] 
+            num_channels = input_shape[-1]
         else:
-            num_channels = input_shape[1] 
+            num_channels = input_shape[1]
 
         self.info = {
             "num_channels": num_channels,

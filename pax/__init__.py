@@ -1,4 +1,4 @@
-from . import haiku, initializers, nn, optim, utils
+from . import haiku, initializers, nets, nn, optim, utils
 from .haiku import dynamic_unroll, from_haiku
 from .module import Module
 from .optim import Optimizer
