@@ -79,9 +79,14 @@ class BatchNorm(Module):
             "params", hk.data_structures.to_mutable_dict(params)
         )
         self.register_state_subtree("state", hk.data_structures.to_mutable_dict(state))
+        
+        if data_format in ["channels_last", "N...C"]:
+            num_channels = input_shape[-1] 
+        else:
+            num_channels = input_shape[1] 
 
         self.info = {
-            "input_shape": input_shape,
+            "num_channels": num_channels,
             "create_scale": create_scale,
             "create_offset": create_offset,
             "decay_rate": decay_rate,
