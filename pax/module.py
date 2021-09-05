@@ -101,37 +101,43 @@ class Module:
         self._scan_fields(fields={name: value})
 
     def register_parameter(self, name: str, value: jnp.ndarray):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.PARAMETER
         setattr(self, name, value)
 
     def register_state(self, name: str, value: jnp.ndarray):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.STATE
         setattr(self, name, value)
 
     def register_module(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.MODULE`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.MODULE`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.MODULE
         setattr(self, name, value)
 
     def register_parameter_subtree(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.PARAMETER_SUBTREE`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.PARAMETER_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.PARAMETER_SUBTREE
         setattr(self, name, value)
 
     def register_state_subtree(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.STATE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.STATE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.STATE_SUBTREE
         setattr(self, name, value)
 
     def register_module_subtree(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.MODULE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.MODULE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.MODULE_SUBTREE
         setattr(self, name, value)
