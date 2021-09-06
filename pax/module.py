@@ -56,8 +56,9 @@ class Module:
     # Field Name To Kind
     _name_to_kind: Optional[Dict[str, PaxFieldKind]] = None
     _training: bool = True
+    name: str = None
 
-    def __init__(self):
+    def __init__(self, name: Optional[str] = None):
         """Initialize the ``_training`` flag (the default is ``True``)
         and the **very** important ``_name_to_kind`` dictionary.
 
@@ -65,8 +66,9 @@ class Module:
         We implement a safeguard mechanism to enforce that by checking if ``_name_to_kind`` is ``None`` in the ``__setattr__`` method.
         """
         super().__init__()
-        self.__dict__["_name_to_kind"] = dict()
-        self.__dict__["_training"] = True
+        super().__setattr__("_name_to_kind", dict())
+        super().__setattr__("_training", True)
+        super().__setattr__("name", name)
 
     @property
     def training(self) -> bool:
@@ -93,7 +95,7 @@ class Module:
                 f"If you _really_ want to, use `self.__dict__[name] = value` instead."
             )
 
-        self.__dict__[name] = value
+        super().__setattr__(name, value)
 
         if isinstance(value, Module) and name not in self._name_to_kind:
             self._name_to_kind[name] = PaxFieldKind.MODULE
@@ -307,7 +309,11 @@ class Module:
         return [module for module in submods if isinstance(module, Module)]
 
     def __repr__(self) -> str:
-        return self.__class__.__name__
+        cls_name = self.__class__.__name__
+        if self.name is not None:
+            return f"({self.name}) {cls_name}"
+        else:
+            return cls_name
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         """This is the default summary method.

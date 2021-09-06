@@ -35,9 +35,13 @@ class ResnetBlock(Module):
                 kernel_shape=1,
                 stride=stride,
                 with_bias=False,
-                padding="SAME",
+                padding=(0, 0),
+                data_format="NCHW",
+                name="proj_conv",
             )
-            self.proj_batchnorm = BatchNorm2D(out_channels, True, True, 0.999)
+            self.proj_batchnorm = BatchNorm2D(
+                out_channels, True, True, 0.9, data_format="NC...", name="proj_bn"
+            )
 
         channel_div = 4 if bottleneck else 1
         conv_0 = Conv2D(
@@ -46,9 +50,14 @@ class ResnetBlock(Module):
             kernel_shape=1 if bottleneck else 3,
             stride=1 if bottleneck else stride,
             with_bias=False,
-            padding="SAME",
+            padding=(0, 0) if bottleneck else (1, 1),
+            data_format="NCHW",
+            name="conv1",
         )
-        bn_0 = BatchNorm2D(out_channels, True, True, 0.999)
+
+        bn_0 = BatchNorm2D(
+            out_channels, True, True, 0.9, data_format="NC...", name="bn1"
+        )
 
         conv_1 = Conv2D(
             in_features=out_channels,
@@ -56,10 +65,14 @@ class ResnetBlock(Module):
             kernel_shape=3,
             stride=stride if bottleneck else 1,
             with_bias=False,
-            padding="SAME",
+            padding=(1, 1),
+            data_format="NCHW",
+            name="conv2",
         )
 
-        bn_1 = BatchNorm2D(out_channels, True, True, 0.999)
+        bn_1 = BatchNorm2D(
+            out_channels, True, True, 0.9, data_format="NC...", name="bn2"
+        )
 
         layers = ((conv_0, bn_0), (conv_1, bn_1))
 
@@ -70,9 +83,19 @@ class ResnetBlock(Module):
                 kernel_shape=1,
                 stride=1,
                 with_bias=False,
-                padding="SAME",
+                padding=(0, 0),
+                data_format="NCHW",
+                name="conv3",
             )
-            bn_2 = BatchNorm2D(out_channels, True, True, 0.999, scale_init=jnp.zeros)
+            bn_2 = BatchNorm2D(
+                out_channels,
+                True,
+                True,
+                0.9,
+                scale_init=jnp.zeros,
+                data_format="NC...",
+                name="bn3",
+            )
             layers = layers + ((conv_2, bn_2))
 
         self.register_module_subtree("layers", layers)
@@ -167,8 +190,9 @@ class ResNet(Module):
         use_projection: Sequence[bool] = (True, True, True, True),
         logits_config=None,
         initial_conv_config=None,
+        name=None,
     ):
-        super().__init__()
+        super().__init__(name=name)
 
         check_length(4, blocks_per_group, "blocks_per_group")
         check_length(4, channels_per_group, "channels_per_group")
@@ -182,12 +206,18 @@ class ResNet(Module):
         initial_conv_config.setdefault("kernel_shape", 7)
         initial_conv_config.setdefault("stride", 2)
         initial_conv_config.setdefault("with_bias", False)
-        initial_conv_config.setdefault("padding", "SAME")
+        initial_conv_config.setdefault("padding", (3, 3))
+        initial_conv_config.setdefault("data_format", "NCHW")
 
-        self.initial_conv = Conv2D(**initial_conv_config)
+        self.initial_conv = Conv2D(**initial_conv_config, name="conv1")
 
         self.initial_batchnorm = BatchNorm2D(
-            initial_conv_config["out_features"], True, True, 0.999
+            initial_conv_config["out_features"],
+            True,
+            True,
+            0.9,
+            data_format="NC...",
+            name="bn1",
         )
 
         block_groups = []
@@ -210,19 +240,27 @@ class ResNet(Module):
 
         self.register_module_subtree("block_groups", block_groups)
 
-        self.logits = Linear(channels_per_group[-1], num_classes, **logits_config)
+        self.logits = Linear(
+            channels_per_group[-1], num_classes, **logits_config, name="fc"
+        )
 
     def __call__(self, inputs):
         out = inputs
         out = self.initial_conv(out)
         out = self.initial_batchnorm(out)
         out = jax.nn.relu(out)
-        mp = max_pool(window_shape=(1, 3, 3, 1), strides=(1, 2, 2, 1), padding="SAME")
+        out = jnp.pad(out, [(0, 0), (0, 0), (1, 1), (1, 1)])
+        mp = max_pool(
+            window_shape=(1, 1, 3, 3),
+            strides=(1, 1, 2, 2),
+            padding="VALID",
+            channel_axis=1,
+        )
         out = mp(out)
         for block_group in self.block_groups:
             out = block_group(out)
 
-        out = jnp.mean(out, axis=(1, 2))
+        out = jnp.mean(out, axis=(2, 3))
         return self.logits(out)
 
 
@@ -242,6 +280,7 @@ class ResNet18(ResNet):
             initial_conv_config=initial_conv_config,
             logits_config=logits_config,
             **ResNet.CONFIGS[18],
+            name="ResNet18",
         )
 
 

@@ -26,6 +26,7 @@ class Linear(Module):
         w_init=initializers.variance_scaling(),
         b_init=jnp.zeros,
         *,
+        name=None,
         rng_key: jnp.ndarray = None,
     ):
         """
@@ -37,7 +38,7 @@ class Linear(Module):
             b_init: initializer function for the bias.
             rng_key: the key to generate initial parameters.
         """
-        super().__init__()
+        super().__init__(name=name)
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.W = None
@@ -68,4 +69,5 @@ class Linear(Module):
         return self.f.apply({"linear": {"w": self.W, "b": self.b}}, x)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}[in_dim={self.in_dim}, out_dim={self.out_dim}, with_bias={self.with_bias}]"
+        name = f"({self.name}) " if self.name is not None else " "
+        return f"{name}{self.__class__.__name__}[in_dim={self.in_dim}, out_dim={self.out_dim}, with_bias={self.with_bias}]"

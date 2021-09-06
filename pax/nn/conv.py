@@ -107,6 +107,7 @@ class Conv2D(Module):
         mask: Optional[jnp.ndarray] = None,
         feature_group_count: int = 1,
         *,
+        name: Optional[str] = None,
         rng_key: jnp.ndarray = None,
     ):
         """See https://dm-haiku.readthedocs.io/en/latest/api.html#conv2d for detail.
@@ -117,7 +118,7 @@ class Conv2D(Module):
             kernel_shape: convolution kernel shape.
             rng_key: the random key for initialization.
         """
-        super().__init__()
+        super().__init__(name=name)
         assert data_format in [
             "NCHW",
             "NHWC",
@@ -156,4 +157,5 @@ class Conv2D(Module):
         return self.fwd.apply({"conv2_d": {"w": self.w, "b": self.b}}, x)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}[in_features={self.in_features}, out_features={self.out_features}, with_bias={self.with_bias}]"
+        name = f"({self.name}) " if self.name is not None else ""
+        return f"{name}{self.__class__.__name__}[in_features={self.in_features}, out_features={self.out_features}, with_bias={self.with_bias}]"

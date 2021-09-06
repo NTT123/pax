@@ -29,6 +29,7 @@ class BatchNorm(Module):
         cross_replica_axis: Optional[str] = None,
         data_format: str = "channels_last",
         *,
+        name: Optional[str] = None,
         rng_key: Optional[jnp.ndarray] = None,
     ):
         """Create a new BatchNorm module.
@@ -56,7 +57,7 @@ class BatchNorm(Module):
                 default it is ``channels_last``.
         """
         assert data_format in ["channels_first", "channels_last", "N...C", "NC..."]
-        super().__init__()
+        super().__init__(name=name)
 
         def fwd(x, is_training: bool):
             return hk.BatchNorm(
@@ -105,8 +106,8 @@ class BatchNorm(Module):
     def __repr__(self):
         options = [f"{k}={v}" for (k, v) in self.info.items() if v is not None]
         options = ", ".join(options)
-
-        return f"{self.__class__.__name__}[{options}]"
+        name = f"({self.name}) " if self.name is not None else ""
+        return f"{name}{self.__class__.__name__}[{options}]"
 
 
 class BatchNorm1D(BatchNorm):
@@ -128,6 +129,7 @@ class BatchNorm1D(BatchNorm):
         cross_replica_axis: Optional[str] = None,
         data_format: str = "channels_last",
         *,
+        name: Optional[str] = None,
         rng_key: Optional[jnp.ndarray] = None,
     ):
         shape = [1, 1, 1]
@@ -147,6 +149,7 @@ class BatchNorm1D(BatchNorm):
             axis=axis,
             cross_replica_axis=cross_replica_axis,
             data_format=data_format,
+            name=name,
             rng_key=rng_key,
         )
 
@@ -170,6 +173,7 @@ class BatchNorm2D(BatchNorm):
         cross_replica_axis: Optional[str] = None,
         data_format: str = "channels_last",
         *,
+        name: Optional[str] = None,
         rng_key: Optional[jnp.ndarray] = None,
     ):
         shape = [1, 1, 1, 1]
@@ -189,5 +193,6 @@ class BatchNorm2D(BatchNorm):
             axis=axis,
             cross_replica_axis=cross_replica_axis,
             data_format=data_format,
+            name=name,
             rng_key=rng_key,
         )

@@ -349,7 +349,7 @@ def avg_pool(window_shape, strides, padding, channel_axis=-1):
 
 def max_pool(window_shape, strides, padding, channel_axis=-1):
     """Return a converted MaxPool module."""
-    f = lambda x: hk.avg_pool(
+    f = lambda x: hk.max_pool(
         x,
         window_shape=window_shape,
         strides=strides,
