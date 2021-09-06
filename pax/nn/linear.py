@@ -69,5 +69,6 @@ class Linear(Module):
         return self.f.apply({"linear": {"w": self.W, "b": self.b}}, x)
 
     def __repr__(self):
-        name = f"({self.name}) " if self.name is not None else " "
-        return f"{name}{self.__class__.__name__}[in_dim={self.in_dim}, out_dim={self.out_dim}, with_bias={self.with_bias}]"
+        name = f"({self.name}) " if self.name is not None else ""
+        cls_name = self.__class__.__name__
+        return f"{name}{cls_name}[in_dim={self.in_dim}, out_dim={self.out_dim}, with_bias={self.with_bias}]"
