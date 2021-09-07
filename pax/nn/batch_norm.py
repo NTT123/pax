@@ -104,10 +104,7 @@ class BatchNorm(Module):
         return x
 
     def __repr__(self):
-        options = [f"{k}={v}" for (k, v) in self.info.items() if v is not None]
-        options = ", ".join(options)
-        name = f"({self.name}) " if self.name is not None else ""
-        return f"{name}{self.__class__.__name__}[{options}]"
+        return super().__repr__(self.info)
 
 
 class BatchNorm1D(BatchNorm):

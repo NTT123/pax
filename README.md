@@ -103,23 +103,15 @@ Pax learns a lot from other libraries too:
 
 A good way to learn about ``Pax`` is to see examples in the [examples/](./examples) directory:
 
-<!-- * ``char_rnn.py``: train a RNN language model on TPU.
-* ``transformer/``: train a Transformer language model on TPU.
-* ``mnist.py``: train an image classifier on MNIST dataset.
-* ``notebooks/VAE.ipynb``: train a variational autoencoder.
-* ``notebooks/DCGAN.ipynb``: train a DCGAN model on Celeb-A dataset.
-* ``notebooks/fine_tuning_resnet18.ipynb``: finetune a pretrained ResNet18 model on `cats vs dogs` dataset.
-* ``mnist_mixed_precision.py``: train an image classifier with mixed precision (experimental). -->
 
-
-| Path   |      Description      |
-|----------|-------------|
-| ``char_rnn.py`` |  train a RNN language model on TPU. |
+| Path     |      Description      |
+|----------|-----------------------|
+| ``char_rnn.py``  |  train a RNN language model on TPU.             |
 | ``transformer/`` |    train a Transformer language model on TPU.   |
-| ``mnist.py`` | train an image classifier on `MNIST` dataset. |
-| ``notebooks/VAE.ipynb`` | train a variational autoencoder. |
+| ``mnist.py``     | train an image classifier on `MNIST` dataset.   |
+| ``notebooks/VAE.ipynb``   | train a variational autoencoder.       |
 | ``notebooks/DCGAN.ipynb`` | train a DCGAN model on `Celeb-A` dataset. |
-| ``notebooks/fine_tuning_resnet18.ipynb`` | finetune a pretrained ResNet18 model on `cats vs dogs` dataset. |
+| ``notebooks/fine_tuning_resnet18.ipynb``    | finetune a pretrained ResNet18 model on `cats vs dogs` dataset. |
 | ``mnist_mixed_precision.py`` (experimental) | train an image classifier with mixed precision. |
 
 

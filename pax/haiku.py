@@ -70,9 +70,8 @@ def from_haiku(
                     self.init_haiku_module(u, v)
 
             def __repr__(self) -> str:
-                options = [f"{k}={v}" for (k, v) in kwargs.items() if v is not None]
-                options = ", ".join(options)
-                return self.__class__.__name__ + f"[{options}]"
+                info = dict((k, v) for (k, v) in kwargs.items() if v is not None)
+                return super().__repr__(info)
 
             def __call__(self, *args, **kwargs):
                 if not self._is_haiku_initialized:

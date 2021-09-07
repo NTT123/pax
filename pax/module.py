@@ -465,3 +465,13 @@ class Module:
             rec_fn, self, is_leaf=lambda x: isinstance(x, Module) and x is not self
         )
         return apply_fn(new_self)
+
+    def __repr__(self, info: Optional[Dict[str, Any]] = None) -> str:
+        name = f"({self.name}) " if self.name is not None else ""
+        cls_name = self.__class__.__name__
+        if info is None:
+            return f"{name}{cls_name}"
+        else:
+            info = [f"{k}={v}" for (k, v) in info.items() if v is not None]
+            info = ", ".join(info)
+            return f"{name}{cls_name}[{info}]"

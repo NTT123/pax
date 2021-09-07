@@ -151,4 +151,10 @@ class LayerNorm(Module):
         return inv * (inputs - mean) + offset
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}[num_channels={self.num_channels}, axis={self.axis}, create_scale={self.create_scale}, create_offset={self.create_offset}]"
+        info = {
+            "num_channels": self.num_channels,
+            "axis": self.axis,
+            "create_scale": self.create_scale,
+            "create_offset": self.create_offset,
+        }
+        return super().__repr__(info)

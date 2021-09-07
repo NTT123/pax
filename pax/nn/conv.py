@@ -157,5 +157,9 @@ class Conv2D(Module):
         return self.fwd.apply({"conv2_d": {"w": self.w, "b": self.b}}, x)
 
     def __repr__(self) -> str:
-        name = f"({self.name}) " if self.name is not None else ""
-        return f"{name}{self.__class__.__name__}[in_features={self.in_features}, out_features={self.out_features}, with_bias={self.with_bias}]"
+        info = {
+            "in_features": self.in_features,
+            "out_features": self.out_features,
+            "with_bias": self.with_bias,
+        }
+        return super().__repr__(info)

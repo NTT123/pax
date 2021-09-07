@@ -29,16 +29,16 @@ class MultiHeadAttention(Module):
         self.model_size = key_size * num_heads
         w_init = hk.initializers.VarianceScaling(w_init_scale)
         self.query_projection = pax.nn.Linear(
-            self.model_size, self.model_size, w_init=w_init
+            self.model_size, self.model_size, w_init=w_init, name="qry_proj"
         )
         self.key_projection = pax.nn.Linear(
-            self.model_size, self.model_size, w_init=w_init
+            self.model_size, self.model_size, w_init=w_init, name="key_proj"
         )
         self.value_projection = pax.nn.Linear(
-            self.model_size, self.model_size, w_init=w_init
+            self.model_size, self.model_size, w_init=w_init, name="val_proj"
         )
         self.output_projection = pax.nn.Linear(
-            self.model_size, self.model_size, w_init=w_init
+            self.model_size, self.model_size, w_init=w_init, name="out_proj"
         )
 
     def __call__(
@@ -73,4 +73,5 @@ class MultiHeadAttention(Module):
         return self.output_projection(attn_vec)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}[num_heads={self.num_heads}, key_size={self.key_size}]"
+        info = {"num_heads": self.num_heads, "key_size": self.key_size}
+        return super().__repr__(info)
