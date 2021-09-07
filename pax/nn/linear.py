@@ -41,8 +41,8 @@ class Linear(Module):
         super().__init__(name=name)
         self.in_dim = in_dim
         self.out_dim = out_dim
-        self.W = None
-        self.b = None
+        self.weight = None
+        self.bias = None
         self.with_bias = with_bias
         self.f = hk.without_apply_rng(
             hk.transform(
@@ -53,9 +53,9 @@ class Linear(Module):
         params = self.f.init(rng_key, np.empty((1, self.in_dim), dtype=np.float32))[
             "linear"
         ]
-        self.register_parameter("W", params["w"])
+        self.register_parameter("weight", params["w"])
         if self.with_bias:
-            self.register_parameter("b", params["b"])
+            self.register_parameter("bias", params["b"])
 
     def __call__(self, x: np.ndarray) -> jnp.ndarray:
         """Applies a linear transformation to the inputs along the last dimension.
@@ -66,7 +66,7 @@ class Linear(Module):
         Returns:
             The transformed input.
         """
-        return self.f.apply({"linear": {"w": self.W, "b": self.b}}, x)
+        return self.f.apply({"linear": {"w": self.weight, "b": self.bias}}, x)
 
     def __repr__(self):
         name = f"({self.name}) " if self.name is not None else ""

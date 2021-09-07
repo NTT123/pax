@@ -75,12 +75,12 @@ class Conv1D(Module):
         elif data_format == "NWC":
             x = np.empty(shape=(1, 1, in_features), dtype=jnp.float32)
         params = self.fwd.init(rng_key, x)
-        self.register_parameter("w", params["conv1_d"]["w"])
-        self.register_parameter("b", params["conv1_d"]["b"] if with_bias else None)
+        self.register_parameter("weight", params["conv1_d"]["w"])
+        self.register_parameter("bias", params["conv1_d"]["b"] if with_bias else None)
 
     def __call__(self, x):
         """Apply convolution."""
-        return self.fwd.apply({"conv1_d": {"w": self.w, "b": self.b}}, x)
+        return self.fwd.apply({"conv1_d": {"w": self.weight, "b": self.bias}}, x)
 
 
 class Conv2D(Module):

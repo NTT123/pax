@@ -90,11 +90,11 @@ def convert_linear(linear):
         in_dim=weight.shape[1], out_dim=weight.shape[0], with_bias=True
     )
     weight = np.transpose(weight)
-    assert pax_linear.b.shape == bias.shape
-    assert pax_linear.W.shape == weight.shape
+    assert pax_linear.bias.shape == bias.shape
+    assert pax_linear.weight.shape == weight.shape
 
-    pax_linear.W = weight
-    pax_linear.b = bias
+    pax_linear.weight = weight
+    pax_linear.bias = bias
 
     return pax_linear
 
