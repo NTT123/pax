@@ -29,6 +29,7 @@ class BatchNorm(Module):
         cross_replica_axis: Optional[str] = None,
         data_format: str = "channels_last",
         *,
+        name: Optional[str] = None,
         rng_key: Optional[jnp.ndarray] = None,
     ):
         """Create a new BatchNorm module.
@@ -56,7 +57,7 @@ class BatchNorm(Module):
                 default it is ``channels_last``.
         """
         assert data_format in ["channels_first", "channels_last", "N...C", "NC..."]
-        super().__init__()
+        super().__init__(name=name)
 
         def fwd(x, is_training: bool):
             return hk.BatchNorm(
@@ -80,8 +81,13 @@ class BatchNorm(Module):
         )
         self.register_state_subtree("state", hk.data_structures.to_mutable_dict(state))
 
+        if data_format in ["channels_last", "N...C"]:
+            num_channels = input_shape[-1]
+        else:
+            num_channels = input_shape[1]
+
         self.info = {
-            "input_shape": input_shape,
+            "num_channels": num_channels,
             "create_scale": create_scale,
             "create_offset": create_offset,
             "decay_rate": decay_rate,
@@ -98,10 +104,7 @@ class BatchNorm(Module):
         return x
 
     def __repr__(self):
-        options = [f"{k}={v}" for (k, v) in self.info.items() if v is not None]
-        options = ", ".join(options)
-
-        return f"{self.__class__.__name__}[{options}]"
+        return super().__repr__(self.info)
 
 
 class BatchNorm1D(BatchNorm):
@@ -123,6 +126,7 @@ class BatchNorm1D(BatchNorm):
         cross_replica_axis: Optional[str] = None,
         data_format: str = "channels_last",
         *,
+        name: Optional[str] = None,
         rng_key: Optional[jnp.ndarray] = None,
     ):
         shape = [1, 1, 1]
@@ -142,6 +146,7 @@ class BatchNorm1D(BatchNorm):
             axis=axis,
             cross_replica_axis=cross_replica_axis,
             data_format=data_format,
+            name=name,
             rng_key=rng_key,
         )
 
@@ -165,6 +170,7 @@ class BatchNorm2D(BatchNorm):
         cross_replica_axis: Optional[str] = None,
         data_format: str = "channels_last",
         *,
+        name: Optional[str] = None,
         rng_key: Optional[jnp.ndarray] = None,
     ):
         shape = [1, 1, 1, 1]
@@ -184,5 +190,6 @@ class BatchNorm2D(BatchNorm):
             axis=axis,
             cross_replica_axis=cross_replica_axis,
             data_format=data_format,
+            name=name,
             rng_key=rng_key,
         )

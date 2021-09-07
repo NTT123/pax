@@ -56,8 +56,9 @@ class Module:
     # Field Name To Kind
     _name_to_kind: Optional[Dict[str, PaxFieldKind]] = None
     _training: bool = True
+    name: str = None
 
-    def __init__(self):
+    def __init__(self, name: Optional[str] = None):
         """Initialize the ``_training`` flag (the default is ``True``)
         and the **very** important ``_name_to_kind`` dictionary.
 
@@ -65,8 +66,9 @@ class Module:
         We implement a safeguard mechanism to enforce that by checking if ``_name_to_kind`` is ``None`` in the ``__setattr__`` method.
         """
         super().__init__()
-        self.__dict__["_name_to_kind"] = dict()
-        self.__dict__["_training"] = True
+        super().__setattr__("_name_to_kind", dict())
+        super().__setattr__("_training", True)
+        super().__setattr__("name", name)
 
     @property
     def training(self) -> bool:
@@ -93,7 +95,7 @@ class Module:
                 f"If you _really_ want to, use `self.__dict__[name] = value` instead."
             )
 
-        self.__dict__[name] = value
+        super().__setattr__(name, value)
 
         if isinstance(value, Module) and name not in self._name_to_kind:
             self._name_to_kind[name] = PaxFieldKind.MODULE
@@ -101,37 +103,43 @@ class Module:
         self._scan_fields(fields={name: value})
 
     def register_parameter(self, name: str, value: jnp.ndarray):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.PARAMETER
         setattr(self, name, value)
 
     def register_state(self, name: str, value: jnp.ndarray):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.STATE
         setattr(self, name, value)
 
     def register_module(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.MODULE`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.MODULE`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.MODULE
         setattr(self, name, value)
 
     def register_parameter_subtree(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.PARAMETER_SUBTREE`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.PARAMETER_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.PARAMETER_SUBTREE
         setattr(self, name, value)
 
     def register_state_subtree(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.STATE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.STATE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.STATE_SUBTREE
         setattr(self, name, value)
 
     def register_module_subtree(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and assign its kind to ``PaxFieldKind.MODULE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
+        """Register ``value`` as an attribute of the object under the name ``name`` and
+        assign its kind to ``PaxFieldKind.MODULE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._name_to_kind[name] = PaxFieldKind.MODULE_SUBTREE
         setattr(self, name, value)
@@ -174,7 +182,6 @@ class Module:
 
         Arguments:
             keep: type of leaves that will be kept ("parameter" or "state").
-
         """
         assert keep in ["parameter", "state"]
         fields = vars(self)
@@ -301,7 +308,11 @@ class Module:
         return [module for module in submods if isinstance(module, Module)]
 
     def __repr__(self) -> str:
-        return self.__class__.__name__
+        cls_name = self.__class__.__name__
+        if self.name is not None:
+            return f"({self.name}) {cls_name}"
+        else:
+            return cls_name
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         """This is the default summary method.
@@ -309,7 +320,7 @@ class Module:
         A module can customize its summary by overriding this method.
 
         Arguments:
-            - return_list: return a list of lines instead of a joined string.
+            return_list: return a list of lines instead of a joined string.
 
 
         Example:
@@ -454,3 +465,13 @@ class Module:
             rec_fn, self, is_leaf=lambda x: isinstance(x, Module) and x is not self
         )
         return apply_fn(new_self)
+
+    def __repr__(self, info: Optional[Dict[str, Any]] = None) -> str:
+        name = f"({self.name}) " if self.name is not None else ""
+        cls_name = self.__class__.__name__
+        if info is None:
+            return f"{name}{cls_name}"
+        else:
+            info = [f"{k}={v}" for (k, v) in info.items() if v is not None]
+            info = ", ".join(info)
+            return f"{name}{cls_name}[{info}]"

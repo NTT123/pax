@@ -58,11 +58,11 @@ def test_finetune():
     new_layers = net.layers
 
     for i in range(len(net.layers) - 1):
-        np.testing.assert_array_equal(old_layers[i].W, new_layers[i].W)
+        np.testing.assert_array_equal(old_layers[i].weight, new_layers[i].weight)
 
     np.testing.assert_raises(
         AssertionError,
         np.testing.assert_array_equal,
-        old_layers[-1].W,
-        new_layers[-1].W,
+        old_layers[-1].weight,
+        new_layers[-1].weight,
     )

@@ -114,7 +114,7 @@ def test_linear_computation():
     fc = pax.nn.Linear(1, 1)
     x = jnp.array([[5.0]], dtype=jnp.float32)
     y = fc(x)
-    target = x * fc.W + fc.b
+    target = x * fc.weight + fc.bias
     assert target.item() == y.item()
 
 
@@ -123,7 +123,7 @@ def test_linear():
     x = jnp.zeros((32, 5), dtype=jnp.float32)
     y = fc(x)
     assert y.shape == (32, 7)
-    assert fc.b is not None
+    assert fc.bias is not None
 
 
 def test_linear_wo_bias():
@@ -132,7 +132,7 @@ def test_linear_wo_bias():
     y = fc(x)
     assert y.shape == (32, 7)
 
-    assert fc.b is None
+    assert fc.bias is None
 
 
 def test_sequential_mix():

@@ -216,3 +216,8 @@ def test_forget_call_super_at_init():
 
     with pytest.raises(RuntimeError):
         m = M()
+
+
+def test_name_repr():
+    fc = pax.nn.Linear(2, 3, name="fc1")
+    assert "(fc1)" in fc.__repr__()

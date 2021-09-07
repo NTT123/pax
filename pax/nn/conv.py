@@ -75,12 +75,12 @@ class Conv1D(Module):
         elif data_format == "NWC":
             x = np.empty(shape=(1, 1, in_features), dtype=jnp.float32)
         params = self.fwd.init(rng_key, x)
-        self.register_parameter("w", params["conv1_d"]["w"])
-        self.register_parameter("b", params["conv1_d"]["b"] if with_bias else None)
+        self.register_parameter("weight", params["conv1_d"]["w"])
+        self.register_parameter("bias", params["conv1_d"]["b"] if with_bias else None)
 
     def __call__(self, x):
         """Apply convolution."""
-        return self.fwd.apply({"conv1_d": {"w": self.w, "b": self.b}}, x)
+        return self.fwd.apply({"conv1_d": {"w": self.weight, "b": self.bias}}, x)
 
 
 class Conv2D(Module):
@@ -107,6 +107,7 @@ class Conv2D(Module):
         mask: Optional[jnp.ndarray] = None,
         feature_group_count: int = 1,
         *,
+        name: Optional[str] = None,
         rng_key: jnp.ndarray = None,
     ):
         """See https://dm-haiku.readthedocs.io/en/latest/api.html#conv2d for detail.
@@ -117,7 +118,7 @@ class Conv2D(Module):
             kernel_shape: convolution kernel shape.
             rng_key: the random key for initialization.
         """
-        super().__init__()
+        super().__init__(name=name)
         assert data_format in [
             "NCHW",
             "NHWC",
@@ -156,4 +157,9 @@ class Conv2D(Module):
         return self.fwd.apply({"conv2_d": {"w": self.w, "b": self.b}}, x)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}[in_features={self.in_features}, out_features={self.out_features}, with_bias={self.with_bias}]"
+        info = {
+            "in_features": self.in_features,
+            "out_features": self.out_features,
+            "with_bias": self.with_bias,
+        }
+        return super().__repr__(info)

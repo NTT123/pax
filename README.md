@@ -13,16 +13,17 @@
 ![pypi](https://img.shields.io/pypi/v/pax-j)
 
 
-
 ## Introduction<a id="introduction"></a>
 
 ``Pax`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The central object of `Pax` is a `pax.Module`.
 
 A  `pax.Module` has two sides:
+
 * It is a _normal_ python object which can be modified and called (it has ``__call__`` method).
 * It is a _pytree_ object whose leaves are `ndarray`'s.
 
 ``pax.Module`` manages the pytree and executes functions that depends on the pytree. As a pytree object, `pax.Module` can be input and output to jax functions running on CPU/GPU/TPU cores.
+
 
 ## Installation<a id="installation"></a>
 
@@ -32,6 +33,7 @@ pip3 install git+https://github.com/ntt123/pax.git
 ## or test mode to run tests and examples
 pip3 install git+https://github.com/ntt123/pax.git#egg=pax[test]
 ```
+
 
 ## Getting started<a id="gettingstarted"></a>
 
@@ -67,12 +69,15 @@ print(grads.bias) # 60.0
 ```
 
 There are a few important things in the above example:
+
 * ``__init__`` method calls ``super().__init__()`` for initialization. This is required for any ``pax.Module``.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``model = model.update(params)`` causes ``model`` to use ``params`` in the forward computation.
 * ``loss_fn`` returns the updated `model` in its output.
-* ``net.parameters()`` return a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. This is needed to make sure that we only compute gradients w.r.t trainable parameters.
+* ``net.parameters()`` returns a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. 
+This is needed to make sure that we only compute gradients w.r.t trainable parameters.
+
 
 ## Pax and other libraries <a id="paxandfriends"></a>
 
@@ -98,14 +103,16 @@ Pax learns a lot from other libraries too:
 
 A good way to learn about ``Pax`` is to see examples in the [examples/](./examples) directory:
 
-* ``char_rnn.py``: train a RNN language model on TPU.
-* ``transformer/``: train a Transformer language model on TPU.
-* ``mnist.py``: train an image classifier on MNIST dataset.
-* ``notebooks/VAE.ipynb``: train a variational autoencoder.
-* ``notebooks/DCGAN.ipynb``: train a DCGAN model on Celeb-A dataset.
-* ``mnist_mixed_precision.py``: train an image classifier with mixed precision (experimental).
 
-
+| Path     |      Description      |
+|----------|-----------------------|
+| ``char_rnn.py``  |  train a RNN language model on TPU.             |
+| ``transformer/`` |    train a Transformer language model on TPU.   |
+| ``mnist.py``     | train an image classifier on `MNIST` dataset.   |
+| ``notebooks/VAE.ipynb``   | train a variational autoencoder.       |
+| ``notebooks/DCGAN.ipynb`` | train a DCGAN model on `Celeb-A` dataset. |
+| ``notebooks/fine_tuning_resnet18.ipynb``    | finetune a pretrained ResNet18 model on `cats vs dogs` dataset. |
+| ``mnist_mixed_precision.py`` (experimental) | train an image classifier with mixed precision. |
 
 
 
@@ -131,6 +138,7 @@ If your model uses these converted haiku modules, you have to call the `hk_init`
 
 In additional, Pax provides many functions that avoid the dummy input problems: ``pax.haiku.{linear, layer_norm, batch_norm_2d, lstm, gru, embed, conv_1d, conv_2d, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
 We intent to add more functions like this in the near futures.
+
 
 ## Optimizers<a id="optimizers"></a>
 
@@ -170,6 +178,7 @@ SGD = pax.optim.from_optax(
 )
 ```
 
+
 ## Fine-tunning models<a id="finetune"></a>
 
 Pax's Module provides the ``freeze`` method to convert all trainable parameters to non-trainable states.
@@ -186,6 +195,7 @@ net.modules[2] = pax.nn.Linear(64, 2)
 # freeze the first layer.
 net.modules[0] = net.modules[0].freeze() 
 ```
+
 After this, ``net.parameters()`` will only return trainable parameters of the last layer.
 
 
