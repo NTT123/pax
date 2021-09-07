@@ -1,3 +1,5 @@
+from typing import Optional
+
 import haiku as hk
 import jax.numpy as jnp
 import numpy as np
@@ -26,7 +28,7 @@ class Linear(Module):
         w_init=initializers.variance_scaling(),
         b_init=jnp.zeros,
         *,
-        name=None,
+        name: Optional[str] = None,
         rng_key: jnp.ndarray = None,
     ):
         """
