@@ -182,7 +182,6 @@ class Module:
 
         Arguments:
             keep: type of leaves that will be kept ("parameter" or "state").
-
         """
         assert keep in ["parameter", "state"]
         fields = vars(self)
@@ -321,7 +320,7 @@ class Module:
         A module can customize its summary by overriding this method.
 
         Arguments:
-            - return_list: return a list of lines instead of a joined string.
+            return_list: return a list of lines instead of a joined string.
 
 
         Example:
