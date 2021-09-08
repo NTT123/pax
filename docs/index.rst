@@ -31,7 +31,6 @@ and easy to use while preserving benefits from Jax.
                self.velocity,
                grads
          )
-         params = model.parameters()
          new_params = jax.tree_map(lambda p, v: p - v, params, self.velocity)
          return new_params
 

@@ -58,15 +58,14 @@ def test_sgd():
                 "velocity", jax.tree_map(lambda x: jnp.zeros_like(x), params)
             )
 
-        def step(self, grads: pax.Module, model: pax.Module):
+        def step(self, grads: pax.Module, params: pax.Module):
             self.velocity = jax.tree_map(
                 lambda v, g: v * self.momentum + g * self.learning_rate,
                 self.velocity,
                 grads,
             )
-            params = model.parameters()
             new_params = jax.tree_map(lambda p, v: p - v, params, self.velocity)
-            return model.update(new_params)
+            return new_params
 
     f = pax.nn.Linear(2, 2)
     sgd = SGD(f, 0.9, 1e-4)
