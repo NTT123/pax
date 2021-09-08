@@ -13,8 +13,8 @@ from ..rng import next_rng_key
 class Conv1D(Module):
     """Conv1D Module."""
 
-    w: jnp.ndarray
-    b: jnp.ndarray
+    weight: jnp.ndarray
+    bias: jnp.ndarray
 
     in_features: int
     out_features: int
@@ -28,7 +28,8 @@ class Conv1D(Module):
         rate: Union[int, Sequence[int]] = 1,
         padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
         with_bias: bool = True,
-        w_init: Optional[hk.initializers.Initializer] = None,  # TODO: remove hk
+        # TODO: remove hk
+        w_init: Optional[hk.initializers.Initializer] = None,
         b_init: Optional[hk.initializers.Initializer] = None,
         data_format: Optional[str] = "NWC",
         mask: Optional[jnp.ndarray] = None,
@@ -76,7 +77,10 @@ class Conv1D(Module):
             x = np.empty(shape=(1, 1, in_features), dtype=jnp.float32)
         params = self.fwd.init(rng_key, x)
         self.register_parameter("weight", params["conv1_d"]["w"])
-        self.register_parameter("bias", params["conv1_d"]["b"] if with_bias else None)
+        self.register_parameter(
+            "bias",
+            params["conv1_d"]["b"] if with_bias else None,
+        )
 
     def __call__(self, x):
         """Apply convolution."""
@@ -86,8 +90,8 @@ class Conv1D(Module):
 class Conv2D(Module):
     """Conv2D module."""
 
-    w: jnp.ndarray
-    b: jnp.ndarray
+    weight: jnp.ndarray
+    bias: jnp.ndarray
 
     in_features: int
     out_features: int
@@ -149,12 +153,15 @@ class Conv2D(Module):
         elif data_format == "NHWC":
             x = np.empty(shape=(1, 1, 1, in_features), dtype=jnp.float32)
         params = self.fwd.init(rng_key, x)
-        self.register_parameter("w", params["conv2_d"]["w"])
-        self.register_parameter("b", params["conv2_d"]["b"] if with_bias else None)
+        self.register_parameter("weight", params["conv2_d"]["w"])
+        self.register_parameter(
+            "bias",
+            params["conv2_d"]["b"] if with_bias else None,
+        )
 
     def __call__(self, x):
         """Apply convolution."""
-        return self.fwd.apply({"conv2_d": {"w": self.w, "b": self.b}}, x)
+        return self.fwd.apply({"conv2_d": {"w": self.weight, "b": self.bias}}, x)
 
     def __repr__(self) -> str:
         info = {

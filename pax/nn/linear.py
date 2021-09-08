@@ -12,8 +12,8 @@ from ..rng import next_rng_key
 class Linear(Module):
     """A linear transformation is applied over the last dimension of the input."""
 
-    W: jnp.ndarray
-    b: jnp.ndarray
+    weight: jnp.ndarray
+    bias: jnp.ndarray
 
     # props
     in_dim: int
