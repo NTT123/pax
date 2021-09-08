@@ -6,7 +6,7 @@ from typing import List, Mapping, Tuple
 
 import jax
 import jax.numpy as jnp
-import optax
+import opax
 import pax
 import tensorflow_datasets as tfds
 from tqdm.auto import tqdm
@@ -62,7 +62,7 @@ def test_loss_fn(model: ConvNet, batch: Batch):
 
 
 @jax.jit
-def update_fn(model: ConvNet, optimizer: pax.Optimizer, batch: Batch):
+def update_fn(model: ConvNet, optimizer: pax.Module, batch: Batch):
     params = model.parameters()
     grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(params, model, batch)
     model = model.update(
@@ -73,11 +73,9 @@ def update_fn(model: ConvNet, optimizer: pax.Optimizer, batch: Batch):
 
 net = ConvNet()
 print(net.summary())
-optimizer = pax.optim.from_optax(
-    optax.chain(
-        optax.clip_by_global_norm(1.0),
-        optax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
-    )
+optimizer = opax.chain(
+    opax.clip_by_global_norm(1.0),
+    opax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
 )(net.parameters())
 
 

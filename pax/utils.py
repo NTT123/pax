@@ -8,13 +8,12 @@ import jax.numpy as jnp
 
 from . import rng
 from .module import Module
-from .optim import Optimizer
 
 T = TypeVar("T", bound="Module")
 
 LossFnOutput = Tuple[jnp.ndarray, Tuple[Any, T]]
 LossFn = Callable[[T, T, Any], LossFnOutput]
-UpdateFn = Callable[[T, Optimizer, Any], Tuple[Any, T, Optimizer]]
+UpdateFn = Callable[[T, Module, Any], Tuple[Any, T, Module]]
 
 
 def build_update_fn(loss_fn: LossFn) -> UpdateFn:
@@ -37,7 +36,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
     The returned ``update_fn`` function is:
 
-    >>> def _update_fn(model: T, optimizer: Optimizer, inputs: Any):
+    >>> def _update_fn(model: T, optimizer: Module, inputs: Any):
     ...     grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(
     ...         model.parameters(), model, inputs
     ...     )
@@ -59,7 +58,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         """
         )
 
-    def _update_fn(model: T, optimizer: Optimizer, inputs: Any):
+    def _update_fn(model: T, optimizer: Module, inputs: Any):
         """An update function.
 
         Note that: ``model`` and ``optimizer`` have internal states.

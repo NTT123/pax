@@ -230,28 +230,13 @@ Optimizer
 
 .. autosummary::
 
-    Optimizer
     from_optax
-    adamw
-    OptaxState
-    
-
-Optimizer
----------
-
-
-.. autoclass:: Optimizer
 
 
 from_optax
 ----------
 
 .. autofunction:: from_optax
-
-adamw
------
-
-.. autofunction:: adamw
 
 
 

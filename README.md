@@ -145,7 +145,7 @@ We intent to add more functions like this in the near futures.
 Pax implements optimizers in a stateful fashion. Bellow is a simple sgd optimizer with momentum.
 
 ```python
-class SGD(pax.Optimizer):
+class SGD(pax.Module):
     velocity: pax.Module
     learning_rate: float
     momentum: float 
@@ -167,6 +167,8 @@ class SGD(pax.Optimizer):
 ```
 
 Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally. Note that: ``self.register_state_subtree`` registers ``velocity`` as part of the pytree.
+
+Pax has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's github repository for more information. 
 
 Moreover, Pax provides the ``pax.optim.from_optax`` function that convert any [optax](https://optax.readthedocs.io/en/latest/) optimizer to a pax's Module.
 

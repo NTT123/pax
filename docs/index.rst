@@ -14,7 +14,7 @@ and easy to use while preserving benefits from Jax.
 
 .. code-block:: python
 
-   class SGD(pax.Optimizer):
+   class SGD(pax.Module):
       velocity: pax.Module
       learning_rate: float
       momentum: float 

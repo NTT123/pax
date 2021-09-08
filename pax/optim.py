@@ -1,7 +1,6 @@
 """Optax optimizers as Pax modules."""
 
 import logging
-from abc import abstractmethod
 from typing import Any, List, TypeVar
 
 import jax
@@ -11,21 +10,6 @@ import optax
 from .module import Module
 
 T = TypeVar("T", bound="Module")
-OptaxState = List[optax.OptState]
-
-
-class Optimizer(Module):
-    """The base class for all Pax's Optimizers."""
-
-    state: Any
-
-    @abstractmethod
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-
-    @abstractmethod
-    def step(self, grads: T, params: T) -> T:
-        pass
 
 
 def from_optax(optax_obj: optax.GradientTransformation):
@@ -37,8 +21,8 @@ def from_optax(optax_obj: optax.GradientTransformation):
     Returns:
         OptaxOptimizer: A Module optimizer."""
 
-    class OptaxOptimizer(Optimizer):
-        state: OptaxState
+    class OptaxOptimizer(Module):
+        state: List[optax.OptState]
 
         def __init__(self, params: T):
             super().__init__()
@@ -64,12 +48,3 @@ def from_optax(optax_obj: optax.GradientTransformation):
             return new_params
 
     return OptaxOptimizer
-
-
-def adamw(
-    params: T, learning_rate: float = 1e-4, weight_decay: float = 1e-4
-) -> Optimizer:
-    """Create an adam optimizer from optax."""
-    return from_optax(
-        optax.adamw(learning_rate=learning_rate, weight_decay=weight_decay)
-    )(params)

@@ -20,8 +20,8 @@ def convert_conv(conv, name=None):
         data_format="NCHW",
         name=name,
     )
-    assert pax_conv.w.shape == weight.shape
-    pax_conv.w = weight
+    assert pax_conv.weight.shape == weight.shape
+    pax_conv.weight = weight
     return pax_conv
 
 

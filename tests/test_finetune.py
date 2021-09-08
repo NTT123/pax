@@ -3,7 +3,7 @@ from typing import Any, List
 import jax
 import jax.numpy as jnp
 import numpy as np
-import optax
+import opax
 import pax
 
 
@@ -41,10 +41,10 @@ def test_finetune():
         net.layers[i] = net.layers[i].freeze()
 
     # net.layers[-1] = pax.nn.Linear(2, 10)
-    optimizer = pax.optim.from_optax(optax.adam(1e-2))(net.parameters())
+    optimizer = opax.adam(1e-2)(net.parameters())
 
     @jax.jit
-    def update_fn(model: MLP, optimizer: pax.Optimizer, x):
+    def update_fn(model: MLP, optimizer: pax.Module, x):
         params = model.parameters()
         grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(params, model, x)
         model = model.update(

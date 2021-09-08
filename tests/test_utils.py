@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import numpy as np
+import opax
 import pax
 from pax.utils import LossFnOutput, RngSeq
 
@@ -14,7 +15,7 @@ def test_util_update_fn():
         return loss, (loss, model)
 
     net = pax.nn.Linear(2, 1)
-    opt = pax.optim.adamw(net.parameters(), learning_rate=1e-1)
+    opt = opax.adamw(learning_rate=1e-1)(net.parameters())
     update_fn = jax.jit(pax.utils.build_update_fn(loss_fn))
     x = np.random.normal(size=(32, 2))
     y = np.random.normal(size=(32, 1))

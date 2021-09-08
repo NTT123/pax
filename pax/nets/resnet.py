@@ -9,6 +9,7 @@ import jax.numpy as jnp
 from pax.haiku import max_pool
 from pax.nn.linear import Linear
 
+from .. import initializers
 from ..module import Module
 from ..nn import BatchNorm2D, Conv2D
 
@@ -198,7 +199,7 @@ class ResNet(Module):
         check_length(4, channels_per_group, "channels_per_group")
 
         logits_config = dict(logits_config or {})
-        logits_config.setdefault("w_init", jnp.zeros)
+        logits_config.setdefault("w_init", initializers.zeros)
 
         initial_conv_config = dict(initial_conv_config or {})
         initial_conv_config.setdefault("in_features", 3)
