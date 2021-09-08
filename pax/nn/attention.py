@@ -1,12 +1,12 @@
-## Source: https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/attention.py
+# Source: https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/attention.py
 from typing import Optional
 
-import haiku as hk
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pax
 
+from .. import initializers
 from ..module import Module
 
 
@@ -27,7 +27,7 @@ class MultiHeadAttention(Module):
         self.key_size = key_size
         self.value_size = key_size
         self.model_size = key_size * num_heads
-        w_init = hk.initializers.VarianceScaling(w_init_scale)
+        w_init = initializers.variance_scaling(w_init_scale)
         self.query_projection = pax.nn.Linear(
             self.model_size, self.model_size, w_init=w_init, name="qry_proj"
         )

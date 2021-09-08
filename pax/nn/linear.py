@@ -1,6 +1,6 @@
 from typing import Optional
 
-import haiku as hk
+import jax
 import jax.numpy as jnp
 import numpy as np
 
@@ -25,8 +25,8 @@ class Linear(Module):
         in_dim: int,
         out_dim: int,
         with_bias: bool = True,
-        w_init=initializers.variance_scaling(),
-        b_init=jnp.zeros,
+        w_init=None,
+        b_init=None,
         *,
         name: Optional[str] = None,
         rng_key: jnp.ndarray = None,
@@ -46,29 +46,27 @@ class Linear(Module):
         self.weight = None
         self.bias = None
         self.with_bias = with_bias
-        self.f = hk.without_apply_rng(
-            hk.transform(
-                lambda x: hk.Linear(out_dim, with_bias, w_init=w_init, b_init=b_init)(x)
-            )
-        )
+
         rng_key = next_rng_key() if rng_key is None else rng_key
-        params = self.f.init(rng_key, np.empty((1, self.in_dim), dtype=np.float32))[
-            "linear"
-        ]
-        self.register_parameter("weight", params["w"])
+        w_init = w_init or initializers.variance_scaling(1.0)
+        b_init = initializers.zeros
+        rng_key_w, rng_key_b = jax.random.split(rng_key)
+        self.register_parameter(
+            "weight", w_init((in_dim, out_dim), jnp.float32, rng_key_w)
+        )
         if self.with_bias:
-            self.register_parameter("bias", params["b"])
+            self.register_parameter("bias", b_init((out_dim,), jnp.float32, rng_key_b))
 
     def __call__(self, x: np.ndarray) -> jnp.ndarray:
         """Applies a linear transformation to the inputs along the last dimension.
 
         Arguments:
             x: The nd-array to be transformed.
-
-        Returns:
-            The transformed input.
         """
-        return self.f.apply({"linear": {"w": self.weight, "b": self.bias}}, x)
+        x = jnp.dot(x, self.weight)
+        if self.with_bias:
+            x = x + self.bias
+        return x
 
     def __repr__(self):
         info = {

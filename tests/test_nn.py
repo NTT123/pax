@@ -126,6 +126,15 @@ def test_linear():
     assert fc.bias is not None
 
 
+def test_linear_1():
+    fc = pax.nn.Linear(5, 7, b_init=pax.initializers.random_normal())
+    rng_key = jax.random.PRNGKey(42)
+    x = jax.random.normal(rng_key, (32, 5), dtype=jnp.float32)
+    y = fc(x)
+    expected_y = jnp.matmul(x, fc.weight) + fc.bias
+    np.testing.assert_allclose(expected_y, y)
+
+
 def test_linear_wo_bias():
     fc = pax.nn.Linear(5, 7, with_bias=False)
     x = jnp.zeros((32, 5), dtype=jnp.float32)

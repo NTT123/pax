@@ -133,7 +133,6 @@ Haiku Modules
     from_haiku
     batch_norm_2d
     layer_norm
-    linear
     lstm
     gru
     embed
@@ -163,12 +162,6 @@ layer_norm
 ----------
 
 .. autofunction:: layer_norm
-
-    
-linear
-------
-
-.. autofunction:: linear
 
     
 lstm

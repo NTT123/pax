@@ -134,16 +134,6 @@ def layer_norm(num_channels: int, axis: int = -1):
     return LayerNorm(x)
 
 
-def linear(in_dim: int, out_dim: int, with_bias: bool = True):
-    """Return a converted Linear module."""
-    Linear = from_haiku(hk.Linear, delay=False)(
-        output_size=out_dim, with_bias=with_bias
-    )
-    shape = (1, in_dim)
-    x = np.empty(shape, dtype=np.float32)
-    return Linear(x)
-
-
 def lstm(hidden_dim: int):
     """Return a converted LSTM module."""
     LSTM = from_haiku(hk.LSTM, delay=False)(hidden_size=hidden_dim)
@@ -336,23 +326,29 @@ def avg_pool(window_shape, strides, padding, channel_axis=-1):
         padding=padding,
         channel_axis=channel_axis,
     )
-    f = lambda x: hk.avg_pool(
-        x,
-        window_shape=window_shape,
-        strides=strides,
-        padding=padding,
-        channel_axis=channel_axis,
-    )
+
+    def f(x):
+        return hk.avg_pool(
+            x,
+            window_shape=window_shape,
+            strides=strides,
+            padding=padding,
+            channel_axis=channel_axis,
+        )
+
     return Lambda(f)
 
 
 def max_pool(window_shape, strides, padding, channel_axis=-1):
     """Return a converted MaxPool module."""
-    f = lambda x: hk.max_pool(
-        x,
-        window_shape=window_shape,
-        strides=strides,
-        padding=padding,
-        channel_axis=channel_axis,
-    )
+
+    def f(x):
+        return hk.max_pool(
+            x,
+            window_shape=window_shape,
+            strides=strides,
+            padding=padding,
+            channel_axis=channel_axis,
+        )
+
     return Lambda(f)
