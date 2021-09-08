@@ -122,7 +122,9 @@ def update_step(prev, batch: jnp.ndarray):
         model.parameters(), model, batch
     )
     grads = jax.lax.pmean(grads, axis_name="i")
-    model = optimizer.step(grads, model)
+    model = model.update(
+        optimizer.step(grads, model.parameters()),
+    )
     return (model, optimizer), loss
 
 

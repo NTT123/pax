@@ -47,7 +47,9 @@ def test_finetune():
     def update_fn(model: MLP, optimizer: pax.Optimizer, x):
         params = model.parameters()
         grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(params, model, x)
-        model = optimizer.step(grads, model)
+        model = model.update(
+            optimizer.step(grads, model.parameters()),
+        )
         return loss, model, optimizer
 
     old_layers = net.layers

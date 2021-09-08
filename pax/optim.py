@@ -24,7 +24,7 @@ class Optimizer(Module):
         super().__init__()
 
     @abstractmethod
-    def step(self, grads: T, model: T) -> T:
+    def step(self, grads: T, params: T) -> T:
         pass
 
 
@@ -44,7 +44,7 @@ def from_optax(optax_obj: optax.GradientTransformation):
             super().__init__()
             self.register_state_subtree("state", optax_obj.init(params))
 
-        def step(self, grads: T, model: T) -> T:
+        def step(self, grads: T, params: T) -> T:
             """Update model parameters and optimizer state.
 
             Arguments:
@@ -52,9 +52,8 @@ def from_optax(optax_obj: optax.GradientTransformation):
                 params: parameter tree.
 
             Returns:
-                new_model: updated model.
+                new_params: updated params.
             """
-            params = model.parameters()
             if jax.tree_structure(params) != jax.tree_structure(grads):
                 logging.error(
                     """parameter's structure is different from gradient's structure. 
@@ -62,8 +61,7 @@ def from_optax(optax_obj: optax.GradientTransformation):
                 )
             updates, self.state = optax_obj.update(grads, self.state, params)
             new_params = optax.apply_updates(params, updates)
-            new_model = model.update(new_params)
-            return new_model
+            return new_params
 
     return OptaxOptimizer
 

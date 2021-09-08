@@ -156,15 +156,14 @@ class SGD(pax.Optimizer):
         self.learning_rate = learning_rate
         self.register_state_subtree('velocity', jax.tree_map(lambda x: jnp.zeros_like(x), params))
         
-    def step(self, grads: pax.Module, model: pax.Module):
+    def step(self, grads: pax.Module, params: pax.Module):
         self.velocity = jax.tree_map(
             lambda v, g: v * self.momentum + g * self.learning_rate,
             self.velocity,
             grads
         )
-        params = model.parameters()
         new_params = jax.tree_map(lambda p, v: p - v, params, self.velocity)
-        return model.update(new_params)
+        return new_params
 ```
 
 Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally. Note that: ``self.register_state_subtree`` registers ``velocity`` as part of the pytree.

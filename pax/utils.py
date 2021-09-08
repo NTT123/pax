@@ -41,7 +41,9 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
     ...     grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(
     ...         model.parameters(), model, inputs
     ...     )
-    ...     model = optimizer.step(grads, model)
+    ...     model = model.update(
+    ...         optimizer.step(grads, model.parameters()),
+    ...     )
     ...     return loss, model, optimizer
     """
 
@@ -77,7 +79,9 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(
             model.parameters(), model, inputs
         )
-        model = optimizer.step(grads, model)
+        model = model.update(
+            optimizer.step(grads, model.parameters()),
+        )
         return loss, model, optimizer
 
     return _update_fn
