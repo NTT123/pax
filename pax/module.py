@@ -54,7 +54,7 @@ class Module:
     """
 
     # Field Name To Kind
-    _name_to_kind: Dict[str, PaxFieldKind]
+    _name_to_kind: Dict[str, PaxFieldKind] = None
     _training: bool = True
     name: str = None
 
