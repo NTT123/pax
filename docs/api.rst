@@ -131,7 +131,6 @@ Haiku Modules
 
 .. autosummary::
     from_haiku
-    batch_norm_2d
     lstm
     gru
     embed
@@ -151,10 +150,6 @@ from_haiku
 
 See https://dm-haiku.readthedocs.io/en/latest/api.html#common-modules for more information about converted modules.
 
-batch_norm_2d
--------------
-
-.. autofunction:: batch_norm_2d
 
     
 lstm

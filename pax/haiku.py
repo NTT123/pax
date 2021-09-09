@@ -107,22 +107,6 @@ def from_haiku(
     return haiku_module_builder
 
 
-def batch_norm_2d(
-    num_channels: int, axis: int = -1, decay_rate=0.99, cross_replica_axis=None
-):
-    """Return a converted BatchNorm module."""
-    BatchNorm = from_haiku(hk.BatchNorm, delay=False, pass_is_training=True)(
-        create_scale=True,
-        create_offset=True,
-        decay_rate=decay_rate,
-        cross_replica_axis=cross_replica_axis,
-    )
-    shape = [1, 1, 1, 1]
-    shape[axis] = num_channels
-    x = np.ones((num_channels,), dtype=np.float32).reshape(shape)
-    return BatchNorm(x)
-
-
 def lstm(hidden_dim: int):
     """Return a converted LSTM module."""
     LSTM = from_haiku(hk.LSTM, delay=False)(hidden_size=hidden_dim)

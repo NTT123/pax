@@ -1,6 +1,6 @@
 """train a handwritten digit classifier."""
 
-from typing import List, Mapping
+from typing import List, Mapping, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -22,26 +22,23 @@ weight_decay = 1e-4
 class ConvNet(pax.Module):
     """ConvNet module."""
 
-    convs: List[pax.nn.Conv2D] = None
-    bns: List[pax.nn.BatchNorm] = None
+    layers: List[Tuple[pax.nn.Conv2D, pax.nn.BatchNorm2D]]
     output: pax.nn.Conv2D
 
     def __init__(self):
         super().__init__()
-        self.register_module_subtree(
-            "convs",
-            [
-                pax.nn.Conv2D((1 if i == 0 else 32), 32, 6, padding="VALID")
-                for i in range(5)
-            ],
-        )
-        self.register_module_subtree(
-            "bns", [pax.haiku.batch_norm_2d(32) for _ in range(5)]
-        )
+        layers = []
+        for i in range(5):
+            conv_in = 1 if i == 0 else 32
+            conv = pax.nn.Conv2D(conv_in, 32, 6, padding="VALID")
+            bn = pax.nn.BatchNorm2D(32)
+            layers.append((conv, bn))
+
+        self.register_module_subtree("layers", layers)
         self.output = pax.nn.Conv2D(32, 10, 3, padding="VALID")
 
     def __call__(self, x: jnp.ndarray):
-        for conv, bn in zip(self.convs, self.bns):
+        for conv, bn in self.layers:
             x = bn(conv(x))
             x = jax.nn.relu(x)
         x = self.output(x)

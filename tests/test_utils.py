@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import numpy as np
 import opax
 import pax
-from pax.utils import LossFnOutput, RngSeq
+from pax.utils import EMA, LossFnOutput, RngSeq
 
 
 def test_util_update_fn():
@@ -43,3 +43,22 @@ def test_Rng_Seq():
     assert r3.tolist() == r4.tolist()
     h3 = rng_seq._rng_key
     assert h2.tolist() == h3.tolist(), "o update internal state in `eval` mode"
+
+
+def test_ema_debias():
+    ema = EMA(jnp.array(1.0), 0.9, True)
+    assert ema.debias.item() == False
+    assert ema.averages.item() == 1.0
+    ema(jnp.array(2.0))
+    assert ema.averages.item() == 2.0
+    assert ema.debias.item() == True
+    ema(jnp.array(1.0))
+    np.testing.assert_almost_equal(ema.averages.item(), 0.9 * 2.0 + 0.1 * 1.0)
+
+
+def test_ema_bias():
+    ema = EMA(jnp.array(1.0), 0.9, False)
+    assert ema.debias is None
+    assert ema.averages.item() == 1.0
+    ema(jnp.array(2.0))
+    np.testing.assert_almost_equal(ema.averages.item(), 0.1 * 2.0 + 0.9 * 1.0)
