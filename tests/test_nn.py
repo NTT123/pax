@@ -187,3 +187,222 @@ def test_sequential_all_jax():
     x = jnp.zeros((2, 1))
     y = net(x)
     assert y.shape == (2, 1)
+
+
+def test_native_conv1d_1():
+    rng_key = jax.random.PRNGKey(42)
+    conv1d = pax.nn.Conv1D(
+        in_features=3,
+        out_features=5,
+        kernel_shape=3,
+        stride=1,
+        rate=1,
+        padding=[(1, 1)],
+        with_bias=True,
+        data_format="NWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 6, 3))
+    y = conv1d(x)
+    assert y.shape == (2, 6, 5)
+
+
+def test_native_conv1d_2():
+    rng_key = jax.random.PRNGKey(42)
+    conv1d = pax.nn.Conv1D(
+        in_features=7,
+        out_features=5,
+        kernel_shape=3,
+        stride=1,
+        rate=1,
+        padding=[(1, 1)],
+        with_bias=False,
+        data_format="NWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 6, 7))
+    y = conv1d(x)
+    assert y.shape == (2, 6, 5)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv1D(5, 3, 1, 1, [(1, 1)], False, data_format="NWC")(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply({"conv1_d": {"w": conv1d.weight}}, rng_key, x)
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv1d_3():
+    rng_key = jax.random.PRNGKey(42)
+    conv1d = pax.nn.Conv1D(
+        in_features=7,
+        out_features=5,
+        kernel_shape=3,
+        stride=2,
+        rate=1,
+        padding=[(1, 1)],
+        with_bias=False,
+        data_format="NWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 6, 7))
+    y = conv1d(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv1D(5, 3, 2, 1, [(1, 1)], False, data_format="NWC")(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply({"conv1_d": {"w": conv1d.weight}}, rng_key, x)
+    assert params["conv1_d"]["w"].shape == conv1d.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv1d_4():
+    rng_key = jax.random.PRNGKey(42)
+    conv1d = pax.nn.Conv1D(
+        in_features=7,
+        out_features=5,
+        kernel_shape=30,
+        stride=2,
+        rate=3,
+        padding="SAME",
+        with_bias=False,
+        data_format="NWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 6, 7))
+    y = conv1d(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv1D(5, 30, 2, 3, "SAME", False, data_format="NWC")(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply({"conv1_d": {"w": conv1d.weight}}, rng_key, x)
+    assert params["conv1_d"]["w"].shape == conv1d.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv2d_1():
+    rng_key = jax.random.PRNGKey(42)
+    conv1d = pax.nn.Conv2D(
+        in_features=3,
+        out_features=5,
+        kernel_shape=3,
+        stride=1,
+        rate=1,
+        padding=[(1, 1), (1, 1)],
+        with_bias=True,
+        data_format="NHWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 6, 7, 3))
+    y = conv1d(x)
+    assert y.shape == (2, 6, 7, 5)
+
+
+def test_native_conv2d_2():
+    rng_key = jax.random.PRNGKey(42)
+    conv2d = pax.nn.Conv2D(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(20, 30),
+        stride=(2, 3),
+        rate=(2, 3),
+        padding="SAME",
+        with_bias=False,
+        data_format="NHWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 40, 60, 7))
+    y = conv2d(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv2D(
+            5, (20, 30), (2, 3), (2, 3), "SAME", False, data_format="NHWC"
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply({"conv2_d": {"w": conv2d.weight}}, rng_key, x)
+    assert params["conv2_d"]["w"].shape == conv2d.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv2d_3():
+    rng_key = jax.random.PRNGKey(42)
+    conv2d = pax.nn.Conv2D(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(20, 30),
+        stride=(2, 3),
+        rate=(2, 3),
+        padding="VALID",
+        with_bias=False,
+        data_format="NHWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 40, 60, 7))
+    y = conv2d(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv2D(
+            5, (20, 30), (2, 3), (2, 3), "VALID", False, data_format="NHWC"
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply({"conv2_d": {"w": conv2d.weight}}, rng_key, x)
+    assert params["conv2_d"]["w"].shape == conv2d.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv2d_4():
+    rng_key = jax.random.PRNGKey(42)
+    conv2d = pax.nn.Conv2D(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(20, 30),
+        stride=(1, 1),
+        rate=(2, 3),
+        padding="VALID",
+        with_bias=False,
+        data_format="NHWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 40, 60, 7))
+    y = conv2d(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv2D(
+            5, (20, 30), (1, 1), (2, 3), "VALID", False, data_format="NHWC"
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply({"conv2_d": {"w": conv2d.weight}}, rng_key, x)
+    assert params["conv2_d"]["w"].shape == conv2d.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv2d_5():
+    rng_key = jax.random.PRNGKey(42)
+    conv2d = pax.nn.Conv2D(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(10, 20),
+        stride=(1, 1),
+        rate=(1, 3),
+        padding="VALID",
+        with_bias=False,
+        data_format="NHWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 40, 60, 7))
+    y = conv2d(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv2D(
+            5, (10, 20), (1, 1), (1, 3), "VALID", False, data_format="NHWC"
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply({"conv2_d": {"w": conv2d.weight}}, rng_key, x)
+    assert params["conv2_d"]["w"].shape == conv2d.weight.shape
+    np.testing.assert_allclose(y, hk_y)

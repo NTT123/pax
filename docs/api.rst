@@ -76,12 +76,30 @@ Linear
    :members:
 
 
-Sequential
-----------
 
+Convolution
+-----------
 
-.. autoclass:: Sequential
+.. autoclass:: Conv1D
    :members:
+
+.. autoclass:: Conv2D
+   :members:
+
+
+
+BatchNorm
+---------
+
+.. autoclass:: BatchNorm
+   :members:
+
+.. autoclass:: BatchNorm1D
+   :members:
+
+.. autoclass:: BatchNorm2D
+   :members:
+
 
 
 LayerNorm
@@ -100,27 +118,14 @@ MultiHeadAttention
    :members:
 
 
-BatchNorm
----------
 
-.. autoclass:: BatchNorm
+Sequential
+----------
+
+
+.. autoclass:: Sequential
    :members:
 
-.. autoclass:: BatchNorm1D
-   :members:
-
-.. autoclass:: BatchNorm2D
-   :members:
-
-
-Convolution
------------
-
-.. autoclass:: Conv1D
-   :members:
-
-.. autoclass:: Conv2D
-   :members:
 
 
 Haiku Modules
@@ -134,8 +139,6 @@ Haiku Modules
     lstm
     gru
     embed
-    conv_1d
-    conv_2d
     conv_1d_transpose
     conv_2d_transpose
     avg_pool
@@ -169,18 +172,6 @@ embed
 
 .. autofunction:: embed
 
-    
-conv_1d
--------
-
-.. autofunction:: conv_1d
-
-
-    
-conv_2d
--------
-
-.. autofunction:: conv_2d
 
     
 conv_1d_transpose
