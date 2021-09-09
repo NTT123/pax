@@ -16,7 +16,7 @@ def convert_conv(conv, name=None):
         kernel_shape=conv.kernel_size,
         stride=conv.stride,
         with_bias=False,
-        padding=conv.padding,
+        padding=[(conv.padding[0],) * 2, (conv.padding[1],) * 2],
         data_format="NCHW",
         name=name,
     )

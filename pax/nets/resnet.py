@@ -36,7 +36,7 @@ class ResnetBlock(Module):
                 kernel_shape=1,
                 stride=stride,
                 with_bias=False,
-                padding=(0, 0),
+                padding=[(0, 0), (0, 0)],
                 data_format="NCHW",
                 name="proj_conv",
             )
@@ -51,7 +51,7 @@ class ResnetBlock(Module):
             kernel_shape=1 if bottleneck else 3,
             stride=1 if bottleneck else stride,
             with_bias=False,
-            padding=(0, 0) if bottleneck else (1, 1),
+            padding=[(0, 0), (0, 0)] if bottleneck else [(1, 1), (1, 1)],
             data_format="NCHW",
             name="conv1",
         )
@@ -66,7 +66,7 @@ class ResnetBlock(Module):
             kernel_shape=3,
             stride=stride if bottleneck else 1,
             with_bias=False,
-            padding=(1, 1),
+            padding=[(1, 1), (1, 1)],
             data_format="NCHW",
             name="conv2",
         )
@@ -84,7 +84,7 @@ class ResnetBlock(Module):
                 kernel_shape=1,
                 stride=1,
                 with_bias=False,
-                padding=(0, 0),
+                padding=[(0, 0), (0, 0)],
                 data_format="NCHW",
                 name="conv3",
             )
@@ -207,7 +207,7 @@ class ResNet(Module):
         initial_conv_config.setdefault("kernel_shape", 7)
         initial_conv_config.setdefault("stride", 2)
         initial_conv_config.setdefault("with_bias", False)
-        initial_conv_config.setdefault("padding", (3, 3))
+        initial_conv_config.setdefault("padding", [(3, 3), (3, 3)])
         initial_conv_config.setdefault("data_format", "NCHW")
 
         self.initial_conv = Conv2D(**initial_conv_config, name="conv1")
