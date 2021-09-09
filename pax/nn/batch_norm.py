@@ -37,6 +37,8 @@ class BatchNorm(Module):
         data_format: str = None,
         reduced_axes=None,
         param_shape=None,
+        *,
+        name: str = None,
     ):
         """Create a new BatchNorm module.
 
@@ -50,7 +52,7 @@ class BatchNorm(Module):
             reduced_axes: list of axes that will be reduced in the `jnp.mean` computation.
             param_shape: the shape of parameters.
         """
-        super().__init__()
+        super().__init__(name=name)
         assert 0 <= decay_rate <= 1
 
         self.num_channels = num_channels
@@ -126,6 +128,8 @@ class BatchNorm1D(BatchNorm):
         decay_rate: float = 0.9,
         eps: float = 1e-5,
         data_format: str = "NWC",
+        *,
+        name: str = None,
     ):
         assert data_format in ["NWC", "NCW"], "expecting a correct `data_format`"
 
@@ -147,6 +151,7 @@ class BatchNorm1D(BatchNorm):
             data_format=data_format,
             param_shape=param_shape,
             reduced_axes=reduced_axes,
+            name=name,
         )
 
 
@@ -161,6 +166,8 @@ class BatchNorm2D(BatchNorm):
         decay_rate: float = 0.9,
         eps: float = 1e-5,
         data_format: str = "NHWC",
+        *,
+        name: str = None,
     ):
         assert data_format in ["NHWC", "NCHW"], "expecting a correct `data_format`"
 
@@ -182,4 +189,5 @@ class BatchNorm2D(BatchNorm):
             data_format=data_format,
             param_shape=param_shape,
             reduced_axes=reduced_axes,
+            name=name,
         )

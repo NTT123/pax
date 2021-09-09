@@ -38,7 +38,7 @@ def convert_bn(bn, name=None):
         create_scale=True,
         decay_rate=0.9,
         eps=1e-5,
-        data_format="NC...",
+        data_format="NCHW",
         name=name,
     )
     assert pax_bn.scale.shape == weight.shape

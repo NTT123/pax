@@ -41,7 +41,7 @@ class ResnetBlock(Module):
                 name="proj_conv",
             )
             self.proj_batchnorm = BatchNorm2D(
-                out_channels, True, True, 0.9, data_format="NC...", name="proj_bn"
+                out_channels, True, True, 0.9, data_format="NCHW", name="proj_bn"
             )
 
         channel_div = 4 if bottleneck else 1
@@ -57,7 +57,7 @@ class ResnetBlock(Module):
         )
 
         bn_0 = BatchNorm2D(
-            out_channels, True, True, 0.9, data_format="NC...", name="bn1"
+            out_channels, True, True, 0.9, data_format="NCHW", name="bn1"
         )
 
         conv_1 = Conv2D(
@@ -72,7 +72,7 @@ class ResnetBlock(Module):
         )
 
         bn_1 = BatchNorm2D(
-            out_channels, True, True, 0.9, data_format="NC...", name="bn2"
+            out_channels, True, True, 0.9, data_format="NCHW", name="bn2"
         )
 
         layers = ((conv_0, bn_0), (conv_1, bn_1))
@@ -94,7 +94,7 @@ class ResnetBlock(Module):
                 True,
                 0.9,
                 scale_init=jnp.zeros,
-                data_format="NC...",
+                data_format="NCHW",
                 name="bn3",
             )
             layers = layers + ((conv_2, bn_2))
@@ -217,7 +217,7 @@ class ResNet(Module):
             True,
             True,
             0.9,
-            data_format="NC...",
+            data_format="NCHW",
             name="bn1",
         )
 
