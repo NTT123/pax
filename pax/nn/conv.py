@@ -6,6 +6,7 @@ from typing import Optional, Sequence, Tuple, Union
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 from .. import initializers
 from ..module import Module
@@ -73,17 +74,18 @@ class Conv(Module):
         rng_key = next_rng_key() if rng_key is None else rng_key
         w_rng_key, b_rng_key = jax.random.split(rng_key)
 
-        if w_init is None:
-            w_init = initializers.truncated_normal()
-        if b_init is None:
-            b_init = initializers.zeros
-
         w_shape = [*kernel_shape, in_features, out_features]
         if ndim == 1:
             self.kernel_format = "WIO"
         else:
             self.kernel_format = "HWIO"
         self.kernel_dilation = (1,) * ndim
+
+        if w_init is None:
+            fan_in = np.prod(w_shape[:-1])
+            w_init = initializers.truncated_normal(stddev=1.0 / np.sqrt(fan_in))
+        if b_init is None:
+            b_init = initializers.zeros
 
         self.register_parameter("weight", w_init(w_shape, jnp.float32, w_rng_key))
         b_shape = [out_features]
