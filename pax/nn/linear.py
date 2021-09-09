@@ -48,7 +48,8 @@ class Linear(Module):
         self.with_bias = with_bias
 
         rng_key = next_rng_key() if rng_key is None else rng_key
-        w_init = w_init or initializers.variance_scaling(1.0)
+        if w_init is None:
+            w_init = initializers.truncated_normal(stddev=1.0 / np.sqrt(self.in_dim))
         b_init = initializers.zeros
         rng_key_w, rng_key_b = jax.random.split(rng_key)
         self.register_parameter(
