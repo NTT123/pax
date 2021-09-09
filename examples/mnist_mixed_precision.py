@@ -78,7 +78,8 @@ def update_fn(model: ConvNet, optimizer: pax.Module, batch: Batch):
 net = ConvNet()
 
 
-half = jnp.float16  # On TPU this should be jnp.bfloat16.
+# TODO: check why this makes training so slow on CPU.
+half = jnp.float16  # or bfloat16
 full = jnp.float32
 linear_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=full)
 batchnorm_policy = jmp.Policy(compute_dtype=full, param_dtype=full, output_dtype=full)

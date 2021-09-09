@@ -10,7 +10,14 @@ install_requires = [
     "jmp",
 ]
 setup_requires = []
-tests_require = ["tensorflow", "tensorflow_datasets", "tqdm", "chex", "pytest"]
+tests_require = [
+    "tensorflow",
+    "tensorflow_datasets",
+    "tqdm",
+    "chex",
+    "pytest",
+    "opax@git+https://github.com/NTT123/opax.git",
+]
 
 setup(
     name="pax",

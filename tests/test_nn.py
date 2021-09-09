@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pax
+import pytest
 
 
 def test_batchnorm_train():
@@ -142,6 +143,14 @@ def test_linear_wo_bias():
     assert y.shape == (32, 7)
 
     assert fc.bias is None
+
+
+def test_linear_input_shape_error():
+    fc = pax.nn.Linear(2, 3, b_init=pax.initializers.random_normal())
+    rng_key = jax.random.PRNGKey(42)
+    x = jax.random.normal(rng_key, (2,), dtype=jnp.float32)
+    with pytest.raises(AssertionError):
+        y = fc(x)
 
 
 def test_sequential_mix():

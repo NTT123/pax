@@ -63,6 +63,7 @@ class Linear(Module):
         Arguments:
             x: The nd-array to be transformed.
         """
+        assert len(x.shape) >= 2, "expecting an input of shape `N...C`"
         x = jnp.dot(x, self.weight)
         if self.with_bias:
             x = x + self.bias
