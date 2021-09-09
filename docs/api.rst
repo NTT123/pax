@@ -132,7 +132,6 @@ Haiku Modules
 .. autosummary::
     from_haiku
     batch_norm_2d
-    layer_norm
     lstm
     gru
     embed
@@ -156,12 +155,6 @@ batch_norm_2d
 -------------
 
 .. autofunction:: batch_norm_2d
-
-    
-layer_norm
-----------
-
-.. autofunction:: layer_norm
 
     
 lstm

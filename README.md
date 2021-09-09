@@ -121,11 +121,13 @@ A good way to learn about ``Pax`` is to see examples in the [examples/](./exampl
 At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, BatchNorm1D, BatchNorm2D, Conv1D, Conv2D, LayerNorm, Sequential}``.
 We intent to add new modules in the near future.
 
-Fortunately, Pax also provides the ``pax.from_haiku`` function that can convert most of modules from ``dm-haiku`` library to ``pax.Module``. For example, to convert a dm-haiku LSTM Module:
+Pax also provides the ``pax.from_haiku`` function that can convert most of modules from ``dm-haiku`` library to ``pax.Module``. For example, to convert a dm-haiku LSTM Module:
+
 ```python
 import haiku as hk
 mylstm = pax.from_haiku(hk.LSTM)(hidden_dim=hidden_dim)
 ```
+
 Similar to dm-haiku modules that needs a dummy input to infer parameters' shape in the initialization process. We also need to pass ``mylstm`` a dummy input to initialize parameters.
 
 ```python
@@ -133,10 +135,11 @@ dummy_x = np.empty((1, hidden_dim), dtype=np.float32)
 dummy_hx = hk.LSTMState(dummy_x, dummy_x)
 mylstm = mylstm.hk_init(dummy_x, dummy_hx)
 ```
+
 If your model uses these converted haiku modules, you have to call the `hk_init` method right after your model is created to make sure everything is initialized correctly.
 
 
-In additional, Pax provides many functions that avoid the dummy input problems: ``pax.haiku.{layer_norm, batch_norm_2d, lstm, gru, embed, conv_1d, conv_2d, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
+In additional, Pax provides many functions that avoid the dummy input problems: ``pax.haiku.{batch_norm_2d, lstm, gru, embed, conv_1d, conv_2d, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
 
 
 ## Optimizers<a id="optimizers"></a>

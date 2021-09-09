@@ -54,7 +54,7 @@ class Module:
     """
 
     # Field Name To Kind
-    _name_to_kind: Optional[Dict[str, PaxFieldKind]] = None
+    _name_to_kind: Dict[str, PaxFieldKind]
     _training: bool = True
     name: str = None
 
@@ -306,13 +306,6 @@ class Module:
             self, is_leaf=lambda x: isinstance(x, Module) and x is not self
         )
         return [module for module in submods if isinstance(module, Module)]
-
-    def __repr__(self) -> str:
-        cls_name = self.__class__.__name__
-        if self.name is not None:
-            return f"({self.name}) {cls_name}"
-        else:
-            return cls_name
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         """This is the default summary method.

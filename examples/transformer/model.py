@@ -1,5 +1,5 @@
 import math
-from typing import List, Optional
+from typing import Dict, List, Optional, Sequence
 
 import haiku as hk
 import jax
@@ -35,7 +35,7 @@ class DenseBlock(pax.Module):
     def __init__(self, in_dim: int, init_scale: float, widening_factor: int = 4):
         super().__init__()
         self._init_scale = init_scale
-        initializer = hk.initializers.VarianceScaling(self._init_scale)
+        initializer = pax.initializers.variance_scaling(self._init_scale)
         self._widening_factor = widening_factor
         self.fc1 = pax.nn.Linear(in_dim, in_dim * widening_factor, w_init=initializer)
         self.fc2 = pax.nn.Linear(in_dim * widening_factor, in_dim, w_init=initializer)
@@ -48,6 +48,8 @@ class DenseBlock(pax.Module):
 
 class Transformer(pax.Module):
     """A transformer stack."""
+
+    layers: Sequence[Dict[str, pax.Module]]
 
     def __init__(self, dim: int, num_heads: int, num_layers: int, dropout_rate: float):
         super().__init__()
@@ -149,7 +151,7 @@ class LM(pax.Module):
         self.transformer = Transformer(
             hidden_dim, hidden_dim // 64, num_layers, dropout_rate=dropout
         )
-        self.output = pax.haiku.linear(hidden_dim, vocab_size)
+        self.output = pax.nn.Linear(hidden_dim, vocab_size)
 
     def __call__(self, x):
         x = self.embed(x)

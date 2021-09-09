@@ -123,17 +123,6 @@ def batch_norm_2d(
     return BatchNorm(x)
 
 
-def layer_norm(num_channels: int, axis: int = -1):
-    """Return a converted LayerNorm module."""
-    LayerNorm = from_haiku(hk.LayerNorm, delay=False)(
-        axis=axis, create_scale=True, create_offset=True
-    )
-    shape = [1, 1, 1, 1]
-    shape[axis] = num_channels
-    x = np.empty((num_channels,), dtype=np.float32).reshape(shape)
-    return LayerNorm(x)
-
-
 def lstm(hidden_dim: int):
     """Return a converted LSTM module."""
     LSTM = from_haiku(hk.LSTM, delay=False)(hidden_size=hidden_dim)
