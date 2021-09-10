@@ -105,16 +105,3 @@ def from_haiku(
             return HaikuModule
 
     return haiku_module_builder
-
-
-def gru(hidden_dim: int):
-    """Return a converted GRU module."""
-    GRU = from_haiku(hk.GRU, delay=False)(hidden_size=hidden_dim)
-
-    def initial_state(o, batch_size):
-        h0 = np.zeros((batch_size, hidden_dim), dtype=np.float32)
-        return h0
-
-    GRU.initial_state = initial_state
-    x = np.empty((1, hidden_dim), dtype=np.float32)
-    return GRU(x, GRU.initial_state(GRU, 1))

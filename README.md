@@ -136,11 +136,7 @@ dummy_hx = hk.LSTMState(dummy_x, dummy_x)
 mylstm = mylstm.hk_init(dummy_x, dummy_hx)
 ```
 
-If your model uses these converted haiku modules, you have to call the `hk_init` method right after your model is created to make sure everything is initialized correctly.
-
-
-In additional, Pax provides many functions that avoid the dummy input problems: ``pax.haiku.{gru}``.
-
+**Note:** If your model uses these converted haiku modules, you have to call the `hk_init` method right after your model is created to make sure everything is initialized correctly.
 
 ## Optimizers<a id="optimizers"></a>
 

@@ -20,15 +20,6 @@ def test_lstm():
     assert hx.cell.shape == (2, 32)
 
 
-def test_haiku_gru():
-    lstm = pax.haiku.gru(32)
-    x = np.zeros((2, 32), dtype=np.float32)
-    hx = lstm.initial_state(2)
-    y, hx = lstm(x, hx)
-    assert y.shape == (2, 32)
-    assert hx.shape == (2, 32)
-
-
 def test_haiku_conv1d_online():
     import haiku as hk
 
