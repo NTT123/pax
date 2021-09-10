@@ -100,11 +100,11 @@ class Transformer(pax.Module):
         for i in range(self._num_layers):
             h_norm = self.layers[i]["attn_layer_norm"](h)
             h_attn = self.layers[i]["attention"](h_norm, mask=mask)
-            h_attn = pax.haiku.dropout(rngs[i * 2 + 0], dropout_rate, h_attn)
+            h_attn = pax.dropout(rngs[i * 2 + 0], dropout_rate, h_attn)
             h = h + h_attn
             h_norm = self.layers[i]["dense_layer_norm"](h)
             h_dense = self.layers[i]["dense_block"](h_norm)
-            h_dense = pax.haiku.dropout(rngs[i * 2 + 1], dropout_rate, h_dense)
+            h_dense = pax.dropout(rngs[i * 2 + 1], dropout_rate, h_dense)
             h = h + h_dense
         h = self.layer_norm_output(h)
 

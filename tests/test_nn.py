@@ -733,3 +733,22 @@ def test_native_conv1d_transpose_4():
     )
     assert params["conv1_d_transpose"]["w"].shape == conv1d_t.weight.shape
     np.testing.assert_allclose(y, hk_y)
+
+
+def test_dropout():
+    drop = pax.nn.Dropout(0.9)
+    rng_key = jax.random.PRNGKey(42)
+    x = jax.random.normal(rng_key, (1, 2, 50), dtype=jnp.float32)
+    drop = drop.eval()
+    y = drop(x)
+    assert y is x
+    drop = drop.train()
+    y = drop(x)
+    assert jnp.sum(y == 0).item() > 80
+
+    x = jnp.ones_like(x)
+    y = drop(x)
+    assert jnp.max(y).item() == 10.0
+
+    with pytest.raises(AssertionError):
+        drop = pax.nn.Dropout(1.0)

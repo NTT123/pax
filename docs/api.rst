@@ -11,6 +11,7 @@ Random Number Generator
 
     seed_rng_key
     next_rng_key
+    dropout
 
 
 seed_rng_key
@@ -23,6 +24,12 @@ next_rng_key
 ~~~~~~~~~~~~
 
 .. autofunction:: next_rng_key
+
+
+dropout
+~~~~~~~
+
+.. autofunction:: dropout
 
 
 
@@ -76,6 +83,13 @@ Linear
 .. autoclass:: Linear
    :members:
 
+
+Dropout
+-------
+
+
+.. autoclass:: Dropout
+   :members:
 
 
 Convolution
@@ -283,6 +297,7 @@ Utilities
 .. autosummary::
 
     build_update_fn
+    dropout
     Lambda
     RngSeq
 
@@ -291,6 +306,13 @@ build_update_fn
 ---------------
 
 .. autofunction:: build_update_fn
+
+
+dropout
+-------
+
+.. autofunction:: dropout
+
 
 Lambda
 ------

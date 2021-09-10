@@ -1,4 +1,5 @@
 from typing import Any, Callable, Optional, Sequence
+
 import jax
 import jax.numpy as jnp
 
@@ -11,6 +12,7 @@ Initializer = Callable[[Sequence[int], Any, Optional[jnp.ndarray]], jnp.ndarray]
 
 def from_haiku_initializer(fn: hk.initializers.Initializer) -> Initializer:
     """Convert haiku initializer to pax initializer."""
+
     def _fn(shape: Sequence[int], dtype: Any, rng_key: Optional[jnp.ndarray] = None):
         rng_key = next_rng_key() if rng_key is None else rng_key
         return hk.transform(fn).apply({}, rng_key, shape, dtype)
@@ -30,6 +32,7 @@ def ones(shape: Sequence[int], dtype: Any, rng_key=None):
 
 def truncated_normal(stddev: float = 1.0, mean: float = 0.0):
     """Initialize from truncated normal distribution."""
+
     def _truncated_normal_init(shape, dtype, rng_key):
         noise = jax.random.truncated_normal(
             key=rng_key, shape=shape, dtype=dtype, lower=-2.0, upper=2.0
@@ -41,6 +44,7 @@ def truncated_normal(stddev: float = 1.0, mean: float = 0.0):
 
 def random_normal(stddev: float = 1.0, mean: float = 0.0):
     """Initialize from normal distribution."""
+
     def _random_normal_init(shape, dtype, rng_key):
         noise = jax.random.normal(key=rng_key, shape=shape, dtype=dtype)
         return noise * stddev + mean
