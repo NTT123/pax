@@ -8,7 +8,7 @@ import pytest
 
 
 def test_batchnorm_train():
-    bn = pax.nn.BatchNorm(
+    bn = pax.nn.batch_norm.BatchNorm(
         (None, None, 3), True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
     )
     bn = bn.train()
@@ -46,7 +46,7 @@ def test_batchnorm2D_train():
 
 
 def test_batchnorm_eval():
-    bn = pax.nn.BatchNorm(
+    bn = pax.nn.batch_norm.BatchNorm(
         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
     )
     bn = bn.eval()
@@ -59,7 +59,7 @@ def test_batchnorm_eval():
 
 
 def test_batchnorm_params_filter():
-    bn = pax.nn.BatchNorm(
+    bn = pax.nn.batch_norm.BatchNorm(
         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
     )
     params = bn.filter("parameter")
@@ -170,7 +170,7 @@ def test_sequential_mix():
 def test_sequential_non_mix():
     net = pax.nn.Sequential(
         pax.nn.Linear(1, 2),
-        pax.nn.BatchNorm(
+        pax.nn.batch_norm.BatchNorm(
             [None, 2], True, True, 0.99, reduced_axes=[0], param_shape=[1, 2]
         ),
         pax.nn.Linear(2, 3),

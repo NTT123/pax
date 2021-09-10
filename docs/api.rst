@@ -56,7 +56,6 @@ Common Modules
 
 .. autosummary::
     MultiHeadAttention
-    BatchNorm
     BatchNorm1D
     BatchNorm2D
     Conv1D
@@ -223,6 +222,56 @@ from_optax
 .. autofunction:: from_optax
 
 
+Initializers
+============
+
+.. currentmodule:: pax.initializers
+
+.. autosummary::
+
+   zeros
+   ones
+   truncated_normal
+   random_normal
+   variance_scaling
+   from_haiku_initializer    
+
+
+
+zeros
+-----
+
+.. autofunction:: zeros
+
+
+ones
+----
+
+.. autofunction:: ones
+
+
+truncated_normal
+----------------
+
+.. autofunction:: truncated_normal
+
+
+random_normal
+-------------
+
+.. autofunction:: random_normal
+
+
+variance_scaling
+----------------
+
+.. autofunction:: variance_scaling
+
+
+from_haiku_initializer
+----------------------
+
+.. autofunction:: from_haiku_initializer
 
 
 Utilities
