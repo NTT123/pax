@@ -326,7 +326,9 @@ class Module:
 
         output = [self.__repr__()]
         if output[0] is None:
-            raise ValueError(f"The `{self.__class__}.__repr__` method returns a `None` value.")
+            raise ValueError(
+                f"The `{self.__class__}.__repr__` method returns a `None` value."
+            )
         sub_modules = self.sub_modules()
 
         def indent(lines: List[str], s) -> List[str]:

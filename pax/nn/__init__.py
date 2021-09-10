@@ -5,4 +5,6 @@ from .dropout import Dropout
 from .embed import Embed
 from .layer_norm import LayerNorm
 from .linear import Linear
+from .pool import avg_pool, max_pool
+from .recurrent import LSTM, LSTMState
 from .sequential import Sequential

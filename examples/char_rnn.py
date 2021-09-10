@@ -63,7 +63,7 @@ class LM(pax.Module):
         self.vocab_size = vocab_size
         self.hidden_dim = hidden_dim
         self.embed = pax.nn.Embed(vocab_size, hidden_dim)
-        self.lstm = pax.haiku.lstm(hidden_dim)
+        self.lstm = pax.nn.LSTM(hidden_dim, hidden_dim)
         self.output = pax.nn.Linear(hidden_dim, vocab_size)
 
     def __call__(self, x):

@@ -62,16 +62,19 @@ Common Modules
 .. currentmodule:: pax.nn
 
 .. autosummary::
-    MultiHeadAttention
-    BatchNorm1D
-    BatchNorm2D
+    Linear
     Conv1D
     Conv2D
     Conv1DTranspose
     Conv2DTranspose
+    BatchNorm1D
+    BatchNorm2D
     LayerNorm
-    Linear
     Sequential
+    LSTM
+    MultiHeadAttention
+    avg_pool
+    max_pool
 
 
 
@@ -151,6 +154,34 @@ LayerNorm
    :members:
 
 
+Recurrent
+---------
+
+
+LSTM
+~~~~
+
+.. autoclass:: LSTM
+   :members:
+
+
+
+Pool
+----
+    
+avg_pool
+~~~~~~~~
+
+.. autofunction:: avg_pool
+
+    
+max_pool
+~~~~~~~~
+
+.. autofunction:: max_pool
+
+
+
 
 MultiHeadAttention
 ------------------
@@ -177,11 +208,7 @@ Haiku Modules
 
 .. autosummary::
     from_haiku
-    lstm
     gru
-    embed
-    avg_pool
-    max_pool
 
     
 from_haiku
@@ -193,29 +220,11 @@ from_haiku
 See https://dm-haiku.readthedocs.io/en/latest/api.html#common-modules for more information about converted modules.
 
 
-    
-lstm
-----
-
-.. autofunction:: lstm
-
-
 gru
 ---
 
 .. autofunction:: gru
 
-    
-avg_pool
---------
-
-.. autofunction:: avg_pool
-
-    
-max_pool
---------
-
-.. autofunction:: max_pool
 
     
 

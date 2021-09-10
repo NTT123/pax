@@ -11,7 +11,7 @@ def test_embed():
 
 
 def test_lstm():
-    lstm = pax.haiku.lstm(32)
+    lstm = pax.nn.LSTM(32, 32)
     x = np.zeros((2, 32), dtype=np.float32)
     hx = lstm.initial_state(2)
     y, hx = lstm(x, hx)
@@ -82,17 +82,15 @@ def test_haiku_conv1d_hk_init_jit():
     assert y.shape == (3, 3, 4)
 
 
-def test_haiku_avg_pool():
+def test_avg_pool():
     x = np.zeros((3, 5, 3), dtype=np.float32)
-    avg_pool = pax.haiku.avg_pool(2, 2, "SAME", -1)
-    y = avg_pool(x)
+    y = pax.nn.avg_pool(x, (2, 1), (2, 1), "SAME", -1)
     assert y.shape == (3, 3, 3)
 
 
 def test_haiku_max_pool():
     x = np.zeros((3, 5, 3), dtype=np.float32)
-    avg_pool = pax.haiku.avg_pool(2, 3, "SAME", -1)
-    y = avg_pool(x)
+    y = pax.nn.max_pool(x, (2, 1), (3, 1), "SAME", -1)
     assert y.shape == (3, 2, 3)
 
 

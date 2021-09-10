@@ -107,20 +107,6 @@ def from_haiku(
     return haiku_module_builder
 
 
-def lstm(hidden_dim: int):
-    """Return a converted LSTM module."""
-    LSTM = from_haiku(hk.LSTM, delay=False)(hidden_size=hidden_dim)
-
-    def initial_state(o, batch_size):
-        h0 = np.zeros((batch_size, hidden_dim), dtype=np.float32)
-        c0 = np.zeros((batch_size, hidden_dim), dtype=np.float32)
-        return LSTMState(h0, c0)
-
-    LSTM.initial_state = initial_state
-    x = np.empty((1, hidden_dim), dtype=np.float32)
-    return LSTM(x, LSTM.initial_state(LSTM, 1))
-
-
 def gru(hidden_dim: int):
     """Return a converted GRU module."""
     GRU = from_haiku(hk.GRU, delay=False)(hidden_size=hidden_dim)
@@ -132,48 +118,3 @@ def gru(hidden_dim: int):
     GRU.initial_state = initial_state
     x = np.empty((1, hidden_dim), dtype=np.float32)
     return GRU(x, GRU.initial_state(GRU, 1))
-
-
-def embed(vocab_size: int, embed_dim: int, w_init: Optional[Callable] = None):
-    """Return a converted Embed module."""
-    Embed = from_haiku(hk.Embed, delay=False)(
-        vocab_size=vocab_size, embed_dim=embed_dim, w_init=w_init
-    )
-    x = np.empty((1, 1), dtype=np.int32)
-    return Embed(x)
-
-
-def avg_pool(window_shape, strides, padding, channel_axis=-1):
-    """Return a converted AvgPool module."""
-    AvgPool = from_haiku(hk.AvgPool)(
-        window_shape=window_shape,
-        strides=strides,
-        padding=padding,
-        channel_axis=channel_axis,
-    )
-
-    def f(x):
-        return hk.avg_pool(
-            x,
-            window_shape=window_shape,
-            strides=strides,
-            padding=padding,
-            channel_axis=channel_axis,
-        )
-
-    return Lambda(f)
-
-
-def max_pool(window_shape, strides, padding, channel_axis=-1):
-    """Return a converted MaxPool module."""
-
-    def f(x):
-        return hk.max_pool(
-            x,
-            window_shape=window_shape,
-            strides=strides,
-            padding=padding,
-            channel_axis=channel_axis,
-        )
-
-    return Lambda(f)

@@ -6,7 +6,7 @@ from typing import Sequence, Tuple
 
 import jax
 import jax.numpy as jnp
-from pax.haiku import max_pool
+from pax.nn import max_pool
 from pax.nn.linear import Linear
 
 from .. import initializers
@@ -251,13 +251,13 @@ class ResNet(Module):
         out = self.initial_batchnorm(out)
         out = jax.nn.relu(out)
         out = jnp.pad(out, [(0, 0), (0, 0), (1, 1), (1, 1)])
-        mp = max_pool(
+        out = max_pool(
+            out,
             window_shape=(1, 1, 3, 3),
             strides=(1, 1, 2, 2),
             padding="VALID",
             channel_axis=1,
         )
-        out = mp(out)
         for block_group in self.block_groups:
             out = block_group(out)
 
