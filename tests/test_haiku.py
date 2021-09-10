@@ -29,20 +29,6 @@ def test_haiku_gru():
     assert hx.shape == (2, 32)
 
 
-def test_haiku_conv1d_transpose():
-    conv_transpose = pax.haiku.conv_1d_transpose(3, 4, 2)
-    x = np.zeros((3, 5, 3), dtype=np.float32)
-    y = conv_transpose(x)
-    assert y.shape == (3, 5, 4)
-
-
-def test_haiku_conv2d_transpose():
-    conv_transpose = pax.haiku.conv_2d_transpose(3, 4, 2)
-    x = np.zeros((3, 5, 6, 3), dtype=np.float32)
-    y = conv_transpose(x)
-    assert y.shape == (3, 5, 6, 4)
-
-
 def test_haiku_conv1d_online():
     import haiku as hk
 

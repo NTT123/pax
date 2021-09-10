@@ -382,7 +382,6 @@ class ConvTranspose(Module):
             "data_format": self.data_format,
             "padding": self.padding,
             "stride": self.stride,
-            "rate": self.rate,
             "with_bias": self.with_bias,
         }
         return super().__repr__(info)
@@ -418,9 +417,6 @@ class Conv1DTranspose(ConvTranspose):
                 length 1.
             stride: Optional stride for the kernel. Either an integer or a sequence of
                 length 1. Defaults to 1.
-            output_shape: Output shape of the spatial dimensions of a transpose
-                convolution. Can be either an integer or an iterable of integers. If a
-                `None` value is given, a default shape is automatically calculated.
             padding: Optional padding algorithm. Either ``VALID`` or ``SAME``.
                 Defaults to ``SAME``. See:
                 https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
@@ -483,9 +479,6 @@ class Conv2DTranspose(ConvTranspose):
                 length 1.
             stride: Optional stride for the kernel. Either an integer or a sequence of
                 length 1. Defaults to 1.
-            output_shape: Output shape of the spatial dimensions of a transpose
-                convolution. Can be either an integer or an iterable of integers. If a
-                `None` value is given, a default shape is automatically calculated.
             padding: Optional padding algorithm. Either ``VALID`` or ``SAME``.
                 Defaults to ``SAME``. See:
                 https://www.tensorflow.org/xla/operation_semantics#conv_convolution.

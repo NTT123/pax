@@ -118,7 +118,7 @@ A good way to learn about ``Pax`` is to see examples in the [examples/](./exampl
 
 ## Modules<a id="modules"></a>
 
-At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, BatchNorm1D, BatchNorm2D, Conv1D, Conv2D, LayerNorm, Sequential}``.
+At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, BatchNorm1D, BatchNorm2D, Conv1D, Conv2D, Conv1DTranspose, Conv2DTranspose, LayerNorm, Sequential}``.
 We intent to add new modules in the near future.
 
 Pax also provides the ``pax.from_haiku`` function that can convert most of modules from ``dm-haiku`` library to ``pax.Module``. For example, to convert a dm-haiku LSTM Module:
@@ -139,7 +139,7 @@ mylstm = mylstm.hk_init(dummy_x, dummy_hx)
 If your model uses these converted haiku modules, you have to call the `hk_init` method right after your model is created to make sure everything is initialized correctly.
 
 
-In additional, Pax provides many functions that avoid the dummy input problems: ``pax.haiku.{lstm, gru, embed, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
+In additional, Pax provides many functions that avoid the dummy input problems: ``pax.haiku.{lstm, gru, embed, avg_pool, max_pool}``.
 
 
 ## Optimizers<a id="optimizers"></a>

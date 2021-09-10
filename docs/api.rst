@@ -61,6 +61,8 @@ Common Modules
     BatchNorm2D
     Conv1D
     Conv2D
+    Conv1DTranspose
+    Conv2DTranspose
     LayerNorm
     Linear
     Sequential
@@ -86,6 +88,11 @@ Convolution
 .. autoclass:: Conv2D
    :members:
 
+.. autoclass:: Conv1DTranspose
+   :members:
+
+.. autoclass:: Conv2DTranspose
+   :members:
 
 
 BatchNorm
@@ -139,8 +146,6 @@ Haiku Modules
     lstm
     gru
     embed
-    conv_1d_transpose
-    conv_2d_transpose
     avg_pool
     max_pool
 
@@ -172,26 +177,11 @@ embed
 
 .. autofunction:: embed
 
-
-    
-conv_1d_transpose
------------------
-
-.. autofunction:: conv_1d_transpose
-
-
-    
-conv_2d_transpose
------------------
-
-.. autofunction:: conv_2d_transpose
-
     
 avg_pool
 --------
 
 .. autofunction:: avg_pool
-
 
     
 max_pool
