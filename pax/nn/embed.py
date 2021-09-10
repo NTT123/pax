@@ -7,7 +7,7 @@ from ..rng import next_rng_key
 
 class Embed(Module):
     """Embed module maps interger values to real vectors.
-    Embedded vectors are trainable vectors.
+    The embedded vectors are trainable.
     """
 
     weight: jnp.ndarray
@@ -27,9 +27,9 @@ class Embed(Module):
         An embed module.
 
         Arguments:
-            vocab_size: number of embedded vectors.
-            embed_dim: size of the embedded vectors.
-            w_init: weight initializer. Default is `truncated_normal`.
+            vocab_size: the number of embedded vectors.
+            embed_dim: the size of embedded vectors.
+            w_init: weight initializer. Default: `truncated_normal`.
             name: module name.
         """
 

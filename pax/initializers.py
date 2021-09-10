@@ -2,6 +2,7 @@ from typing import Any, Callable, Optional, Sequence
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 import haiku as hk
 
@@ -9,15 +10,24 @@ from .rng import next_rng_key
 
 Initializer = Callable[[Sequence[int], Any, Optional[jnp.ndarray]], jnp.ndarray]
 
-
-def from_haiku_initializer(fn: hk.initializers.Initializer) -> Initializer:
-    """Convert haiku initializer to pax initializer."""
-
-    def _fn(shape: Sequence[int], dtype: Any, rng_key: Optional[jnp.ndarray] = None):
-        rng_key = next_rng_key() if rng_key is None else rng_key
-        return hk.transform(fn).apply({}, rng_key, shape, dtype)
-
-    return _fn
+# source:
+# https://github.com/deepmind/dm-haiku/blob/48f5d5d9b7faabffb3860900c633229bc57e01df/haiku/_src/initializers.py#L34
+def _compute_fans(shape):
+    """Computes the number of input and output units for a weight shape."""
+    if len(shape) < 1:
+        fan_in = fan_out = 1
+    elif len(shape) == 1:
+        fan_in = fan_out = shape[0]
+    elif len(shape) == 2:
+        fan_in, fan_out = shape
+    else:
+        # Assuming convolution kernels (2D, 3D, or more.)
+        # kernel_shape: (..., input_depth, depth)
+        # TODO: this is not true for conv_tranpose.
+        receptive_field_size = np.prod(shape[:-2])
+        fan_in = shape[-2] * receptive_field_size
+        fan_out = shape[-1] * receptive_field_size
+    return fan_in, fan_out
 
 
 def zeros(shape: Sequence[int], dtype: Any, rng_key=None):
@@ -50,6 +60,17 @@ def random_normal(stddev: float = 1.0, mean: float = 0.0):
         return noise * stddev + mean
 
     return _random_normal_init
+
+
+def random_uniform(minval=0.0, maxval=1.0):
+    """Initialize from uniform distribution."""
+
+    def _random_uniform(shape, dtype, rng_key):
+        return jax.random.uniform(
+            rng_key, shape=shape, dtype=dtype, minval=minval, maxval=maxval
+        )
+
+    return _random_uniform
 
 
 def variance_scaling(
@@ -87,8 +108,36 @@ def variance_scaling(
     ==============  ==============================================================
     """
 
-    return from_haiku_initializer(
-        hk.initializers.VarianceScaling(
-            scale=scale, mode=mode, distribution=distribution
-        )
-    )
+    def _variance_scaling_init(shape, dtype, rng_key):
+        fan_in, fan_out = _compute_fans(shape)
+
+        if mode == "fan_in":
+            scale_ = scale / max(1.0, fan_in)
+        elif mode == "fan_out":
+            scale_ = scale / max(1.0, fan_out)
+        else:
+            scale_ = scale / max(1.0, (fan_in + fan_out) / 2.0)
+
+        if distribution == "truncated_normal":
+            stddev = np.sqrt(scale_)
+            distribution_stddev = np.asarray(0.87962566103423978, dtype=np.float32)
+            stddev = stddev / distribution_stddev
+            return truncated_normal(stddev=stddev)(shape, dtype, rng_key)
+        elif distribution == "normal":
+            stddev = np.sqrt(scale_)
+            return random_normal(stddev=stddev)(shape, dtype, rng_key)
+        else:
+            limit = np.sqrt(3.0 * scale_)
+            return random_uniform(minval=-limit, maxval=limit)(shape, dtype, rng_key)
+
+    return _variance_scaling_init
+
+
+def from_haiku_initializer(fn: hk.initializers.Initializer) -> Initializer:
+    """Convert haiku initializer to pax initializer."""
+
+    def _fn(shape: Sequence[int], dtype: Any, rng_key: Optional[jnp.ndarray] = None):
+        rng_key = next_rng_key() if rng_key is None else rng_key
+        return hk.transform(fn).apply({}, rng_key, shape, dtype)
+
+    return _fn

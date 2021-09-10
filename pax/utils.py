@@ -87,7 +87,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
 
 def dropout(rng_key: jnp.ndarray, dropout_rate: float, x: jnp.ndarray) -> jnp.ndarray:
-    """dropout input `x` randomly.
+    """Dropout input `x` randomly.
 
     Scaling the input by ``1 / (1-dropout_rate)`` makes ``E[output] = input``.
     """

@@ -214,6 +214,7 @@ Initializers
    ones
    truncated_normal
    random_normal
+   random_uniform
    variance_scaling
    from_haiku_initializer    
 
@@ -241,6 +242,12 @@ random_normal
 -------------
 
 .. autofunction:: random_normal
+
+
+random_uniform
+-------------
+
+.. autofunction:: random_uniform
 
 
 variance_scaling
