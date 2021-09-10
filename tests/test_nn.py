@@ -406,3 +406,29 @@ def test_native_conv2d_5():
     hk_y = hk_conv.apply({"conv2_d": {"w": conv2d.weight}}, rng_key, x)
     assert params["conv2_d"]["w"].shape == conv2d.weight.shape
     np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_linear_wo_bias():
+    rng_key = jax.random.PRNGKey(44)
+    fc = pax.nn.Linear(3, 5, with_bias=False, rng_key=rng_key)
+    hk_fc = hk.transform(lambda x: hk.Linear(5, with_bias=False)(x))
+    x = jax.random.normal(rng_key, (7, 4, 3), dtype=jnp.float32)
+    y = fc(x)
+    hk_y = hk_fc.apply({"linear": {"w": fc.weight}}, rng_key, x)
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_linear_w_bias():
+    rng_key = jax.random.PRNGKey(44)
+    fc = pax.nn.Linear(
+        9,
+        5,
+        with_bias=True,
+        rng_key=rng_key,
+        b_init=pax.initializers.truncated_normal(),
+    )
+    hk_fc = hk.transform(lambda x: hk.Linear(5, with_bias=True)(x))
+    x = jax.random.normal(rng_key, (7, 11, 9), dtype=jnp.float32)
+    y = fc(x)
+    hk_y = hk_fc.apply({"linear": {"w": fc.weight, "b": fc.bias}}, rng_key, x)
+    np.testing.assert_allclose(y, hk_y)
