@@ -82,14 +82,26 @@ Linear
 Convolution
 -----------
 
+Conv1D
+~~~~~~
+
 .. autoclass:: Conv1D
    :members:
+
+Conv2D
+~~~~~~
 
 .. autoclass:: Conv2D
    :members:
 
+Conv1DTranspose
+~~~~~~~~~~~~~~~
+
 .. autoclass:: Conv1DTranspose
    :members:
+
+Conv2DTranspose
+~~~~~~~~~~~~~~~
 
 .. autoclass:: Conv2DTranspose
    :members:
@@ -98,11 +110,14 @@ Convolution
 BatchNorm
 ---------
 
-.. autoclass:: BatchNorm
-   :members:
+BatchNorm1D
+~~~~~~~~~~~
 
 .. autoclass:: BatchNorm1D
    :members:
+
+BatchNorm2D
+~~~~~~~~~~~
 
 .. autoclass:: BatchNorm2D
    :members:
