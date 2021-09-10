@@ -87,8 +87,14 @@ Linear
 Dropout
 -------
 
-
 .. autoclass:: Dropout
+   :members:
+
+
+Embed
+-----
+
+.. autoclass:: Embed
    :members:
 
 
@@ -198,12 +204,6 @@ gru
 ---
 
 .. autofunction:: gru
-
-    
-embed
------
-
-.. autofunction:: embed
 
     
 avg_pool

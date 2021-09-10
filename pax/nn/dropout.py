@@ -15,14 +15,15 @@ class Dropout(Module):
     rng_key: jnp.ndarray
     dropout_rate: float
 
-    def __init__(self, dropout_rate: float):
+    def __init__(self, dropout_rate: float, *, name: str = None):
         """Create a dropout module.
 
         Arguments:
             dropout_rate: the probability of dropping an element.
+            name: the module name.
         """
+        super().__init__(name=name)
         assert 0 <= dropout_rate < 1.0
-        super().__init__()
 
         self.dropout_rate = dropout_rate
         self.register_state("rng_key", next_rng_key())

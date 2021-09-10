@@ -752,3 +752,13 @@ def test_dropout():
 
     with pytest.raises(AssertionError):
         drop = pax.nn.Dropout(1.0)
+
+
+def test_embed():
+    embed = pax.nn.Embed(5, 7)
+    x = jnp.array([[[1, 2, 4]]], dtype=jnp.int32)
+    y = embed(x)
+    assert y.shape == (1, 1, 3, 7)
+    hk_embed = hk.transform(lambda x: hk.Embed(5, 7)(x))
+    hk_y = hk_embed.apply({"embed": {"embeddings": embed.weight}}, None, x)
+    np.testing.assert_allclose(y, hk_y)

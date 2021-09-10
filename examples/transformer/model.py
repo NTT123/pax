@@ -143,10 +143,10 @@ class LM(pax.Module):
         super().__init__()
         self.vocab_size = vocab_size
         self.hidden_dim = hidden_dim
-        self.embed = pax.haiku.embed(
+        self.embed = pax.nn.Embed(
             vocab_size,
             hidden_dim,
-            w_init=hk.initializers.VarianceScaling(mode="fan_out"),
+            w_init=pax.initializers.variance_scaling(mode="fan_out"),
         )
         self.transformer = Transformer(
             hidden_dim, hidden_dim // 64, num_layers, dropout_rate=dropout

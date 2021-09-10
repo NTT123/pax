@@ -4,7 +4,7 @@ import pax
 
 
 def test_embed():
-    embed = pax.haiku.embed(5, 32)
+    embed = pax.nn.Embed(5, 32)
     x = np.zeros((2, 10), dtype=np.int32)
     y = embed(x)
     assert y.shape == (2, 10, 32)
