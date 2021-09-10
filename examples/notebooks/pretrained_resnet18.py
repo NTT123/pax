@@ -16,12 +16,12 @@ def convert_conv(conv, name=None):
         kernel_shape=conv.kernel_size,
         stride=conv.stride,
         with_bias=False,
-        padding=conv.padding,
+        padding=[(conv.padding[0],) * 2, (conv.padding[1],) * 2],
         data_format="NCHW",
         name=name,
     )
-    assert pax_conv.w.shape == weight.shape
-    pax_conv.w = weight
+    assert pax_conv.weight.shape == weight.shape
+    pax_conv.weight = weight
     return pax_conv
 
 
@@ -38,26 +38,19 @@ def convert_bn(bn, name=None):
         create_scale=True,
         decay_rate=0.9,
         eps=1e-5,
-        data_format="NC...",
+        data_format="NCHW",
         name=name,
     )
-    assert pax_bn.params["batch_norm"]["scale"].shape == weight.shape
-    assert pax_bn.params["batch_norm"]["offset"].shape == bias.shape
-    assert pax_bn.state["batch_norm/~/mean_ema"]["hidden"].shape == running_mean.shape
-    assert pax_bn.state["batch_norm/~/mean_ema"]["average"].shape == running_mean.shape
-    assert pax_bn.state["batch_norm/~/var_ema"]["hidden"].shape == running_var.shape
-    assert pax_bn.state["batch_norm/~/var_ema"]["average"].shape == running_var.shape
+    assert pax_bn.scale.shape == weight.shape
+    assert pax_bn.offset.shape == bias.shape
+    assert pax_bn.ema_mean.averages.shape == running_mean.shape
+    assert pax_bn.ema_var.averages.shape == running_var.shape
 
-    pax_bn.params["batch_norm"]["scale"] = weight
-    pax_bn.params["batch_norm"]["offset"] = bias
+    pax_bn.scale = weight
+    pax_bn.offset = bias
 
-    pax_bn.state["batch_norm/~/mean_ema"]["counter"] = np.array(0, dtype=np.int32)
-    pax_bn.state["batch_norm/~/mean_ema"]["hidden"] = running_mean
-    pax_bn.state["batch_norm/~/mean_ema"]["average"] = running_mean
-
-    pax_bn.state["batch_norm/~/var_ema"]["counter"] = np.array(0, dtype=np.int32)
-    pax_bn.state["batch_norm/~/var_ema"]["hidden"] = running_var
-    pax_bn.state["batch_norm/~/var_ema"]["average"] = running_var
+    pax_bn.ema_mean.averages = running_mean
+    pax_bn.ema_var.averages = running_var
 
     return pax_bn
 

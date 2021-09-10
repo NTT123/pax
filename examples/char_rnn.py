@@ -8,10 +8,9 @@ from typing import List
 import jax
 import jax.numpy as jnp
 import jax.tools.colab_tpu
-import optax
+import opax
 import pax
 import tensorflow as tf
-from pax.optim import Optimizer
 from tqdm.auto import tqdm
 
 pax.seed_rng_key(42)
@@ -63,9 +62,9 @@ class LM(pax.Module):
         super().__init__()
         self.vocab_size = vocab_size
         self.hidden_dim = hidden_dim
-        self.embed = pax.haiku.embed(vocab_size, hidden_dim)
-        self.lstm = pax.haiku.lstm(hidden_dim)
-        self.output = pax.haiku.linear(hidden_dim, vocab_size)
+        self.embed = pax.nn.Embed(vocab_size, hidden_dim)
+        self.lstm = pax.nn.LSTM(hidden_dim, hidden_dim)
+        self.output = pax.nn.Linear(hidden_dim, vocab_size)
 
     def __call__(self, x):
         x = self.embed(x)
@@ -122,12 +121,16 @@ def update_step(prev, batch: jnp.ndarray):
         model.parameters(), model, batch
     )
     grads = jax.lax.pmean(grads, axis_name="i")
-    model = optimizer.step(grads, model)
+    model = model.update(
+        optimizer.step(grads, model.parameters()),
+    )
     return (model, optimizer), loss
 
 
 @partial(jax.pmap, axis_name="i")
-def update_fn(model: LM, optimizer: Optimizer, multi_batch: jnp.ndarray):
+def update_fn(
+    model: LM, optimizer: opax.GradientTransformation, multi_batch: jnp.ndarray
+):
     (model, optimizer), losses = jax.lax.scan(
         update_step, (model, optimizer), multi_batch
     )
@@ -135,9 +138,7 @@ def update_fn(model: LM, optimizer: Optimizer, multi_batch: jnp.ndarray):
 
 
 net = LM(vocab_size=vocab_size, hidden_dim=hidden_dim)
-optimizer = pax.optim.from_optax(
-    optax.chain(optax.clip_by_global_norm(1.0), optax.adam(1e-4))
-)(net.parameters())
+optimizer = opax.chain(opax.clip_by_global_norm(1.0), opax.adam(1e-4))(net.parameters())
 
 # replicate on multiple devices
 net = jax.device_put_replicated(net, jax.devices())

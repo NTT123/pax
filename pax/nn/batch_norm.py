@@ -1,195 +1,193 @@
-"""BatchNorm Module."""
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence
 
-import haiku as hk
+import jax
 import jax.numpy as jnp
-import numpy as np
 
-from ..haiku import HaikuParam, HaikuState
 from ..module import Module
-from ..rng import next_rng_key
+from ..utils import EMA
 
 
 class BatchNorm(Module):
-    """BatchNorm Module."""
+    """A Generic BatchNorm Module.
 
-    params: HaikuParam = None
-    state: HaikuState = None
+    Normalize a mini-batch of data by subtracting its mean and dividing by its standard deviation.
+
+    Use EMA modules to track the averaged mean and averaged variance for later uses in `eval` mode.
+    """
+
+    scale: Optional[jnp.ndarray] = None
+    offset: Optional[jnp.ndarray] = None
+
+    ema_mean: EMA
+    ema_var: EMA
+
+    reduced_axes: Sequence[int]
+    create_offset: bool
+    create_scale: bool
+    eps: float
+    data_format: str
 
     def __init__(
         self,
-        input_shape: Sequence[Union[int, None]],
-        create_scale: bool,
-        create_offset: bool,
-        decay_rate: float,
-        eps: float = 0.00001,
-        scale_init: Optional[hk.initializers.Initializer] = None,
-        offset_init: Optional[hk.initializers.Initializer] = None,
-        axis: Optional[Sequence[int]] = None,
-        cross_replica_axis: Optional[str] = None,
-        data_format: str = "channels_last",
+        num_channels: int,
+        create_scale: bool = True,
+        create_offset: bool = True,
+        decay_rate: float = 0.9,
+        eps: float = 1e-5,
+        data_format: str = None,
+        reduced_axes=None,
+        param_shape=None,
         *,
-        name: Optional[str] = None,
-        rng_key: Optional[jnp.ndarray] = None,
+        name: str = None,
     ):
         """Create a new BatchNorm module.
 
         Arguments:
-            input_shape: The shape of input tensor. For example ``[None, None, 3]``. Use ``None`` to indicate unknown value.
-            create_scale: Whether to include a trainable scaling factor.
-            create_offset: Whether to include a trainable offset.
-            decay_rate: Decay rate for EMA.
-            eps: Small epsilon to avoid division by zero variance. Defaults ``1e-5``,
-                as in the paper and Sonnet.
-            scale_init: Optional initializer for gain (aka scale). Can only be set
-                if ``create_scale=True``. By default, ``1``.
-            offset_init: Optional initializer for bias (aka offset). Can only be set
-                if ``create_offset=True``. By default, ``0``.
-            axis: Which axes to reduce over. The default (``None``) signifies that all
-                but the channel axis should be normalized. Otherwise this is a list of
-                axis indices which will have normalization statistics calculated.
-            cross_replica_axis: If not ``None``, it should be a string representing
-                the axis name over which this module is being run within a ``jax.pmap``.
-                Supplying this argument means that batch statistics are calculated
-                across all replicas on that axis.
-            data_format: The data format of the input. Can be either
-                ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
-                default it is ``channels_last``.
+            num_channels: the number of filters.
+            create_scale: create a trainable `scale` parameter.
+            create_offset: create a trainable `offset` parameter.
+            decay_rate: the decay rate for tracking the averaged mean and the averaged variance.
+            eps: a small positive number to avoid divided by zero.
+            data_format:  the data format ["NHWC", NCHW", "NWC", "NCW"].
+            reduced_axes: list of axes that will be reduced in the `jnp.mean` computation.
+            param_shape: the shape of parameters.
         """
-        assert data_format in ["channels_first", "channels_last", "N...C", "NC..."]
         super().__init__(name=name)
+        assert 0 <= decay_rate <= 1
 
-        def fwd(x, is_training: bool):
-            return hk.BatchNorm(
-                create_scale=create_scale,
-                create_offset=create_offset,
-                decay_rate=decay_rate,
-                eps=eps,
-                scale_init=scale_init,
-                offset_init=offset_init,
-                axis=axis,
-                cross_replica_axis=cross_replica_axis,
-                data_format=data_format,
-            )(x, is_training=is_training)
+        self.num_channels = num_channels
+        self.data_format = data_format
+        self.create_scale = create_scale
+        self.create_offset = create_offset
+        self.eps = eps
+        self.decay_rate = decay_rate
 
-        self.fwd = hk.without_apply_rng(hk.transform_with_state(fwd))
-        rng_key = next_rng_key() if rng_key is None else rng_key
-        x = np.ones([(1 if i is None else i) for i in input_shape], dtype=np.float32)
-        params, state = self.fwd.init(rng_key, x, is_training=self.training)
-        self.register_parameter_subtree(
-            "params", hk.data_structures.to_mutable_dict(params)
-        )
-        self.register_state_subtree("state", hk.data_structures.to_mutable_dict(state))
+        self.reduced_axes = reduced_axes
 
-        if data_format in ["channels_last", "N...C"]:
-            num_channels = input_shape[-1]
-        else:
-            num_channels = input_shape[1]
+        if create_scale:
+            self.register_parameter("scale", jnp.ones(param_shape, dtype=jnp.float32))
+        if create_offset:
+            self.register_parameter("offset", jnp.zeros(param_shape, dtype=jnp.float32))
 
-        self.info = {
-            "num_channels": num_channels,
-            "create_scale": create_scale,
-            "create_offset": create_offset,
-            "decay_rate": decay_rate,
-            "data_format": data_format,
-            "axis": axis,
-            "cross_replica_axis": cross_replica_axis,
-        }
+        self.ema_mean = EMA(jnp.zeros_like(self.offset), decay_rate, debias=True)
+        self.ema_var = EMA(jnp.zeros_like(self.offset), decay_rate, debias=True)
 
     def __call__(self, x):
-        x, state = self.fwd.apply(self.params, self.state, x, is_training=self.training)
         if self.training:
-            # TODO: remove this
-            self.state = hk.data_structures.to_mutable_dict(state)
+            batch_mean = jnp.mean(x, axis=self.reduced_axes, keepdims=True)
+            batch_mean_of_squares = jnp.mean(
+                jnp.square(x), axis=self.reduced_axes, keepdims=True
+            )
+            batch_var = batch_mean_of_squares - jnp.square(batch_mean)
+            self.ema_mean(batch_mean)
+            self.ema_var(batch_var)
+        else:
+            batch_mean = self.ema_mean.averages
+            batch_var = self.ema_var.averages
+
+        if self.create_scale:
+            scale = self.scale
+        else:
+            scale = 1.0
+
+        if self.create_offset:
+            offset = self.offset
+        else:
+            offset = 0.0
+
+        inv = scale * jax.lax.rsqrt(batch_var + self.eps)
+        x = (x - batch_mean) * inv + offset
         return x
 
     def __repr__(self):
-        return super().__repr__(self.info)
+        info = {
+            "num_channels": self.num_channels,
+            "create_scale": self.create_scale,
+            "create_offset": self.create_offset,
+            "data_format": self.data_format,
+            "decay_rate": self.decay_rate,
+        }
+        return super().__repr__(info)
+
+    def summary(self, return_list: bool = True):
+        lines = super().summary(return_list=True)
+        if return_list:
+            return lines[:1]
+        else:
+            return lines[0]
 
 
 class BatchNorm1D(BatchNorm):
-    """BatchNorm1D Module."""
-
-    params: HaikuParam = None
-    state: HaikuState = None
+    """The 1D version of BatchNorm."""
 
     def __init__(
         self,
         num_channels: int,
-        create_scale: bool,
-        create_offset: bool,
-        decay_rate: float,
-        eps: float = 0.00001,
-        scale_init: Optional[hk.initializers.Initializer] = None,
-        offset_init: Optional[hk.initializers.Initializer] = None,
-        axis: Optional[Sequence[int]] = None,
-        cross_replica_axis: Optional[str] = None,
-        data_format: str = "channels_last",
+        create_scale: bool = True,
+        create_offset: bool = True,
+        decay_rate: float = 0.9,
+        eps: float = 1e-5,
+        data_format: str = "NWC",
         *,
-        name: Optional[str] = None,
-        rng_key: Optional[jnp.ndarray] = None,
+        name: str = None,
     ):
-        shape = [1, 1, 1]
-        if data_format in ["channels_last", "N...C"]:
-            shape[-1] = num_channels
+        assert data_format in ["NWC", "NCW"], "expecting a correct `data_format`"
+
+        param_shape = [1, 1, 1]
+        if data_format == "NWC":
+            axis = -1
+            reduced_axes = [0, 1]
         else:
-            shape[1] = num_channels
+            axis = 1
+            reduced_axes = [0, 2]
+        param_shape[axis] = num_channels
 
         super().__init__(
-            input_shape=shape,
+            num_channels=num_channels,
             create_scale=create_scale,
             create_offset=create_offset,
             decay_rate=decay_rate,
             eps=eps,
-            scale_init=scale_init,
-            offset_init=offset_init,
-            axis=axis,
-            cross_replica_axis=cross_replica_axis,
             data_format=data_format,
+            param_shape=param_shape,
+            reduced_axes=reduced_axes,
             name=name,
-            rng_key=rng_key,
         )
 
 
 class BatchNorm2D(BatchNorm):
-    """BatchNorm2D Module."""
-
-    params: HaikuParam = None
-    state: HaikuState = None
+    """The 2D version of BatchNorm."""
 
     def __init__(
         self,
         num_channels: int,
-        create_scale: bool,
-        create_offset: bool,
-        decay_rate: float,
-        eps: float = 0.00001,
-        scale_init: Optional[hk.initializers.Initializer] = None,
-        offset_init: Optional[hk.initializers.Initializer] = None,
-        axis: Optional[Sequence[int]] = None,
-        cross_replica_axis: Optional[str] = None,
-        data_format: str = "channels_last",
+        create_scale: bool = True,
+        create_offset: bool = True,
+        decay_rate: float = 0.9,
+        eps: float = 1e-5,
+        data_format: str = "NHWC",
         *,
-        name: Optional[str] = None,
-        rng_key: Optional[jnp.ndarray] = None,
+        name: str = None,
     ):
-        shape = [1, 1, 1, 1]
-        if data_format in ["channels_last", "N...C"]:
-            shape[-1] = num_channels
+        assert data_format in ["NHWC", "NCHW"], "expecting a correct `data_format`"
+
+        param_shape = [1, 1, 1, 1]
+        if data_format == "NHWC":
+            axis = -1
+            reduced_axes = [0, 1, 2]
         else:
-            shape[1] = num_channels
+            axis = 1
+            reduced_axes = [0, 2, 3]
+        param_shape[axis] = num_channels
 
         super().__init__(
-            input_shape=shape,
+            num_channels=num_channels,
             create_scale=create_scale,
             create_offset=create_offset,
             decay_rate=decay_rate,
             eps=eps,
-            scale_init=scale_init,
-            offset_init=offset_init,
-            axis=axis,
-            cross_replica_axis=cross_replica_axis,
             data_format=data_format,
+            param_shape=param_shape,
+            reduced_axes=reduced_axes,
             name=name,
-            rng_key=rng_key,
         )

@@ -11,6 +11,7 @@ Random Number Generator
 
     seed_rng_key
     next_rng_key
+    dropout
 
 
 seed_rng_key
@@ -23,6 +24,12 @@ next_rng_key
 ~~~~~~~~~~~~
 
 .. autofunction:: next_rng_key
+
+
+dropout
+~~~~~~~
+
+.. autofunction:: dropout
 
 
 
@@ -55,15 +62,19 @@ Common Modules
 .. currentmodule:: pax.nn
 
 .. autosummary::
-    MultiHeadAttention
-    BatchNorm
-    BatchNorm1D
-    BatchNorm2D
+    Linear
     Conv1D
     Conv2D
+    Conv1DTranspose
+    Conv2DTranspose
+    BatchNorm1D
+    BatchNorm2D
     LayerNorm
-    Linear
     Sequential
+    LSTM
+    MultiHeadAttention
+    avg_pool
+    max_pool
 
 
 
@@ -76,12 +87,63 @@ Linear
    :members:
 
 
-Sequential
-----------
+Dropout
+-------
 
-
-.. autoclass:: Sequential
+.. autoclass:: Dropout
    :members:
+
+
+Embed
+-----
+
+.. autoclass:: Embed
+   :members:
+
+
+Convolution
+-----------
+
+Conv1D
+~~~~~~
+
+.. autoclass:: Conv1D
+   :members:
+
+Conv2D
+~~~~~~
+
+.. autoclass:: Conv2D
+   :members:
+
+Conv1DTranspose
+~~~~~~~~~~~~~~~
+
+.. autoclass:: Conv1DTranspose
+   :members:
+
+Conv2DTranspose
+~~~~~~~~~~~~~~~
+
+.. autoclass:: Conv2DTranspose
+   :members:
+
+
+BatchNorm
+---------
+
+BatchNorm1D
+~~~~~~~~~~~
+
+.. autoclass:: BatchNorm1D
+   :members:
+
+BatchNorm2D
+~~~~~~~~~~~
+
+.. autoclass:: BatchNorm2D
+   :members:
+
 
 
 LayerNorm
@@ -92,6 +154,34 @@ LayerNorm
    :members:
 
 
+Recurrent
+---------
+
+
+LSTM
+~~~~
+
+.. autoclass:: LSTM
+   :members:
+
+
+
+Pool
+----
+    
+avg_pool
+~~~~~~~~
+
+.. autofunction:: avg_pool
+
+    
+max_pool
+~~~~~~~~
+
+.. autofunction:: max_pool
+
+
+
 
 MultiHeadAttention
 ------------------
@@ -100,167 +190,76 @@ MultiHeadAttention
    :members:
 
 
-BatchNorm
----------
 
-.. autoclass:: BatchNorm
-   :members:
+Sequential
+----------
 
-.. autoclass:: BatchNorm1D
-   :members:
 
-.. autoclass:: BatchNorm2D
+.. autoclass:: Sequential
    :members:
 
 
-Convolution
------------
-
-.. autoclass:: Conv1D
-   :members:
-
-.. autoclass:: Conv2D
-   :members:
 
 
-Haiku Modules
-=============
 
 
-.. currentmodule:: pax.haiku
+Initializers
+============
+
+.. currentmodule:: pax.initializers
 
 .. autosummary::
-    from_haiku
-    batch_norm_2d
-    layer_norm
-    linear
-    lstm
-    gru
-    embed
-    conv_1d
-    conv_2d
-    conv_1d_transpose
-    conv_2d_transpose
-    avg_pool
-    max_pool
 
-    
-from_haiku
-----------
-
-.. autofunction:: from_haiku
+   zeros
+   ones
+   truncated_normal
+   random_normal
+   random_uniform
+   variance_scaling
+   from_haiku_initializer    
 
 
-See https://dm-haiku.readthedocs.io/en/latest/api.html#common-modules for more information about converted modules.
 
-batch_norm_2d
--------------
+zeros
+-----
 
-.. autofunction:: batch_norm_2d
+.. autofunction:: zeros
 
-    
-layer_norm
-----------
 
-.. autofunction:: layer_norm
-
-    
-linear
-------
-
-.. autofunction:: linear
-
-    
-lstm
+ones
 ----
 
-.. autofunction:: lstm
+.. autofunction:: ones
 
 
-gru
----
+truncated_normal
+----------------
 
-.. autofunction:: gru
-
-    
-embed
------
-
-.. autofunction:: embed
-
-    
-conv_1d
--------
-
-.. autofunction:: conv_1d
+.. autofunction:: truncated_normal
 
 
-    
-conv_2d
--------
+random_normal
+-------------
 
-.. autofunction:: conv_2d
-
-    
-conv_1d_transpose
------------------
-
-.. autofunction:: conv_1d_transpose
+.. autofunction:: random_normal
 
 
-    
-conv_2d_transpose
------------------
+random_uniform
+-------------
 
-.. autofunction:: conv_2d_transpose
-
-    
-avg_pool
---------
-
-.. autofunction:: avg_pool
+.. autofunction:: random_uniform
 
 
-    
-max_pool
---------
+variance_scaling
+----------------
 
-.. autofunction:: max_pool
-
-    
-
-Optimizer
-=========
-
-.. currentmodule:: pax.optim
+.. autofunction:: variance_scaling
 
 
-.. autosummary::
+from_haiku_initializer
+----------------------
 
-    Optimizer
-    from_optax
-    adamw
-    OptaxState
-    
-
-Optimizer
----------
-
-
-.. autoclass:: Optimizer
-
-
-from_optax
-----------
-
-.. autofunction:: from_optax
-
-adamw
------
-
-.. autofunction:: adamw
-
-
+.. autofunction:: from_haiku_initializer
 
 
 Utilities
@@ -272,6 +271,7 @@ Utilities
 .. autosummary::
 
     build_update_fn
+    dropout
     Lambda
     RngSeq
 
@@ -280,6 +280,13 @@ build_update_fn
 ---------------
 
 .. autofunction:: build_update_fn
+
+
+dropout
+-------
+
+.. autofunction:: dropout
+
 
 Lambda
 ------
@@ -291,3 +298,22 @@ RngSeq
 
 .. autoclass:: RngSeq
    :members:
+
+.. currentmodule:: pax.haiku
+
+from_haiku
+----------
+
+.. autofunction:: from_haiku
+
+
+See https://dm-haiku.readthedocs.io/en/latest/api.html#common-modules for more information about converted modules.    
+
+
+.. currentmodule:: pax.optim
+
+
+from_optax
+----------
+
+.. autofunction:: from_optax

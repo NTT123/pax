@@ -81,7 +81,7 @@ This is needed to make sure that we only compute gradients w.r.t trainable param
 
 ## Pax and other libraries <a id="paxandfriends"></a>
 
-Pax has several methods that are similar to Pytorch. 
+Pax module has several methods that are similar to Pytorch. 
 
 - ``self.parameters()`` returns parameters of the module.
 - ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameters.
@@ -118,14 +118,16 @@ A good way to learn about ``Pax`` is to see examples in the [examples/](./exampl
 
 ## Modules<a id="modules"></a>
 
-At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, BatchNorm1D, BatchNorm2D, Conv1D, Conv2D, LayerNorm, Sequential}``.
+At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, BatchNorm1D, BatchNorm2D, Conv1D, Conv2D, Conv1DTranspose, Conv2DTranspose, LayerNorm, Sequential}``.
 We intent to add new modules in the near future.
 
-Fortunately, Pax also provides the ``pax.from_haiku`` function that can convert most of modules from ``dm-haiku`` library to ``pax.Module``. For example, to convert a dm-haiku LSTM Module:
+Pax also provides the ``pax.from_haiku`` function that can convert most of modules from ``dm-haiku`` library to ``pax.Module``. For example, to convert a dm-haiku LSTM Module:
+
 ```python
 import haiku as hk
 mylstm = pax.from_haiku(hk.LSTM)(hidden_dim=hidden_dim)
 ```
+
 Similar to dm-haiku modules that needs a dummy input to infer parameters' shape in the initialization process. We also need to pass ``mylstm`` a dummy input to initialize parameters.
 
 ```python
@@ -133,19 +135,15 @@ dummy_x = np.empty((1, hidden_dim), dtype=np.float32)
 dummy_hx = hk.LSTMState(dummy_x, dummy_x)
 mylstm = mylstm.hk_init(dummy_x, dummy_hx)
 ```
-If your model uses these converted haiku modules, you have to call the `hk_init` method right after your model is created to make sure everything is initialized correctly.
 
-
-In additional, Pax provides many functions that avoid the dummy input problems: ``pax.haiku.{linear, layer_norm, batch_norm_2d, lstm, gru, embed, conv_1d, conv_2d, conv_1d_transpose, conv_2d_transpose, avg_pool, max_pool}``.
-We intent to add more functions like this in the near futures.
-
+**Note:** If your model uses these converted haiku modules, you have to call the `hk_init` method right after your model is created to make sure everything is initialized correctly.
 
 ## Optimizers<a id="optimizers"></a>
 
 Pax implements optimizers in a stateful fashion. Bellow is a simple sgd optimizer with momentum.
 
 ```python
-class SGD(pax.Optimizer):
+class SGD(pax.Module):
     velocity: pax.Module
     learning_rate: float
     momentum: float 
@@ -156,18 +154,19 @@ class SGD(pax.Optimizer):
         self.learning_rate = learning_rate
         self.register_state_subtree('velocity', jax.tree_map(lambda x: jnp.zeros_like(x), params))
         
-    def step(self, grads: pax.Module, model: pax.Module):
+    def step(self, grads: pax.Module, params: pax.Module):
         self.velocity = jax.tree_map(
             lambda v, g: v * self.momentum + g * self.learning_rate,
             self.velocity,
             grads
         )
-        params = model.parameters()
         new_params = jax.tree_map(lambda p, v: p - v, params, self.velocity)
-        return model.update(new_params)
+        return new_params
 ```
 
 Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally. Note that: ``self.register_state_subtree`` registers ``velocity`` as part of the pytree.
+
+Pax has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's github repository for more information. 
 
 Moreover, Pax provides the ``pax.optim.from_optax`` function that convert any [optax](https://optax.readthedocs.io/en/latest/) optimizer to a pax's Module.
 

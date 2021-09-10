@@ -46,7 +46,7 @@ class Module:
     It manages all information related to the pytree.
     It also includes methods (usually, ``__call__``) that can be executed to compute functions on the pytree.
 
-    The two important methods: ``flatten`` and ``unflatten`` specify how a module can be converted to a ``(leaves, treedef)``,
+    The two important methods: ``tree_flatten`` and ``tree_unflatten`` specify how a module can be converted to a ``(leaves, treedef)``,
     and otherwise from ``(treedef, leaves)`` back to a module.
 
     A module maintains a ``_name_to_kind`` dictionary that tells if an attribute is part of
@@ -54,13 +54,12 @@ class Module:
     """
 
     # Field Name To Kind
-    _name_to_kind: Optional[Dict[str, PaxFieldKind]] = None
+    _name_to_kind: Dict[str, PaxFieldKind] = None
     _training: bool = True
     name: str = None
 
     def __init__(self, name: Optional[str] = None):
-        """Initialize the ``_training`` flag (the default is ``True``)
-        and the **very** important ``_name_to_kind`` dictionary.
+        """Initialize the ``_training`` flag and ``_name_to_kind`` dictionary.
 
         It is required that any subclass of ``Module`` has to call ``super().__init__()`` for initialization.
         We implement a safeguard mechanism to enforce that by checking if ``_name_to_kind`` is ``None`` in the ``__setattr__`` method.
@@ -75,13 +74,13 @@ class Module:
         return self._training
 
     def __setattr__(self, name: str, value: Any) -> None:
-        """Whenever a user sets ``value`` to attribute ``name``, we will check the assignment.
+        """Whenever a user sets ``value`` to attribute ``name``, we will check the assignment:
 
         * Setting ``_name_to_kind`` and ``_training`` are forbidden.
 
         * Setting ``value`` to a wrong kind attribute is also forbidden.
 
-        * If ``value`` is a ``Module``'s instance and ``name`` is not in ``_name_to_kind``, it will be assigned of kind ``PaxFieldKind.MODULE``.
+        * If ``value`` is a ``Module``'s instance and ``name`` is not in ``_name_to_kind``, its kind will be ``PaxFieldKind.MODULE``.
         """
         if self._name_to_kind is None:
             raise RuntimeError(
@@ -231,8 +230,6 @@ class Module:
     def train(self: T, mode: bool = True):
         """Rebuild a new model recursively and set ``self._training = mode``.
 
-        The default behavior is to create a new module in ``train`` mode.
-
         Arguments:
             mode: return a copy module in ``train`` mode module if ``True``.
         """
@@ -284,7 +281,7 @@ class Module:
     def hk_init(self, *args, enable_jit: bool = False, **kwargs):
         """Return a new initialized module.
 
-        **Note**: This function is only useful if a module is or includes a converted module from the haiku library.
+        **Note**: This function is only useful if a module is/includes a converted module from the haiku library.
 
         Arguments:
             args, kwargs: dummy inputs to the module.
@@ -307,13 +304,6 @@ class Module:
         )
         return [module for module in submods if isinstance(module, Module)]
 
-    def __repr__(self) -> str:
-        cls_name = self.__class__.__name__
-        if self.name is not None:
-            return f"({self.name}) {cls_name}"
-        else:
-            return cls_name
-
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         """This is the default summary method.
 
@@ -332,6 +322,10 @@ class Module:
         """
 
         output = [self.__repr__()]
+        if output[0] is None:
+            raise ValueError(
+                f"The `{self.__class__}.__repr__` method returns a `None` value."
+            )
         sub_modules = self.sub_modules()
 
         def indent(lines: List[str], s) -> List[str]:
@@ -410,7 +404,7 @@ class Module:
     def mixed_precision(self: T, mp_policy: jmp.Policy, method_name="__call__"):
         """Convert the module to a MixedPrecision module.
 
-        It operates by creating a new clone object that has one method be wrapped to enforce the mixed-precision policy.
+        Return a clone object whose ``method_name`` method is wrapped to enforce the mixed-precision policy.
 
         Arguments:
             mp_policy: a ``jmp`` mixed precision policy.
@@ -449,10 +443,10 @@ class Module:
     def apply(self, apply_fn):
         """Apply a function to all sub-modules.
 
-        **Note**: this function returns a transformed copy of the current object.
+        **Note**: this function returns a transformed copy of the current module.
 
         Arguments:
-            apply_fn: a function which inputs a module and outputs a new module.
+            apply_fn: a function which inputs a module and outputs a transformed module.
         """
 
         def rec_fn(x):

@@ -1,20 +1,19 @@
 """Useful functions."""
 
 import inspect
-from typing import Any, Callable, List, Sequence, Tuple, TypeVar, Union
+from typing import Any, Callable, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
 
 from . import rng
 from .module import Module
-from .optim import Optimizer
 
 T = TypeVar("T", bound="Module")
 
 LossFnOutput = Tuple[jnp.ndarray, Tuple[Any, T]]
 LossFn = Callable[[T, T, Any], LossFnOutput]
-UpdateFn = Callable[[T, Optimizer, Any], Tuple[Any, T, Optimizer]]
+UpdateFn = Callable[[T, Module, Any], Tuple[Any, T, Module]]
 
 
 def build_update_fn(loss_fn: LossFn) -> UpdateFn:
@@ -37,11 +36,13 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
     The returned ``update_fn`` function is:
 
-    >>> def _update_fn(model: T, optimizer: Optimizer, inputs: Any):
+    >>> def _update_fn(model: T, optimizer: Module, inputs: Any):
     ...     grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(
     ...         model.parameters(), model, inputs
     ...     )
-    ...     model = optimizer.step(grads, model)
+    ...     model = model.update(
+    ...         optimizer.step(grads, model.parameters()),
+    ...     )
     ...     return loss, model, optimizer
     """
 
@@ -57,7 +58,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         """
         )
 
-    def _update_fn(model: T, optimizer: Optimizer, inputs: Any):
+    def _update_fn(model: T, optimizer: Module, inputs: Any):
         """An update function.
 
         Note that: ``model`` and ``optimizer`` have internal states.
@@ -77,10 +78,27 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(
             model.parameters(), model, inputs
         )
-        model = optimizer.step(grads, model)
+        model = model.update(
+            optimizer.step(grads, model.parameters()),
+        )
         return loss, model, optimizer
 
     return _update_fn
+
+
+def dropout(rng_key: jnp.ndarray, dropout_rate: float, x: jnp.ndarray) -> jnp.ndarray:
+    """Dropout input `x` randomly.
+
+    Scaling the input by ``1 / (1-dropout_rate)`` makes ``E[output] = input``.
+    """
+    assert 0 <= dropout_rate < 1.0
+
+    if dropout_rate == 0.0:
+        return x
+    else:
+        mask = jax.random.bernoulli(rng_key, dropout_rate, shape=x.shape)
+        x = jnp.where(mask, 0.0, x / (1.0 - dropout_rate))
+        return x
 
 
 class Lambda(Module):
@@ -155,3 +173,42 @@ class RngSeq(Module):
             return rng_keys[0]
         else:
             return rng_keys
+
+
+class EMA(Module):
+    """Exponential Moving Average (EMA) Module"""
+
+    averages: Any
+    decay_rate: float
+    debias: Optional[jnp.ndarray] = None
+
+    def __init__(self, initial_value, decay_rate: float, debias: bool = False):
+        """Create a new EMA module.
+
+        Arguments:
+            initial_value: the initial value.
+            decay_rate: the decay rate.
+            debias: ignore the initial value to avoid biased estimates.
+        """
+
+        super().__init__()
+        self.register_state_subtree("averages", initial_value)
+        self.decay_rate = decay_rate
+        if debias:
+            self.register_state("debias", jnp.array(False))
+
+    def __call__(self, xs):
+        if self.debias is not None:
+            self.averages = jax.tree_map(
+                lambda a, x: jnp.where(self.debias, a, x), self.averages, xs
+            )
+
+            self.debias = jnp.logical_or(self.debias, True)
+
+        self.averages = jax.tree_map(
+            lambda a, x: a * self.decay_rate + x * (1 - self.decay_rate),
+            self.averages,
+            xs,
+        )
+
+        return self.averages

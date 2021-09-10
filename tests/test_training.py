@@ -2,6 +2,7 @@ from typing import Tuple
 
 import jax
 import jax.numpy as jnp
+import opax
 import pax
 from pax.utils import LossFnOutput
 
@@ -24,7 +25,7 @@ def test_train_linear_regression():
 
     update_fn = pax.utils.build_update_fn(loss_fn)
     net = pax.nn.Linear(1, 1)
-    optimizer = pax.optim.adamw(net.parameters(), 1e-1)
+    optimizer = opax.adamw(1e-1)(net.parameters())
     for step in range(100):
         loss, net, optimizer = update_fn(net, optimizer, (x, y))
     print(f"[step {step}]  loss {loss:.3f}")
@@ -62,7 +63,7 @@ def test_train_hk_linear_regression():
 
     update_fn = pax.utils.build_update_fn(loss_fn)
     net = M().hk_init(x)
-    optimizer = pax.optim.adamw(net.parameters(), 1e-1)
+    optimizer = opax.adamw(1e-1)(net.parameters())
     for step in range(100):
         loss, net, optimizer = update_fn(net, optimizer, (x, y))
     print(f"[step {step}]  loss {loss:.3f}")

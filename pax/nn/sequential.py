@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Optional
 
 import jax
 
@@ -26,12 +26,14 @@ class Sequential(Module):
     functions: List[Optional[Callable]]
 
     def __init__(self, *layers):
+        """Create a Sequential module."""
         super().__init__()
         self.register_module_subtree(
             "modules", [(f if isinstance(f, Module) else Lambda(f)) for f in layers]
         )
 
     def __call__(self, x):
+        """Call layers in order."""
         for f in self.modules:
             x = f(x)
         return x

@@ -1,14 +1,9 @@
 import jax
 import jax.numpy as jnp
+import opax
 import pax
 import pytest
 from pax.utils import LossFnOutput
-
-
-def test_adamw_optim():
-    net = pax.nn.Linear(1, 1)
-    opt = pax.optim.adamw(net.parameters())
-    net = opt.step(net.parameters(), net)
 
 
 def test_optim_model_update_state():
@@ -37,7 +32,7 @@ def test_optim_model_update_state():
         return loss, (loss, model)
 
     update_fn = pax.utils.build_update_fn(loss_fn=loss_fn)
-    optimizer = pax.optim.adamw(net.parameters())
+    optimizer = opax.adamw()(net.parameters())
     x = jnp.zeros((2, 2), dtype=jnp.float32)
 
     with pytest.raises(ValueError):
@@ -45,7 +40,7 @@ def test_optim_model_update_state():
 
 
 def test_sgd():
-    class SGD(pax.Optimizer):
+    class SGD(pax.Module):
         velocity: pax.Module
         learning_rate: float
         momentum: float
@@ -58,15 +53,14 @@ def test_sgd():
                 "velocity", jax.tree_map(lambda x: jnp.zeros_like(x), params)
             )
 
-        def step(self, grads: pax.Module, model: pax.Module):
+        def step(self, grads: pax.Module, params: pax.Module):
             self.velocity = jax.tree_map(
                 lambda v, g: v * self.momentum + g * self.learning_rate,
                 self.velocity,
                 grads,
             )
-            params = model.parameters()
             new_params = jax.tree_map(lambda p, v: p - v, params, self.velocity)
-            return model.update(new_params)
+            return new_params
 
     f = pax.nn.Linear(2, 2)
     sgd = SGD(f, 0.9, 1e-4)

@@ -14,22 +14,19 @@ state._seed = None
 
 
 def seed_rng_key(seed: int) -> None:
-    """Set ``state._seed = seed`` and reset ``_rng_key``.
-
-    ``_rng_key`` is reset to ``None`` to signal generating a new ``rng_key`` from ``seed``.
+    """Set ``state._seed = seed`` and reset ``state._rng_key`` to ``None``.
 
     Arguments:
         seed: an interger seed.
-
     """
     state._seed = seed
     state._rng_key = None  # reset `_rng_key`
 
 
 def next_rng_key() -> jnp.ndarray:
-    """Return a random RNG key. Also, renew the global random key.
+    """Return a random rng key. Renew the global random key ``state._rng_key``.
 
-    If ``state._rng_key`` is ``None``, generate a new ``_rng_key`` from ``state._seed``.
+    If ``state._rng_key`` is ``None``, generate a new ``state._rng_key`` from ``state._seed``.
     """
     if state._rng_key is None:
         if state._seed is None:

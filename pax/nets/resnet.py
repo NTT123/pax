@@ -6,9 +6,10 @@ from typing import Sequence, Tuple
 
 import jax
 import jax.numpy as jnp
-from pax.haiku import max_pool
+from pax.nn import max_pool
 from pax.nn.linear import Linear
 
+from .. import initializers
 from ..module import Module
 from ..nn import BatchNorm2D, Conv2D
 
@@ -35,12 +36,12 @@ class ResnetBlock(Module):
                 kernel_shape=1,
                 stride=stride,
                 with_bias=False,
-                padding=(0, 0),
+                padding=[(0, 0), (0, 0)],
                 data_format="NCHW",
                 name="proj_conv",
             )
             self.proj_batchnorm = BatchNorm2D(
-                out_channels, True, True, 0.9, data_format="NC...", name="proj_bn"
+                out_channels, True, True, 0.9, data_format="NCHW", name="proj_bn"
             )
 
         channel_div = 4 if bottleneck else 1
@@ -50,13 +51,13 @@ class ResnetBlock(Module):
             kernel_shape=1 if bottleneck else 3,
             stride=1 if bottleneck else stride,
             with_bias=False,
-            padding=(0, 0) if bottleneck else (1, 1),
+            padding=[(0, 0), (0, 0)] if bottleneck else [(1, 1), (1, 1)],
             data_format="NCHW",
             name="conv1",
         )
 
         bn_0 = BatchNorm2D(
-            out_channels, True, True, 0.9, data_format="NC...", name="bn1"
+            out_channels, True, True, 0.9, data_format="NCHW", name="bn1"
         )
 
         conv_1 = Conv2D(
@@ -65,13 +66,13 @@ class ResnetBlock(Module):
             kernel_shape=3,
             stride=stride if bottleneck else 1,
             with_bias=False,
-            padding=(1, 1),
+            padding=[(1, 1), (1, 1)],
             data_format="NCHW",
             name="conv2",
         )
 
         bn_1 = BatchNorm2D(
-            out_channels, True, True, 0.9, data_format="NC...", name="bn2"
+            out_channels, True, True, 0.9, data_format="NCHW", name="bn2"
         )
 
         layers = ((conv_0, bn_0), (conv_1, bn_1))
@@ -83,7 +84,7 @@ class ResnetBlock(Module):
                 kernel_shape=1,
                 stride=1,
                 with_bias=False,
-                padding=(0, 0),
+                padding=[(0, 0), (0, 0)],
                 data_format="NCHW",
                 name="conv3",
             )
@@ -93,7 +94,7 @@ class ResnetBlock(Module):
                 True,
                 0.9,
                 scale_init=jnp.zeros,
-                data_format="NC...",
+                data_format="NCHW",
                 name="bn3",
             )
             layers = layers + ((conv_2, bn_2))
@@ -198,7 +199,7 @@ class ResNet(Module):
         check_length(4, channels_per_group, "channels_per_group")
 
         logits_config = dict(logits_config or {})
-        logits_config.setdefault("w_init", jnp.zeros)
+        logits_config.setdefault("w_init", initializers.zeros)
 
         initial_conv_config = dict(initial_conv_config or {})
         initial_conv_config.setdefault("in_features", 3)
@@ -206,7 +207,7 @@ class ResNet(Module):
         initial_conv_config.setdefault("kernel_shape", 7)
         initial_conv_config.setdefault("stride", 2)
         initial_conv_config.setdefault("with_bias", False)
-        initial_conv_config.setdefault("padding", (3, 3))
+        initial_conv_config.setdefault("padding", [(3, 3), (3, 3)])
         initial_conv_config.setdefault("data_format", "NCHW")
 
         self.initial_conv = Conv2D(**initial_conv_config, name="conv1")
@@ -216,7 +217,7 @@ class ResNet(Module):
             True,
             True,
             0.9,
-            data_format="NC...",
+            data_format="NCHW",
             name="bn1",
         )
 
@@ -250,13 +251,13 @@ class ResNet(Module):
         out = self.initial_batchnorm(out)
         out = jax.nn.relu(out)
         out = jnp.pad(out, [(0, 0), (0, 0), (1, 1), (1, 1)])
-        mp = max_pool(
+        out = max_pool(
+            out,
             window_shape=(1, 1, 3, 3),
             strides=(1, 1, 2, 2),
             padding="VALID",
             channel_axis=1,
         )
-        out = mp(out)
         for block_group in self.block_groups:
             out = block_group(out)
 

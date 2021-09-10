@@ -1,6 +1,10 @@
 from .attention import MultiHeadAttention
-from .batch_norm import BatchNorm, BatchNorm1D, BatchNorm2D
-from .conv import Conv1D, Conv2D
+from .batch_norm import BatchNorm1D, BatchNorm2D
+from .conv import Conv1D, Conv1DTranspose, Conv2D, Conv2DTranspose
+from .dropout import Dropout
+from .embed import Embed
 from .layer_norm import LayerNorm
 from .linear import Linear
+from .pool import avg_pool, max_pool
+from .recurrent import LSTM, LSTMState
 from .sequential import Sequential

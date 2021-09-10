@@ -1,13 +1,11 @@
 """train a handwritten digit classifier."""
 
-import pickle
-from pathlib import Path
-from typing import List, Mapping
+from typing import List, Mapping, Tuple
 
 import jax
 import jax.numpy as jnp
 import jmp
-import optax
+import opax
 import pax
 import tensorflow_datasets as tfds
 from tqdm.auto import tqdm
@@ -24,26 +22,23 @@ weight_decay = 1e-4
 class ConvNet(pax.Module):
     """ConvNet module."""
 
-    convs: List[pax.nn.Conv2D] = None
-    bns: List[pax.nn.BatchNorm] = None
+    layers: List[Tuple[pax.nn.Conv2D, pax.nn.BatchNorm2D]]
     output: pax.nn.Conv2D
 
     def __init__(self):
         super().__init__()
-        self.register_module_subtree(
-            "convs",
-            [
-                pax.nn.Conv2D((1 if i == 0 else 32), 32, 6, padding="VALID")
-                for i in range(5)
-            ],
-        )
-        self.register_module_subtree(
-            "bns", [pax.haiku.batch_norm_2d(32) for _ in range(5)]
-        )
+        layers = []
+        for i in range(5):
+            conv_in = 1 if i == 0 else 32
+            conv = pax.nn.Conv2D(conv_in, 32, 6, padding="VALID")
+            bn = pax.nn.BatchNorm2D(32)
+            layers.append((conv, bn))
+
+        self.register_module_subtree("layers", layers)
         self.output = pax.nn.Conv2D(32, 10, 3, padding="VALID")
 
     def __call__(self, x: jnp.ndarray):
-        for conv, bn in zip(self.convs, self.bns):
+        for conv, bn in self.layers:
             x = bn(conv(x))
             x = jax.nn.relu(x)
         x = self.output(x)
@@ -68,17 +63,20 @@ def test_loss_fn(model: ConvNet, batch: Batch):
 
 
 @jax.jit
-def update_fn(model: ConvNet, optimizer: pax.Optimizer, batch: Batch):
+def update_fn(model: ConvNet, optimizer: pax.Module, batch: Batch):
     params = model.parameters()
     grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(params, model, batch)
-    model = optimizer.step(grads, model)
+    model = model.update(
+        optimizer.step(grads, model.parameters()),
+    )
     return loss, model, optimizer
 
 
 net = ConvNet()
 
 
-half = jnp.float16  # On TPU this should be jnp.bfloat16.
+# TODO: check why this makes training so slow on CPU.
+half = jnp.float16  # or bfloat16
 full = jnp.float32
 linear_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=full)
 batchnorm_policy = jmp.Policy(compute_dtype=full, param_dtype=full, output_dtype=full)
@@ -97,11 +95,9 @@ def mp_policy_fn(mod):
 net = net.apply(mp_policy_fn)
 
 print(net.summary())
-optimizer = pax.optim.from_optax(
-    optax.chain(
-        optax.clip_by_global_norm(1.0),
-        optax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
-    )
+optimizer = opax.chain(
+    opax.clip_by_global_norm(1.0),
+    opax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
 )(net.parameters())
 
 

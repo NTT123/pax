@@ -1,5 +1,5 @@
 import math
-from typing import List, Optional
+from typing import Dict, List, Optional, Sequence
 
 import haiku as hk
 import jax
@@ -35,7 +35,7 @@ class DenseBlock(pax.Module):
     def __init__(self, in_dim: int, init_scale: float, widening_factor: int = 4):
         super().__init__()
         self._init_scale = init_scale
-        initializer = hk.initializers.VarianceScaling(self._init_scale)
+        initializer = pax.initializers.variance_scaling(self._init_scale)
         self._widening_factor = widening_factor
         self.fc1 = pax.nn.Linear(in_dim, in_dim * widening_factor, w_init=initializer)
         self.fc2 = pax.nn.Linear(in_dim * widening_factor, in_dim, w_init=initializer)
@@ -48,6 +48,8 @@ class DenseBlock(pax.Module):
 
 class Transformer(pax.Module):
     """A transformer stack."""
+
+    layers: Sequence[Dict[str, pax.Module]]
 
     def __init__(self, dim: int, num_heads: int, num_layers: int, dropout_rate: float):
         super().__init__()
@@ -98,11 +100,11 @@ class Transformer(pax.Module):
         for i in range(self._num_layers):
             h_norm = self.layers[i]["attn_layer_norm"](h)
             h_attn = self.layers[i]["attention"](h_norm, mask=mask)
-            h_attn = pax.haiku.dropout(rngs[i * 2 + 0], dropout_rate, h_attn)
+            h_attn = pax.dropout(rngs[i * 2 + 0], dropout_rate, h_attn)
             h = h + h_attn
             h_norm = self.layers[i]["dense_layer_norm"](h)
             h_dense = self.layers[i]["dense_block"](h_norm)
-            h_dense = pax.haiku.dropout(rngs[i * 2 + 1], dropout_rate, h_dense)
+            h_dense = pax.dropout(rngs[i * 2 + 1], dropout_rate, h_dense)
             h = h + h_dense
         h = self.layer_norm_output(h)
 
@@ -141,15 +143,15 @@ class LM(pax.Module):
         super().__init__()
         self.vocab_size = vocab_size
         self.hidden_dim = hidden_dim
-        self.embed = pax.haiku.embed(
+        self.embed = pax.nn.Embed(
             vocab_size,
             hidden_dim,
-            w_init=hk.initializers.VarianceScaling(mode="fan_out"),
+            w_init=pax.initializers.variance_scaling(mode="fan_out"),
         )
         self.transformer = Transformer(
             hidden_dim, hidden_dim // 64, num_layers, dropout_rate=dropout
         )
-        self.output = pax.haiku.linear(hidden_dim, vocab_size)
+        self.output = pax.nn.Linear(hidden_dim, vocab_size)
 
     def __call__(self, x):
         x = self.embed(x)

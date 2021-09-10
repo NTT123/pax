@@ -8,10 +8,9 @@ import jax
 import jax.numpy as jnp
 import jax.tools.colab_tpu
 import numpy as np
-import optax
+import opax
 import pax
 import tensorflow as tf
-from pax.optim import Optimizer
 from tqdm.auto import tqdm
 
 from model import LM
@@ -69,13 +68,18 @@ def update_step(prev, batch: jnp.ndarray):
         model.parameters(), model, batch
     )
     grads = jax.lax.pmean(grads, axis_name="i")
-    model = optimizer.step(grads, model)
+    model = model.update(
+        optimizer.step(grads, model.parameters()),
+    )
     return (model, optimizer), loss
 
 
 @partial(jax.pmap, axis_name="i")
 def update_fn(
-    model: LM, optimizer: Optimizer, multi_batch: jnp.ndarray, total_losses: jnp.ndarray
+    model: LM,
+    optimizer: pax.Module,
+    multi_batch: jnp.ndarray,
+    total_losses: jnp.ndarray,
 ):
     (model, optimizer), losses = jax.lax.scan(
         update_step, (model, optimizer), multi_batch
@@ -138,8 +142,9 @@ def double_buffer(ds):
 def train():
     net = LM(vocab_size=vocab_size, hidden_dim=hidden_dim, num_layers=num_layers)
     print(net.summary())
-    optimizer = pax.optim.from_optax(
-        optax.chain(optax.clip_by_global_norm(1.0), optax.adam(learning_rate))
+    optimizer = opax.chain(
+        opax.clip_by_global_norm(1.0),
+        opax.adam(learning_rate),
     )(net.parameters())
 
     # replicate on multiple devices
