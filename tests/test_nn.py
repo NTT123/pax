@@ -284,7 +284,7 @@ def test_native_conv1d_4():
 
 def test_native_conv2d_1():
     rng_key = jax.random.PRNGKey(42)
-    conv1d = pax.nn.Conv2D(
+    conv2d = pax.nn.Conv2D(
         in_features=3,
         out_features=5,
         kernel_shape=3,
@@ -296,12 +296,12 @@ def test_native_conv2d_1():
         rng_key=rng_key,
     )
     x = jax.random.normal(rng_key, (2, 6, 7, 3))
-    y = conv1d(x)
+    y = conv2d(x)
     assert y.shape == (2, 6, 7, 5)
 
 
 def test_native_conv2d_2():
-    rng_key = jax.random.PRNGKey(42)
+    rng_key = jax.random.PRNGKey(11)
     conv2d = pax.nn.Conv2D(
         in_features=7,
         out_features=5,
@@ -328,7 +328,7 @@ def test_native_conv2d_2():
 
 
 def test_native_conv2d_3():
-    rng_key = jax.random.PRNGKey(42)
+    rng_key = jax.random.PRNGKey(55)
     conv2d = pax.nn.Conv2D(
         in_features=7,
         out_features=5,
@@ -355,7 +355,7 @@ def test_native_conv2d_3():
 
 
 def test_native_conv2d_4():
-    rng_key = jax.random.PRNGKey(42)
+    rng_key = jax.random.PRNGKey(66)
     conv2d = pax.nn.Conv2D(
         in_features=7,
         out_features=5,
@@ -382,7 +382,7 @@ def test_native_conv2d_4():
 
 
 def test_native_conv2d_5():
-    rng_key = jax.random.PRNGKey(42)
+    rng_key = jax.random.PRNGKey(99)
     conv2d = pax.nn.Conv2D(
         in_features=7,
         out_features=5,
@@ -404,6 +404,63 @@ def test_native_conv2d_5():
     )
     params = hk_conv.init(rng_key, x)
     hk_y = hk_conv.apply({"conv2_d": {"w": conv2d.weight}}, rng_key, x)
+    assert params["conv2_d"]["w"].shape == conv2d.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv2d_6():
+    rng_key = jax.random.PRNGKey(40)
+    conv2d = pax.nn.Conv2D(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(10, 20),
+        stride=(1, 1),
+        rate=(1, 3),
+        padding="VALID",
+        with_bias=False,
+        data_format="NCHW",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 7, 40, 60))
+    y = conv2d(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv2D(
+            5, (10, 20), (1, 1), (1, 3), "VALID", False, data_format="NCHW"
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply({"conv2_d": {"w": conv2d.weight}}, rng_key, x)
+    assert params["conv2_d"]["w"].shape == conv2d.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv2d_7():
+    rng_key = jax.random.PRNGKey(46)
+    conv2d = pax.nn.Conv2D(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(10, 20),
+        stride=(1, 1),
+        rate=(1, 3),
+        padding="VALID",
+        with_bias=True,
+        data_format="NCHW",
+        b_init=pax.initializers.truncated_normal(),
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 7, 40, 60))
+    y = conv2d(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv2D(
+            5, (10, 20), (1, 1), (1, 3), "VALID", True, data_format="NCHW"
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply(
+        {"conv2_d": {"w": conv2d.weight, "b": conv2d.bias[:, None, None]}}, rng_key, x
+    )
     assert params["conv2_d"]["w"].shape == conv2d.weight.shape
     np.testing.assert_allclose(y, hk_y)
 
@@ -431,4 +488,248 @@ def test_native_linear_w_bias():
     x = jax.random.normal(rng_key, (7, 11, 9), dtype=jnp.float32)
     y = fc(x)
     hk_y = hk_fc.apply({"linear": {"w": fc.weight, "b": fc.bias}}, rng_key, x)
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv2d_transpose_1():
+    rng_key = jax.random.PRNGKey(42)
+    conv2d_t = pax.nn.Conv2DTranspose(
+        in_features=3,
+        out_features=5,
+        kernel_shape=3,
+        stride=1,
+        with_bias=False,
+        data_format="NHWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 6, 7, 3))
+    y = conv2d_t(x)
+    assert y.shape == (2, 6, 7, 5)
+
+
+def test_native_conv2d_transpose_2():
+    rng_key = jax.random.PRNGKey(45)
+    conv2d_t = pax.nn.Conv2DTranspose(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(10, 20),
+        stride=(1, 1),
+        padding="VALID",
+        with_bias=False,
+        data_format="NHWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 40, 60, 7))
+    y = conv2d_t(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv2DTranspose(
+            5,
+            kernel_shape=(10, 20),
+            stride=(1, 1),
+            padding="VALID",
+            with_bias=False,
+            data_format="NHWC",
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply({"conv2_d_transpose": {"w": conv2d_t.weight}}, rng_key, x)
+    assert params["conv2_d_transpose"]["w"].shape == conv2d_t.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv2d_transpose_3():
+    rng_key = jax.random.PRNGKey(45)
+    conv2d_t = pax.nn.Conv2DTranspose(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(8, 8),
+        stride=(4, 4),
+        padding="SAME",
+        with_bias=True,
+        data_format="NCHW",
+        rng_key=rng_key,
+        b_init=pax.initializers.truncated_normal(),
+    )
+    x = jax.random.normal(rng_key, (2, 7, 40, 60))
+    y = conv2d_t(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv2DTranspose(
+            5,
+            kernel_shape=(8, 8),
+            stride=(4, 4),
+            padding="SAME",
+            with_bias=True,
+            data_format="NCHW",
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply(
+        {
+            "conv2_d_transpose": {
+                "w": conv2d_t.weight,
+                "b": conv2d_t.bias[:, None, None],
+            }
+        },
+        rng_key,
+        x,
+    )
+    assert params["conv2_d_transpose"]["w"].shape == conv2d_t.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv2d_transpose_4():
+    rng_key = jax.random.PRNGKey(45)
+    conv2d_t = pax.nn.Conv2DTranspose(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(8, 8),
+        stride=(4, 4),
+        padding="SAME",
+        with_bias=True,
+        data_format="NHWC",
+        rng_key=rng_key,
+        b_init=pax.initializers.truncated_normal(),
+    )
+    x = jax.random.normal(rng_key, (2, 40, 60, 7))
+    y = conv2d_t(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv2DTranspose(
+            5,
+            kernel_shape=(8, 8),
+            stride=(4, 4),
+            padding="SAME",
+            with_bias=True,
+            data_format="NHWC",
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply(
+        {"conv2_d_transpose": {"w": conv2d_t.weight, "b": conv2d_t.bias}}, rng_key, x
+    )
+    assert params["conv2_d_transpose"]["w"].shape == conv2d_t.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv1d_transpose_1():
+    rng_key = jax.random.PRNGKey(42)
+    conv1d_t = pax.nn.Conv1DTranspose(
+        in_features=3,
+        out_features=5,
+        kernel_shape=3,
+        stride=1,
+        with_bias=False,
+        data_format="NWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 6, 3))
+    y = conv1d_t(x)
+    assert y.shape == (2, 6, 5)
+
+
+def test_native_conv1d_transpose_2():
+    rng_key = jax.random.PRNGKey(45)
+    conv1d_t = pax.nn.Conv1DTranspose(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(10,),
+        stride=(1,),
+        padding="VALID",
+        with_bias=False,
+        data_format="NWC",
+        rng_key=rng_key,
+    )
+    x = jax.random.normal(rng_key, (2, 40, 7))
+    y = conv1d_t(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv1DTranspose(
+            5,
+            kernel_shape=(10,),
+            stride=(1,),
+            padding="VALID",
+            with_bias=False,
+            data_format="NWC",
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply({"conv1_d_transpose": {"w": conv1d_t.weight}}, rng_key, x)
+    assert params["conv1_d_transpose"]["w"].shape == conv1d_t.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv1d_transpose_3():
+    rng_key = jax.random.PRNGKey(45)
+    conv1d_t = pax.nn.Conv1DTranspose(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(8,),
+        stride=(4,),
+        padding="SAME",
+        with_bias=True,
+        data_format="NCW",
+        rng_key=rng_key,
+        b_init=pax.initializers.truncated_normal(),
+    )
+    x = jax.random.normal(rng_key, (2, 7, 40))
+    y = conv1d_t(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv1DTranspose(
+            5,
+            kernel_shape=(8,),
+            stride=(4,),
+            padding="SAME",
+            with_bias=True,
+            data_format="NCW",
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply(
+        {
+            "conv1_d_transpose": {
+                "w": conv1d_t.weight,
+                "b": conv1d_t.bias[:, None],
+            }
+        },
+        rng_key,
+        x,
+    )
+    assert params["conv1_d_transpose"]["w"].shape == conv1d_t.weight.shape
+    np.testing.assert_allclose(y, hk_y)
+
+
+def test_native_conv1d_transpose_4():
+    rng_key = jax.random.PRNGKey(45)
+    conv1d_t = pax.nn.Conv1DTranspose(
+        in_features=7,
+        out_features=5,
+        kernel_shape=(8,),
+        stride=(4,),
+        padding="SAME",
+        with_bias=True,
+        data_format="NWC",
+        rng_key=rng_key,
+        b_init=pax.initializers.truncated_normal(),
+    )
+    x = jax.random.normal(rng_key, (2, 40, 7))
+    y = conv1d_t(x)
+
+    hk_conv = hk.transform(
+        lambda x: hk.Conv1DTranspose(
+            5,
+            kernel_shape=(8,),
+            stride=(4,),
+            padding="SAME",
+            with_bias=True,
+            data_format="NWC",
+        )(x),
+    )
+    params = hk_conv.init(rng_key, x)
+    hk_y = hk_conv.apply(
+        {"conv1_d_transpose": {"w": conv1d_t.weight, "b": conv1d_t.bias}}, rng_key, x
+    )
+    assert params["conv1_d_transpose"]["w"].shape == conv1d_t.weight.shape
     np.testing.assert_allclose(y, hk_y)
