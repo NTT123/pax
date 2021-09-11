@@ -72,6 +72,7 @@ Common Modules
     LayerNorm
     Sequential
     LSTM
+    GRU
     MultiHeadAttention
     avg_pool
     max_pool
@@ -165,6 +166,12 @@ LSTM
    :members:
 
 
+GRU
+~~~
+
+.. autoclass:: GRU
+   :members:
+
 
 Pool
 ----
@@ -245,7 +252,7 @@ random_normal
 
 
 random_uniform
--------------
+--------------
 
 .. autofunction:: random_uniform
 
@@ -269,11 +276,17 @@ Utilities
 
 
 .. autosummary::
-
+    scan
     build_update_fn
     dropout
     Lambda
     RngSeq
+
+
+scan
+----
+
+.. autofunction:: scan
 
 
 build_update_fn

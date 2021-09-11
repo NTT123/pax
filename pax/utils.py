@@ -101,6 +101,35 @@ def dropout(rng_key: jnp.ndarray, dropout_rate: float, x: jnp.ndarray) -> jnp.nd
         return x
 
 
+def scan(fn, init, xs, length=None, unroll: int = 1, time_major=False):
+    """``jax.lax.scan`` with an additional ``time_major=False`` mode.
+
+
+    The semantics of ``scan`` are given roughly by this Python implementation::
+
+      def scan(f, init, xs, length=None):
+          if xs is None:
+              xs = [None] * length
+          carry = init
+          ys = []
+          for x in xs:
+              carry, y = f(carry, x)
+              ys.append(y)
+          return carry, np.stack(ys)
+
+    """
+    if time_major:
+        # data format: TN...
+        return jax.lax.scan(fn, init, xs, length=length, unroll=unroll)
+    else:
+        # data format: NT...
+        if xs is not None:
+            xs = jnp.swapaxes(xs, 0, 1)  # swap batch and time axes
+        state, output = jax.lax.scan(fn, init, xs, length=length, unroll=unroll)
+        output = jnp.swapaxes(output, 0, 1)  # restore to NT...
+        return state, output
+
+
 class Lambda(Module):
     """A pure functional module.
 

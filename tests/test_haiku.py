@@ -14,7 +14,7 @@ def test_lstm():
     lstm = pax.nn.LSTM(32, 32)
     x = np.zeros((2, 32), dtype=np.float32)
     hx = lstm.initial_state(2)
-    y, hx = lstm(x, hx)
+    hx, y = lstm(hx, x)
     assert y.shape == (2, 32)
     assert hx.hidden.shape == (2, 32)
     assert hx.cell.shape == (2, 32)

@@ -7,7 +7,6 @@ import jax.numpy as jnp
 import numpy as np
 
 import haiku as hk
-from haiku import LSTMState, dynamic_unroll
 
 from .module import Module
 from .rng import next_rng_key

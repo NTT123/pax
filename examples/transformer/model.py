@@ -179,5 +179,5 @@ class LM(pax.Module):
         padded_inputs = [0] * pad_len + inputs
         x = jnp.array([padded_inputs], dtype=jnp.int32)
         L = length - len(prompt)
-        _, out = jax.lax.scan(step, x, None, length=L)
-        return prompt + out[:, 0].tolist()
+        _, out = pax.utils.scan(step, x, None, length=L)
+        return prompt + out[0].tolist()
