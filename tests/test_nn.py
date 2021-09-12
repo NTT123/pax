@@ -796,3 +796,10 @@ def test_haiku_max_pool():
     x = np.zeros((3, 5, 3), dtype=np.float32)
     y = pax.nn.max_pool(x, (2, 1), (3, 1), "SAME", -1)
     assert y.shape == (3, 2, 3)
+
+
+def test_conv_wrong_input_size():
+    conv1 = pax.nn.Conv2D(3, 6, 3)
+    x = jnp.zeros((2, 9, 9, 7), dtype=jnp.float32)
+    with pytest.raises(ValueError):
+        y = conv1(x)

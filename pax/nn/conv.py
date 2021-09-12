@@ -94,6 +94,11 @@ class Conv(Module):
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         assert len(x.shape) == len(self.kernel_format)
+        n_channels = x.shape[1] if self.data_format[1] == "C" else x.shape[-1]
+        if n_channels != self.in_features:
+            raise ValueError(
+                f"Expecting {self.in_features} input channels. Get {n_channels} channels."
+            )
 
         dimension_numbers = jax.lax.conv_dimension_numbers(
             x.shape,
