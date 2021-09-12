@@ -29,11 +29,13 @@ def generate_test_sample(step, test_logmel, wave_gru, length, sample_rate, mu):
     generated_mu = wave_gru.eval().inference(test_logmel[None, :length, :])
     generated_mu = jax.device_get(generated_mu)
     synthesized_clip = librosa.mu_expand(generated_mu[0] - 128, mu=mu, quantize=True)
+    file_name = f"/tmp/wave_gru_sample_{step:05d}.wav"
     soundfile.write(
-        f"/tmp/wave_gru_sample_{step:05d}.wav",
+        file_name,
         synthesized_clip,
         samplerate=sample_rate,
     )
+    return file_name
 
 
 def train(
@@ -52,7 +54,9 @@ def train(
     seq_len=2 ** 10,
     n_mu_bits=8,
     log_freq: int = 1000,
+    random_seed=42,
 ):
+    pax.seed_rng_key(random_seed)
     mu = 2 ** n_mu_bits - 1
     n_frames = seq_len // hop_length
     wave_gru = WaveGRU(n_mels, hidden_dim)
@@ -90,9 +94,13 @@ def train(
 
         if step % log_freq == 0:
             loss = total_loss / log_freq
-            tr.write(f"[step {step}]  train loss {loss:.3f}")
             total_loss = 0.0
-            generate_test_sample(step, test_logmel, wave_gru, 200, sample_rate, mu)
+            file_name = generate_test_sample(
+                step, test_logmel, wave_gru, 200, sample_rate, mu
+            )
+            tr.write(
+                f"[step {step}]  train loss {loss:.3f}  synthesized clip {file_name}"
+            )
 
     return wave_gru
 
