@@ -1,7 +1,7 @@
 """Optax optimizers as Pax modules."""
 
 import logging
-from typing import Any, List, TypeVar
+from typing import List, TypeVar
 
 import jax
 import jax.tree_util
