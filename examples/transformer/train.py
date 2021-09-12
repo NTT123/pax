@@ -82,7 +82,7 @@ def update_fn(
     total_losses: jnp.ndarray,
 ):
     (model, optimizer), losses = pax.utils.scan(
-        update_step, (model, optimizer), multi_batch, time_major=True
+        update_step, (model, optimizer), multi_batch
     )
 
     total_losses = total_losses + jnp.sum(losses)

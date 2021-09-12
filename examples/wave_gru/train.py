@@ -25,8 +25,7 @@ def loss_fn(params: WaveGRU, model: WaveGRU, inputs) -> pax.utils.LossFnOutput:
     return loss, (loss, model)
 
 
-def generate_test_sample(step, test_iter, wave_gru, length, sample_rate, mu):
-    test_logmel, text_mu_wav = next(test_iter)
+def generate_test_sample(step, test_logmel, wave_gru, length, sample_rate, mu):
     generated_mu = wave_gru.eval().inference(test_logmel[None, :length, :])
     generated_mu = jax.device_get(generated_mu)
     synthesized_clip = librosa.mu_expand(generated_mu[0] - 128, mu=mu, quantize=True)
@@ -79,6 +78,7 @@ def train(
     )
     data_iter = split_loader(split="train")
     test_iter = split_loader(split="test")
+    test_logmel, _ = next(test_iter)
 
     update_fn = jax.jit(pax.utils.build_update_fn(loss_fn))
     total_loss = 0.0
@@ -90,11 +90,9 @@ def train(
 
         if step % log_freq == 0:
             loss = total_loss / log_freq
-            tr.write(f"================\n[step {step}]  train loss {loss:.3f}")
+            tr.write(f"[step {step}]  train loss {loss:.3f}")
             total_loss = 0.0
-            logits = wave_gru.eval()((batch[0], batch[1][:, :-1]))
-            prs = jax.nn.softmax(logits, axis=-1)
-            generate_test_sample(step, test_iter, wave_gru, 200, sample_rate, mu)
+            generate_test_sample(step, test_logmel, wave_gru, 200, sample_rate, mu)
 
     return wave_gru
 

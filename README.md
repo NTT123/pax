@@ -113,6 +113,7 @@ A good way to learn about ``Pax`` is to see examples in the [examples/](./exampl
 | ``notebooks/DCGAN.ipynb`` | train a DCGAN model on `Celeb-A` dataset. |
 | ``notebooks/fine_tuning_resnet18.ipynb``    | finetune a pretrained ResNet18 model on `cats vs dogs` dataset. |
 | ``mnist_mixed_precision.py`` (experimental) | train an image classifier with mixed precision. |
+| ``wave_gru/`` | train a WaveGRU vocoder: convert mel-spectrogram to waveform. |
 
 
 

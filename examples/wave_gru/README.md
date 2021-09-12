@@ -18,4 +18,4 @@ To prepare audio clip:
     
 ## Train WaveGRU
 
-    python3 train.py # 1 hours on a Tesla T4
+    python3 train.py # 1 hour on a Tesla T4

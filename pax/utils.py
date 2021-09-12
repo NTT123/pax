@@ -101,7 +101,7 @@ def dropout(rng_key: jnp.ndarray, dropout_rate: float, x: jnp.ndarray) -> jnp.nd
         return x
 
 
-def scan(fn, init, xs, length=None, unroll: int = 1, time_major=False):
+def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):
     """``jax.lax.scan`` with an additional ``time_major=False`` mode.
 
 

@@ -72,6 +72,7 @@ class LM(pax.Module):
             self.lstm,
             self.lstm.initial_state(x.shape[0]),
             x,
+            time_major=False,
         )
         del hx
         logits = self.output(x)
@@ -134,7 +135,7 @@ def update_fn(
     model: LM, optimizer: opax.GradientTransformation, multi_batch: jnp.ndarray
 ):
     (model, optimizer), losses = pax.utils.scan(
-        update_step, (model, optimizer), multi_batch, time_major=True
+        update_step, (model, optimizer), multi_batch
     )
     return jnp.sum(losses), model, optimizer
 
