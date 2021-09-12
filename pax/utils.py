@@ -136,18 +136,23 @@ class Lambda(Module):
     Note: We put ``Lambda`` module definition here so both ``haiku`` and ``nn`` modules can use it.
     """
 
-    def __init__(self, f: Callable):
-        super().__init__()
+    def __init__(self, f: Callable, name: str = None):
+        super().__init__(name=name)
         self.f = f
 
     def __call__(self, x):
         return self.f(x)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}[{self.f}]"
+        if self.name is not None:
+            return super().__repr__()
+        else:
+            return f"{self.__class__.__name__}[{self.f}]"
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
-        if self.f == jax.nn.relu:
+        if self.name is not None:
+            name = self.name
+        elif self.f == jax.nn.relu:
             name = "relu"
         else:
             name = f"{self.f}"
