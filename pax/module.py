@@ -426,11 +426,50 @@ class Module:
                 return back
 
         def mp_call(self_: T, *args, **kwargs):
+            """This method does four tasks:
+
+            Task 1: It casts all parameters and arguments to the "compute" data type.
+            Task 2: It calls the original method.
+            Task 3: It casts all the parameters back to the "param" data type.
+               However, if a parameter is NOT modified during the forward pass,
+               the original parameter will be reused to avoid a `cast` operation.
+            Task 4: It casts the output to the "output" data type.
+            """
+            old_self_clone = self_.copy()
+
+            # task 1
             casted_self, casted_args, casted_kwargs = mp_policy.cast_to_compute(
                 (self_, args, kwargs)
             )
             self_.update(casted_self, in_place=True)
+
+            casted_self_clone = self_.copy()
+
+            # task 2
             output = getattr(cls, method_name)(self_, *casted_args, **casted_kwargs)
+
+            # task 3
+            if jax.tree_structure(self_) != jax.tree_structure(old_self_clone):
+                raise RuntimeError(
+                    f"The module `{self_.__class__.__name__}` has its treedef modified during the forward pass. "
+                    f"This is currently not supported for a mixed-precision module!"
+                )
+
+            def reuse_params_fn(updated_new, new, old):
+                # reuse the original parameter if it is
+                # NOT modified during the forward pass.
+                if updated_new is new:
+                    return old  # nothing change
+                else:
+                    return mp_policy.cast_to_param(updated_new)
+
+            casted_to_param_self = jax.tree_map(
+                reuse_params_fn, self_, casted_self_clone, old_self_clone
+            )
+
+            self_.update(casted_to_param_self, in_place=True)
+
+            # task 4
             output = mp_policy.cast_to_output(output)
             return output
 

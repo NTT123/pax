@@ -2,6 +2,7 @@ import jax
 import jax.numpy as jnp
 import jmp
 import pax
+import pytest
 
 half = jnp.float16  # On TPU this should be jnp.bfloat16.
 full = jnp.float32
@@ -69,5 +70,33 @@ def test_change_internal_state():
     x = jnp.array(0.0)
     assert mm.counter.item() == 0
     y = mm(x)
+    assert mm.counter.item() == 1
+    assert m.counter.item() == 0
+
+
+def test_change_tree_def():
+    class M(pax.Module):
+        counter: jnp.ndarray
+        count: int
+
+        def __init__(self):
+            super().__init__()
+            self.register_state("counter", jnp.array(0))
+            self.count = 0
+
+        def __call__(self, x):
+            self.counter = self.counter + 1
+            self.count = self.count + 1
+            return x * self.counter
+
+    m = M()
+    mp = jmp.Policy(
+        compute_dtype=jnp.float16, param_dtype=jnp.float32, output_dtype=jnp.float16
+    )
+    mm = m.apply(lambda x: (x.mixed_precision(mp) if isinstance(x, M) else x))
+    x = jnp.array(0.0)
+    assert mm.counter.item() == 0
+    with pytest.raises(RuntimeError):
+        y = mm(x)
     assert mm.counter.item() == 1
     assert m.counter.item() == 0
