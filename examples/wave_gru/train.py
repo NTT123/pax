@@ -102,8 +102,6 @@ def train(
                 f"[step {step}]  train loss {loss:.3f}  synthesized clip {file_name}"
             )
 
-    return wave_gru
-
 
 if __name__ == "__main__":
     import fire
