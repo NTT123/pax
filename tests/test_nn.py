@@ -762,3 +762,37 @@ def test_embed():
     hk_embed = hk.transform(lambda x: hk.Embed(5, 7)(x))
     hk_y = hk_embed.apply({"embed": {"embeddings": embed.weight}}, None, x)
     np.testing.assert_allclose(y, hk_y)
+
+
+def test_gru():
+    gru = pax.nn.GRU(3, 7)
+    state = gru.initial_state(2)
+    assert state.hidden.shape == (2, 7)
+    x = jnp.ones((2, 3), dtype=jnp.float32)
+    state, x = gru(state, x)
+    assert state.hidden.shape == (2, 7)
+    assert x.shape == (2, 7)
+
+
+def test_lstm():
+    lstm = pax.nn.LSTM(3, 7)
+    state = lstm.initial_state(2)
+    assert state.hidden.shape == (2, 7)
+    assert state.cell.shape == (2, 7)
+    x = jnp.ones((2, 3), dtype=jnp.float32)
+    state, x = lstm(state, x)
+    assert state.hidden.shape == (2, 7)
+    assert state.cell.shape == (2, 7)
+    assert x.shape == (2, 7)
+
+
+def test_avg_pool():
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+    y = pax.nn.avg_pool(x, (2, 1), (2, 1), "SAME", -1)
+    assert y.shape == (3, 3, 3)
+
+
+def test_haiku_max_pool():
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+    y = pax.nn.max_pool(x, (2, 1), (3, 1), "SAME", -1)
+    assert y.shape == (3, 2, 3)
