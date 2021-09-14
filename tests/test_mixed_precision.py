@@ -100,3 +100,37 @@ def test_change_tree_def():
         y = mm(x)
     assert mm.counter.item() == 1
     assert m.counter.item() == 0
+
+
+def test_wrap_wrap_mixed_precision():
+    f = pax.nn.Linear(3, 3)
+    my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
+
+    f = f.mixed_precision(my_policy)
+    with pytest.raises(ValueError):
+        f = f.mixed_precision(my_policy)
+
+    f = f.unwrap_mixed_precision()
+    f = f.mixed_precision(my_policy)
+
+    with pytest.raises(ValueError):
+        f = f.mixed_precision(my_policy)
+
+
+def test_mixed_precision_clone():
+    f = pax.nn.Linear(3, 3)
+    my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
+
+    ff = f.mixed_precision(my_policy)
+    f.new_fc = pax.nn.Linear(1, 1)
+    assert "new_fc" not in ff._name_to_kind
+
+
+def test_mixed_precision_unwrap_clone():
+    f = pax.nn.Linear(3, 3)
+    my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
+
+    ff = f.mixed_precision(my_policy)
+    f = ff.unwrap_mixed_precision()
+    f.new_fc = pax.nn.Linear(1, 1)
+    assert "new_fc" not in ff._name_to_kind

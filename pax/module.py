@@ -6,6 +6,7 @@ which is under MIT License.
 """
 
 from enum import Enum
+from types import MappingProxyType
 from typing import (
     Any,
     Dict,
@@ -75,13 +76,22 @@ class Module:
         We implement a safeguard mechanism to enforce that by checking if ``_name_to_kind`` is ``None`` in the ``__setattr__`` method.
         """
         super().__init__()
-        super().__setattr__("_name_to_kind", OrderedDict())
+        super().__setattr__("_name_to_kind", MappingProxyType(OrderedDict()))
         super().__setattr__("_training", True)
         super().__setattr__("name", name)
 
     @property
     def training(self) -> bool:
         return self._training
+
+    def _update_name_to_kind_dict(self, name: str, value):
+        """Update the `_name_to_kind` dictionary.
+
+        Create a new dictionary and wrap it with
+        `MappingProxyType`to avoid side effects."""
+        new_dict = OrderedDict(self._name_to_kind)
+        new_dict[name] = value
+        super().__setattr__("_name_to_kind", MappingProxyType(new_dict))
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Whenever a user sets ``value`` to attribute ``name``, we will check the assignment:
@@ -107,7 +117,7 @@ class Module:
         super().__setattr__(name, value)
 
         if isinstance(value, Module) and name not in self._name_to_kind:
-            self._name_to_kind[name] = PaxFieldKind.MODULE
+            self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
 
         self._scan_fields(fields={name: value})
 
@@ -115,42 +125,43 @@ class Module:
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
 
-        self._name_to_kind[name] = PaxFieldKind.PARAMETER
+        self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
         setattr(self, name, value)
 
     def register_state(self, name: str, value: jnp.ndarray):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
 
-        self._name_to_kind[name] = PaxFieldKind.STATE
+        self._update_name_to_kind_dict(name, PaxFieldKind.STATE)
+
         setattr(self, name, value)
 
     def register_module(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.MODULE`` in the ``_name_to_kind`` dictionary."""
 
-        self._name_to_kind[name] = PaxFieldKind.MODULE
+        self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
         setattr(self, name, value)
 
     def register_parameter_subtree(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
-        self._name_to_kind[name] = PaxFieldKind.PARAMETER_SUBTREE
+        self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER_SUBTREE)
         setattr(self, name, value)
 
     def register_state_subtree(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
-        self._name_to_kind[name] = PaxFieldKind.STATE_SUBTREE
+        self._update_name_to_kind_dict(name, PaxFieldKind.STATE_SUBTREE)
         setattr(self, name, value)
 
     def register_module_subtree(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.MODULE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
-        self._name_to_kind[name] = PaxFieldKind.MODULE_SUBTREE
+        self._update_name_to_kind_dict(name, PaxFieldKind.MODULE_SUBTREE)
         setattr(self, name, value)
 
     def tree_flatten(self):
@@ -162,7 +173,8 @@ class Module:
         name_to_kind = self._name_to_kind
 
         for name, value in fields.items():
-            (_tree if name in name_to_kind else _not_tree)[name] = value
+            d = _tree if name in name_to_kind else _not_tree
+            d[name] = value
 
         return _tree.values(), (_tree.keys(), _not_tree)
 
@@ -173,7 +185,8 @@ class Module:
         _tree, _not_tree = aux_data
         md = module.__dict__
         md.update(_not_tree)
-        md["_name_to_kind"] = OrderedDict(module._name_to_kind)
+        # don't have to copy `_name_to_kind` anymore, speed thing up!
+        # md["_name_to_kind"] = OrderedDict(module._name_to_kind)
         md.update(zip(_tree, children))
 
         return module
@@ -238,7 +251,7 @@ class Module:
             return new_self
 
     def train(self: T, mode: bool = True):
-        """Rebuild a new model recursively and set ``self._training = mode``.
+        """Rebuild a new module recursively and set ``self._training = mode``.
 
         Arguments:
             mode: return a copy module in ``train`` mode module if ``True``.
@@ -252,9 +265,9 @@ class Module:
                 new_submods.append(mod.train(mode=mode))
             else:
                 new_submods.append(mod)
-        model = jax.tree_unflatten(treedef, new_submods)
-        model.__dict__["_training"] = mode
-        return model
+        new_module = jax.tree_unflatten(treedef, new_submods)
+        new_module.__dict__["_training"] = mode
+        return new_module
 
     def eval(self: T) -> T:
         """Return a copy module in ``eval`` mode."""
@@ -417,7 +430,7 @@ class Module:
                             f"SHOULD NOT contains a pax.Module instance: {mod}"
                         )
 
-    def mixed_precision(self: T, mp_policy: jmp.Policy, method_name="__call__"):
+    def mixed_precision(self: T, mp_policy: jmp.Policy, method_name="__call__") -> T:
         """Convert the module to a MixedPrecision module.
 
         Return a clone object whose ``method_name`` method is wrapped to enforce the mixed-precision policy.
@@ -426,6 +439,11 @@ class Module:
             mp_policy: a ``jmp`` mixed precision policy.
             method_name: name of the method that will be affected.
         """
+        if hasattr(self, "unwrap_mixed_precision"):
+            raise ValueError(
+                "Enforcing mixed-precision policy on an object twice is not allowed. "
+                "Unwrap it with the `unwrap_mixed_precision` method first!"
+            )
         casted_self = mp_policy.cast_to_param(self)
 
         cls = casted_self.__class__
