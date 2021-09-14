@@ -1,46 +1,12 @@
 Pax Basics
 ==========
 
-.. currentmodule:: pax
-
-
-Random Number Generator
------------------------
-
-.. autosummary::
-
-    seed_rng_key
-    next_rng_key
-    dropout
-
-
-seed_rng_key
-~~~~~~~~~~~~
-
-.. autofunction:: seed_rng_key
-
-    
-next_rng_key
-~~~~~~~~~~~~
-
-.. autofunction:: next_rng_key
-
-
-dropout
-~~~~~~~
-
-.. autofunction:: dropout
-
-
-
 Pax's Module
 ------------
 .. currentmodule:: pax.module
 
-
 .. autoclass:: Module
    :members:
-
 
 .. autoclass:: PaxFieldKind
    :members:
@@ -53,6 +19,28 @@ Pax's Module
    .. autoattribute:: MODULE_SUBTREE
    .. autoattribute:: OTHERS
 
+.. currentmodule:: pax
+
+
+Random Number Generator
+-----------------------
+
+.. autosummary::
+
+    seed_rng_key
+    next_rng_key
+
+
+seed_rng_key
+~~~~~~~~~~~~
+
+.. autofunction:: seed_rng_key
+
+    
+next_rng_key
+~~~~~~~~~~~~
+
+.. autofunction:: next_rng_key
 
 
 
@@ -72,6 +60,7 @@ Common Modules
     LayerNorm
     Sequential
     LSTM
+    GRU
     MultiHeadAttention
     avg_pool
     max_pool
@@ -165,6 +154,12 @@ LSTM
    :members:
 
 
+GRU
+~~~
+
+.. autoclass:: GRU
+   :members:
+
 
 Pool
 ----
@@ -245,7 +240,7 @@ random_normal
 
 
 random_uniform
--------------
+--------------
 
 .. autofunction:: random_uniform
 
@@ -269,11 +264,17 @@ Utilities
 
 
 .. autosummary::
-
+    scan
     build_update_fn
     dropout
     Lambda
     RngSeq
+
+
+scan
+----
+
+.. autofunction:: scan
 
 
 build_update_fn

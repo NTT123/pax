@@ -6,5 +6,5 @@ from .embed import Embed
 from .layer_norm import LayerNorm
 from .linear import Linear
 from .pool import avg_pool, max_pool
-from .recurrent import LSTM, LSTMState
+from .recurrent import GRU, LSTM, GRUState, LSTMState
 from .sequential import Sequential

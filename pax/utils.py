@@ -101,24 +101,58 @@ def dropout(rng_key: jnp.ndarray, dropout_rate: float, x: jnp.ndarray) -> jnp.nd
         return x
 
 
+def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):
+    """``jax.lax.scan`` with an additional ``time_major=False`` mode.
+
+
+    The semantics of ``scan`` are given roughly by this Python implementation::
+
+      def scan(f, init, xs, length=None):
+          if xs is None:
+              xs = [None] * length
+          carry = init
+          ys = []
+          for x in xs:
+              carry, y = f(carry, x)
+              ys.append(y)
+          return carry, np.stack(ys)
+
+    """
+    if time_major:
+        # data format: TN...
+        return jax.lax.scan(fn, init, xs, length=length, unroll=unroll)
+    else:
+        # data format: NT...
+        if xs is not None:
+            xs = jnp.swapaxes(xs, 0, 1)  # swap batch and time axes
+        state, output = jax.lax.scan(fn, init, xs, length=length, unroll=unroll)
+        output = jnp.swapaxes(output, 0, 1)  # restore to NT...
+        return state, output
+
+
 class Lambda(Module):
     """A pure functional module.
 
     Note: We put ``Lambda`` module definition here so both ``haiku`` and ``nn`` modules can use it.
     """
 
-    def __init__(self, f: Callable):
-        super().__init__()
+    def __init__(self, f: Callable, name: str = None):
+        super().__init__(name=name)
         self.f = f
 
     def __call__(self, x):
         return self.f(x)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}[{self.f}]"
+        if self.name is not None:
+            return super().__repr__()
+        else:
+            return f"{self.__class__.__name__}[{self.f}]"
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
-        if self.f == jax.nn.relu:
+        if self.name is not None:
+            name = self.name
+        elif self.f == jax.nn.relu:
             name = "relu"
         else:
             name = f"{self.f}"

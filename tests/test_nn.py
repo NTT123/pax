@@ -762,3 +762,67 @@ def test_embed():
     hk_embed = hk.transform(lambda x: hk.Embed(5, 7)(x))
     hk_y = hk_embed.apply({"embed": {"embeddings": embed.weight}}, None, x)
     np.testing.assert_allclose(y, hk_y)
+
+
+def test_gru():
+    gru = pax.nn.GRU(3, 7)
+    state = gru.initial_state(2)
+    assert state.hidden.shape == (2, 7)
+    x = jnp.ones((2, 3), dtype=jnp.float32)
+    state, x = gru(state, x)
+    assert state.hidden.shape == (2, 7)
+    assert x.shape == (2, 7)
+
+
+def test_lstm():
+    lstm = pax.nn.LSTM(3, 7)
+    state = lstm.initial_state(2)
+    assert state.hidden.shape == (2, 7)
+    assert state.cell.shape == (2, 7)
+    x = jnp.ones((2, 3), dtype=jnp.float32)
+    state, x = lstm(state, x)
+    assert state.hidden.shape == (2, 7)
+    assert state.cell.shape == (2, 7)
+    assert x.shape == (2, 7)
+
+
+def test_avg_pool():
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+    y = pax.nn.avg_pool(x, (2, 1), (2, 1), "SAME", -1)
+    assert y.shape == (3, 3, 3)
+
+
+def test_haiku_max_pool():
+    x = np.zeros((3, 5, 3), dtype=np.float32)
+    y = pax.nn.max_pool(x, (2, 1), (3, 1), "SAME", -1)
+    assert y.shape == (3, 2, 3)
+
+
+def test_conv_wrong_input_size():
+    conv1 = pax.nn.Conv2D(3, 6, 3)
+    x = jnp.zeros((2, 9, 9, 7), dtype=jnp.float32)
+    with pytest.raises(ValueError):
+        y = conv1(x)
+
+
+def test_list_sub_modules_in_state():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(2, 2)
+            self.register_state("state_of_module", pax.nn.Linear(2, 5))
+
+    m = M()
+    mods = m.sub_modules()
+    assert len(mods) == 1, "expecting `state_of_module` is not counted as a module"
+
+
+def test_sequential_get_set_item():
+    fc1 = pax.nn.Linear(1, 2)
+    fc2 = pax.nn.Linear(2, 3)
+    fc3 = pax.nn.Linear(2, 1)
+    a = pax.nn.Sequential(fc1, jax.nn.relu, fc2)
+    assert a[-1] == fc2
+    a[-1] = fc3
+    assert a[-1] == fc3
+    assert a[0] == fc1

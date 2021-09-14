@@ -1,17 +1,14 @@
 """Convert Haiku module to pax.Module"""
 import logging
-from typing import Callable, Dict, Optional
+from typing import Dict, Optional
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 
 import haiku as hk
-from haiku import LSTMState, dynamic_unroll
 
 from .module import Module
 from .rng import next_rng_key
-from .utils import Lambda
 
 HaikuState = Dict[str, Dict[str, jnp.ndarray]]
 HaikuParam = Dict[str, Dict[str, jnp.ndarray]]

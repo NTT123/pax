@@ -68,8 +68,11 @@ class LM(pax.Module):
 
     def __call__(self, x):
         x = self.embed(x)
-        x, hx = pax.dynamic_unroll(
-            self.lstm, x, self.lstm.initial_state(x.shape[0]), time_major=False
+        hx, x = pax.utils.scan(
+            self.lstm,
+            self.lstm.initial_state(x.shape[0]),
+            x,
+            time_major=False,
         )
         del hx
         logits = self.output(x)
@@ -89,7 +92,7 @@ class LM(pax.Module):
         @jax.jit
         def step(x, hx):
             x = self.embed(x)
-            x, hx = self.lstm(x, hx)
+            hx, x = self.lstm(hx, x)
             logits = self.output(x)
             return logits, hx
 
@@ -131,7 +134,7 @@ def update_step(prev, batch: jnp.ndarray):
 def update_fn(
     model: LM, optimizer: opax.GradientTransformation, multi_batch: jnp.ndarray
 ):
-    (model, optimizer), losses = jax.lax.scan(
+    (model, optimizer), losses = pax.utils.scan(
         update_step, (model, optimizer), multi_batch
     )
     return jnp.sum(losses), model, optimizer
@@ -176,7 +179,7 @@ losses = 0.0
 tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")
 for step in tr:
     batch = next(tfdata)
-    # (num_devices,) is for jax.pmap, (steps_per_update,) is for jax.lax.scan
+    # (num_devices,) is for jax.pmap, (steps_per_update,) is for pax.utils.scan
     batch = jnp.reshape(batch, (num_devices, steps_per_update, -1) + batch.shape[1:])
     loss, net, optimizer = update_fn(net, optimizer, batch)
     losses = losses + loss

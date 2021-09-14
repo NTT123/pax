@@ -1,0 +1,6 @@
+fire
+librosa
+opax
+soundfile
+tqdm
+youtube-dl

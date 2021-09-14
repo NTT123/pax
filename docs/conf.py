@@ -30,7 +30,7 @@ copyright = "2021, Thông Nguyễn"
 author = "Thông Nguyễn"
 
 # The full version, including alpha/beta/rc tags
-release = "v0.2.6"
+release = "v0.2.7"
 
 
 # -- General configuration ---------------------------------------------------
@@ -76,6 +76,7 @@ autodoc_default_options = {
 
 # -- Options for HTML output -------------------------------------------------
 
+pygments_style = "sphinx"
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
