@@ -6,7 +6,17 @@ which is under MIT License.
 """
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    OrderedDict,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import jax
 import jax.numpy as jnp
@@ -65,7 +75,7 @@ class Module:
         We implement a safeguard mechanism to enforce that by checking if ``_name_to_kind`` is ``None`` in the ``__setattr__`` method.
         """
         super().__init__()
-        super().__setattr__("_name_to_kind", dict())
+        super().__setattr__("_name_to_kind", OrderedDict())
         super().__setattr__("_training", True)
         super().__setattr__("name", name)
 
@@ -163,7 +173,7 @@ class Module:
         _tree, _not_tree = aux_data
         md = module.__dict__
         md.update(_not_tree)
-        md["_name_to_kind"] = dict(module._name_to_kind)
+        md["_name_to_kind"] = OrderedDict(module._name_to_kind)
         md.update(zip(_tree, children))
 
         return module
@@ -299,8 +309,14 @@ class Module:
 
     def sub_modules(self):
         """Return a list of sub-modules."""
+        module_subtrees = [
+            getattr(self, name)
+            for name, kind in self._name_to_kind.items()
+            if kind in [PaxFieldKind.MODULE, PaxFieldKind.MODULE_SUBTREE]
+        ]
+
         submods, _ = jax.tree_flatten(
-            self, is_leaf=lambda x: isinstance(x, Module) and x is not self
+            module_subtrees, is_leaf=lambda x: isinstance(x, Module)
         )
         return [module for module in submods if isinstance(module, Module)]
 

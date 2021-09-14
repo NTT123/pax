@@ -803,3 +803,15 @@ def test_conv_wrong_input_size():
     x = jnp.zeros((2, 9, 9, 7), dtype=jnp.float32)
     with pytest.raises(ValueError):
         y = conv1(x)
+
+
+def test_list_sub_modules_in_state():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(2, 2)
+            self.register_state("state_of_module", pax.nn.Linear(2, 5))
+
+    m = M()
+    mods = m.sub_modules()
+    assert len(mods) == 1, "expecting `state_of_module` is not counted as a module"
