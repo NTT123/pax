@@ -191,10 +191,11 @@ net = pax.nn.Sequential(
     pax.nn.Linear(64, 10),
 )
 
-# we only predict two classes.
-net.modules[2] = pax.nn.Linear(64, 2)
-# freeze the first layer.
-net.modules[0] = net.modules[0].freeze() 
+# freeze all parameters.
+net = net.freeze() 
+
+# replace the last layer by a new module.
+net.modules[-1] = pax.nn.Linear(64, 2)
 ```
 
 After this, ``net.parameters()`` will only return trainable parameters of the last layer.
