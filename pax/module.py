@@ -168,26 +168,30 @@ class Module:
         """Convert a module to ``(children, treedef)``."""
         fields = vars(self)
 
-        _tree = {}
-        _not_tree = {}
+        children_names = []
+        children = []
+        not_tree = {}
         name_to_kind = self._name_to_kind
 
         for name, value in fields.items():
-            d = _tree if name in name_to_kind else _not_tree
-            d[name] = value
+            if name in name_to_kind:
+                children_names.append(name)
+                children.append(value)
+            else:
+                not_tree[name] = value
 
-        return _tree.values(), (_tree.keys(), _not_tree)
+        return children, (children_names, not_tree)
 
     @classmethod
     def tree_unflatten(cls, aux_data: ModuleAuxiliaryData, children):
         """Recreate a module from its ``(children, treedef)``."""
         module = cls.__new__(cls)
-        _tree, _not_tree = aux_data
+        children_names, _not_tree = aux_data
         md = module.__dict__
         md.update(_not_tree)
         # don't have to copy `_name_to_kind` anymore, speed thing up!
         # md["_name_to_kind"] = OrderedDict(module._name_to_kind)
-        md.update(zip(_tree, children))
+        md.update(zip(children_names, children))
 
         return module
 
