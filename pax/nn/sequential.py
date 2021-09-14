@@ -35,3 +35,11 @@ class Sequential(Module):
         for f in self.modules:
             x = f(x)
         return x
+
+    def __getitem__(self, index: int) -> Module:
+        """Get an item from the `modules` list."""
+        return self.modules[index]
+
+    def __setitem__(self, index: int, value: Module):
+        """Set an item to the `modules` list."""
+        self.modules[index] = value

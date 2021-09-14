@@ -815,3 +815,14 @@ def test_list_sub_modules_in_state():
     m = M()
     mods = m.sub_modules()
     assert len(mods) == 1, "expecting `state_of_module` is not counted as a module"
+
+
+def test_sequential_get_set_item():
+    fc1 = pax.nn.Linear(1, 2)
+    fc2 = pax.nn.Linear(2, 3)
+    fc3 = pax.nn.Linear(2, 1)
+    a = pax.nn.Sequential(fc1, jax.nn.relu, fc2)
+    assert a[-1] == fc2
+    a[-1] = fc3
+    assert a[-1] == fc3
+    assert a[0] == fc1
