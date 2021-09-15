@@ -89,7 +89,7 @@ class LM(pax.Module):
 
         out = [x]
 
-        @jax.jit
+        @pax.jit
         def step(x, hx):
             x = self.embed(x)
             hx, x = self.lstm(hx, x)

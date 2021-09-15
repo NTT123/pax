@@ -1,15 +1,17 @@
-from functools import wraps
-
 import jax
 
 from . import ctx
 
 
 def enable_immutable_mode(f):
-    @wraps(f)
     def wrapper(*args, **kwds):
-        with ctx.immutable():
-            return f(*args, **kwds)
+        real_fn = f(*args, **kwds)
+
+        def fake_fn(*u, **v):
+            with ctx.immutable():
+                return real_fn(*u, **v)
+
+        return fake_fn
 
     return wrapper
 
