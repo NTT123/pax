@@ -826,3 +826,23 @@ def test_sequential_get_set_item():
     a[-1] = fc3
     assert a[-1] == fc3
     assert a[0] == fc1
+
+
+def test_apply_no_side_effect():
+    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(4, 4))
+
+    def f(mod):
+        with pax.ctx.mutable():
+            mod.test__ = 123
+        return mod
+
+    b = a.apply(f)
+    assert not hasattr(a[0], "test__")
+    assert hasattr(b[0], "test__")
+
+
+def test_new_method_no_side_effects():
+    init_fn = pax.nn.Linear.__init__
+    a = pax.nn.Linear(1, 1)
+    b = pax.nn.Linear(2, 2)
+    assert pax.nn.Linear.__init__ == init_fn

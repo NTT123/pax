@@ -122,7 +122,8 @@ def test_mixed_precision_clone():
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
     ff = f.mixed_precision(my_policy)
-    f.new_fc = pax.nn.Linear(1, 1)
+    with pax.ctx.mutable():
+        f.new_fc = pax.nn.Linear(1, 1)
     assert "new_fc" not in ff._name_to_kind
 
 
@@ -132,5 +133,6 @@ def test_mixed_precision_unwrap_clone():
 
     ff = f.mixed_precision(my_policy)
     f = ff.unwrap_mixed_precision()
-    f.new_fc = pax.nn.Linear(1, 1)
+    with pax.ctx.mutable():
+        f.new_fc = pax.nn.Linear(1, 1)
     assert "new_fc" not in ff._name_to_kind

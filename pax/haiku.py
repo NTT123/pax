@@ -7,6 +7,7 @@ import jax.numpy as jnp
 
 import haiku as hk
 
+from . import ctx
 from .module import Module
 from .rng import next_rng_key
 
@@ -77,7 +78,8 @@ def from_haiku(
                         "Make sure you're doing this right after a module is created. "
                         "Or at least, before `self.parameters()` method is called."
                     )
-                    self.init_haiku_module(args, kwargs)
+                    with ctx.mutable():
+                        self.init_haiku_module(args, kwargs)
 
                 if use_rng:
                     new_rng_key, rng_key = jax.random.split(self.rng_key, 2)

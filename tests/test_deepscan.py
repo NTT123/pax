@@ -1,3 +1,6 @@
+from types import MappingProxyType
+from typing import OrderedDict
+
 import jax.numpy as jnp
 import numpy as np
 import pax
@@ -29,7 +32,7 @@ def test_assigned_field_an_array():
 
     n = N()
     n.deep_scan()
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         n.b = jnp.array([1, 2, 3])
 
 
@@ -51,6 +54,8 @@ def test_assign_int_to_param_deepscan():
 
     m = M()
     m = m.freeze()
-    m._name_to_kind["a"] = pax.module.PaxFieldKind.PARAMETER
+    d = OrderedDict(m._name_to_kind)
+    d["a"] = pax.module.PaxFieldKind.PARAMETER
+    m.__dict__["_name_to_kind"] = MappingProxyType(d)
     with pytest.raises(ValueError):
         m.deep_scan()

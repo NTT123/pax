@@ -19,7 +19,8 @@ def test_optim_model_update_state():
             self.count = 0
 
         def __call__(self, x):
-            self.count = self.count + 1
+            with pax.ctx.mutable():
+                self.count = self.count + 1
             x = self.fc(x)
             return x
 

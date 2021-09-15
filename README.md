@@ -70,7 +70,6 @@ print(grads.bias) # 60.0
 
 There are a few important things in the above example:
 
-* ``__init__`` method calls ``super().__init__()`` for initialization. This is required for any ``pax.Module``.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``model = model.update(params)`` causes ``model`` to use ``params`` in the forward computation.

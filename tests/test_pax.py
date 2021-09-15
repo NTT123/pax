@@ -191,7 +191,8 @@ def test_module_properties_modify():
 def test_clone_no_side_effect():
     fc1 = pax.nn.Linear(3, 3)
     fc2 = fc1.copy()
-    fc1.new_module = pax.nn.Linear(5, 5)
+    with pax.ctx.mutable():
+        fc1.new_module = pax.nn.Linear(5, 5)
     assert "new_module" in fc1._name_to_kind, "registered 'new_modules' as part of fc1"
     assert (
         "new_module" not in fc2._name_to_kind
@@ -214,8 +215,9 @@ def test_forget_call_super_at_init():
         def __init__(self):
             self.fc = pax.nn.Linear(3, 3)
 
-    with pytest.raises(RuntimeError):
-        m = M()
+    # with initialization in the `__new__` method,
+    # no need to call `super().__init__()` anymore.
+    m = M()
 
 
 def test_name_repr():
