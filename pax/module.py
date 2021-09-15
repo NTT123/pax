@@ -116,25 +116,10 @@ class Module:
 
         * With `mutability` disabled, only STATE and MODULE kinds are allowed to be set.
 
-        * With `mutability` enabled or inside a __init__ method, all kinds are allowed to be set.
+        * With `mutability` enabled, all kinds are allowed to be set.
 
         * If ``value`` is a ``Module``'s instance and ``name`` is not in ``_name_to_kind``, its kind will be ``PaxFieldKind.MODULE``.
         """
-
-        # TODO: This is a hack, fix it!
-        tb = traceback.extract_stack(limit=3)
-        if len(tb) >= 2 and tb[-2].name == "__init__":
-            # __init__ -> __setattr__
-            inside_init = True
-        elif (
-            len(tb) >= 3
-            and tb[-2].name.startswith("register_")
-            and tb[-3].name == "__init__"
-        ):
-            # __init__ -> register_* -> __setattr__
-            inside_init = True
-        else:
-            inside_init = False
 
         if name in ["_name_to_kind", "_training", "_name_to_kind_to_unfreeze"]:
             raise RuntimeError(
@@ -144,7 +129,7 @@ class Module:
 
         super().__setattr__(name, value)
 
-        if ctx.state._enable_mutability or inside_init:
+        if ctx.state._enable_mutability:
             super().__setattr__(name, value)
         else:
             kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)

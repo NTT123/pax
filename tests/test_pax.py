@@ -191,8 +191,7 @@ def test_module_properties_modify():
 def test_clone_no_side_effect():
     fc1 = pax.nn.Linear(3, 3)
     fc2 = fc1.copy()
-    with pax.ctx.mutable():
-        fc1.new_module = pax.nn.Linear(5, 5)
+    fc1.new_module = pax.nn.Linear(5, 5)
     assert "new_module" in fc1._name_to_kind, "registered 'new_modules' as part of fc1"
     assert (
         "new_module" not in fc2._name_to_kind

@@ -32,7 +32,7 @@ def test_assigned_field_an_array():
 
     n = N()
     n.deep_scan()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         n.b = jnp.array([1, 2, 3])
 
 
