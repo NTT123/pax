@@ -35,7 +35,7 @@ def test_optim_model_update_state():
     optimizer = opax.adamw()(net.parameters())
     x = jnp.zeros((2, 2), dtype=jnp.float32)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         loss, net, optimizer = update_fn(net, optimizer, x)
 
 

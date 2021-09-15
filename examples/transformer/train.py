@@ -74,7 +74,7 @@ def update_step(prev, batch: jnp.ndarray):
     return (model, optimizer), loss
 
 
-@partial(jax.pmap, axis_name="i")
+@partial(pax.pmap, axis_name="i")
 def update_fn(
     model: LM,
     optimizer: pax.Module,
@@ -174,7 +174,7 @@ def train():
     total_losses = jnp.array([0.0] * num_devices, dtype=jnp.float32)
     for step in tr:
         batch = next(tfdata)
-        # (num_devices,) is for jax.pmap, (steps_per_update,) is for pax.utils.scan
+        # (num_devices,) is for pax.pmap, (steps_per_update,) is for pax.utils.scan
         total_losses, net, optimizer = update_fn(net, optimizer, batch, total_losses)
         if step % 1000 == 0:
             loss = jnp.mean(total_losses) / (1000 if step > 0 else steps_per_update)
