@@ -114,9 +114,9 @@ class Module:
 
         * Setting ``value`` to a wrong kind attribute is also forbidden.
 
-        * With `mutability` disabled, only STATE and MODULE kinds are allowed to be set.
+        * In `immutable` mode, only STATE and MODULE kinds are allowed to be set.
 
-        * With `mutability` enabled, all kinds are allowed to be set.
+        * With `mutable` mode, all kinds are allowed to be set.
 
         * If ``value`` is a ``Module``'s instance and ``name`` is not in ``_name_to_kind``, its kind will be ``PaxFieldKind.MODULE``.
         """
@@ -142,8 +142,7 @@ class Module:
                 super().__setattr__(name, value)
             else:
                 raise RuntimeError(
-                    f"Cannot set an attribute of kind `{kind}` with mutability disabled. "
-                    f"Turn on mutability using `with pax.ctx.mutable(): [...]`"
+                    f"Cannot set an attribute of kind `{kind}` in immutable mode."
                 )
 
         if isinstance(value, Module) and name not in self._name_to_kind:
@@ -156,8 +155,7 @@ class Module:
             super().__delattr__(name)
         else:
             raise RuntimeError(
-                "Cannot delete module's attribute. "
-                "Turn on mutability using `with pax.ctx.mutable(): [...]`"
+                "Cannot delete module's attribute {name} in immutable mode."
             )
 
     def register_parameter(self, name: str, value: jnp.ndarray):
