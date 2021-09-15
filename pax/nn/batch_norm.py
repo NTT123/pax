@@ -62,7 +62,7 @@ class BatchNorm(Module):
         self.eps = eps
         self.decay_rate = decay_rate
 
-        self.reduced_axes = reduced_axes
+        self.reduced_axes = tuple(reduced_axes)
 
         if create_scale:
             self.register_parameter("scale", jnp.ones(param_shape, dtype=jnp.float32))

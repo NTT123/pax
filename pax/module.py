@@ -5,12 +5,10 @@ https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda807690385362
 which is under MIT License.
 """
 
-import traceback
 from enum import Enum
 from types import MappingProxyType
 from typing import (
     Any,
-    Callable,
     Dict,
     List,
     Optional,
@@ -25,6 +23,7 @@ import jax
 import jax.numpy as jnp
 import jax.tree_util
 import jmp
+import pyrsistent as pt
 
 from . import ctx
 
@@ -108,7 +107,10 @@ class Module:
         super().__setattr__("_name_to_kind", MappingProxyType(new_dict))
 
     def __setattr__(self, name: str, value: Any) -> None:
-        """Whenever a user sets ``value`` to attribute ``name``, we will check the assignment:
+        """
+        If an attribute is of OTHERS kind, it will be converted to immutable using the pyrsistent
+
+        Whenever a user sets ``value`` to attribute ``name``, we will check the assignment:
 
         * Setting ``_name_to_kind`` and ``_training`` are forbidden.
 
@@ -127,12 +129,14 @@ class Module:
                 f"If you _really_ want to, use `self.__dict__[name] = value` instead."
             )
 
-        super().__setattr__(name, value)
+        kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
+        old_value = value
+        if kind == PaxFieldKind.OTHERS:
+            value = pt.freeze(value)
 
         if ctx.state._enable_mutability:
             super().__setattr__(name, value)
         else:
-            kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
             if kind in [
                 PaxFieldKind.STATE,
                 PaxFieldKind.STATE_SUBTREE,
@@ -148,7 +152,7 @@ class Module:
         if isinstance(value, Module) and name not in self._name_to_kind:
             self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
 
-        self._scan_fields(fields={name: value})
+        self._scan_fields(fields={name: old_value})
 
     def __delattr__(self, name: str) -> None:
         if ctx.state._enable_mutability:

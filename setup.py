@@ -8,6 +8,7 @@ install_requires = [
     "jax",
     "optax",
     "jmp",
+    "pyrsistent",
 ]
 setup_requires = []
 tests_require = [

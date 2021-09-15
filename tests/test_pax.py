@@ -6,7 +6,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pax
-import pytest
 
 
 def test_pax_next_rng_key():
