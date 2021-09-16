@@ -75,7 +75,7 @@ class Transformer(pax.Module):
                     "dense_block": DenseBlock(dim, init_scale),
                 }
             )
-        self.register_module_subtree("layers", layers)
+        self.layers = pax.ModuleTree(layers)
         self.layer_norm_output = pax.nn.LayerNorm(dim, -1, True, True)
 
     def __call__(

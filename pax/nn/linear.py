@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from .. import initializers
+from .. import initializers, tree
 from ..module import Module
 from ..rng import next_rng_key
 
@@ -52,11 +52,9 @@ class Linear(Module):
             w_init = initializers.truncated_normal(stddev=1.0 / np.sqrt(self.in_dim))
         b_init = initializers.zeros
         rng_key_w, rng_key_b = jax.random.split(rng_key)
-        self.register_parameter(
-            "weight", w_init((in_dim, out_dim), jnp.float32, rng_key_w)
-        )
+        self.weight = tree.Parameter(w_init((in_dim, out_dim), jnp.float32, rng_key_w))
         if self.with_bias:
-            self.register_parameter("bias", b_init((out_dim,), jnp.float32, rng_key_b))
+            self.bias = tree.Parameter(b_init((out_dim,), jnp.float32, rng_key_b))
 
     def __call__(self, x: np.ndarray) -> jnp.ndarray:
         """Applies a linear transformation to the inputs along the last dimension.

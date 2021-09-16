@@ -9,7 +9,7 @@ import jax.numpy as jnp
 from pax.nn import max_pool
 from pax.nn.linear import Linear
 
-from .. import initializers
+from .. import initializers, tree
 from ..module import Module
 from ..nn import BatchNorm2D, Conv2D
 
@@ -99,7 +99,7 @@ class ResnetBlock(Module):
             )
             layers = layers + ((conv_2, bn_2))
 
-        self.register_module_subtree("layers", layers)
+        self.layers = tree.ModuleTree(layers)
 
     def __call__(self, inputs):
         out = shortcut = inputs
@@ -143,7 +143,7 @@ class BlockGroup(Module):
                 )
             )
 
-        self.register_module_subtree("blocks", blocks)
+        self.blocks = tree.ModuleTree(blocks)
 
     def __call__(self, inputs):
         out = inputs
@@ -239,7 +239,7 @@ class ResNet(Module):
                 )
             )
 
-        self.register_module_subtree("block_groups", block_groups)
+        self.block_groups = tree.ModuleTree(block_groups)
 
         self.logits = Linear(
             channels_per_group[-1], num_classes, **logits_config, name="fc"

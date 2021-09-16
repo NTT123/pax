@@ -56,7 +56,7 @@ def test_change_internal_state():
 
         def __init__(self):
             super().__init__()
-            self.register_state("counter", jnp.array(0))
+            self.counter = pax.State(jnp.array(0))
 
         def __call__(self, x):
             self.counter = self.counter + 1
@@ -81,7 +81,7 @@ def test_change_tree_def():
 
         def __init__(self):
             super().__init__()
-            self.register_state("counter", jnp.array(0))
+            self.counter = pax.State(jnp.array(0))
             self.count = 0
 
         def __call__(self, x):

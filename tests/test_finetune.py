@@ -18,7 +18,7 @@ def test_finetune():
             layers = []
             for in_dim, out_dim in zip(dims[:-1], dims[1:]):
                 layers.append(pax.nn.Linear(in_dim, out_dim))
-            self.register_module_subtree("layers", layers)
+            self.layers = pax.ModuleTree(layers)
 
         def __call__(self, x):
             for f in self.layers:

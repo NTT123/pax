@@ -49,8 +49,8 @@ def test_sgd():
             super().__init__()
             self.momentum = momentum
             self.learning_rate = learning_rate
-            self.register_state_subtree(
-                "velocity", jax.tree_map(lambda x: jnp.zeros_like(x), params)
+            self.velocity = pax.StateTree(
+                jax.tree_map(lambda x: jnp.zeros_like(x), params)
             )
 
         def step(self, grads: pax.Module, params: pax.Module):

@@ -8,7 +8,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from .. import initializers
+from .. import initializers, tree
 from ..module import Module
 from ..rng import next_rng_key
 
@@ -88,9 +88,9 @@ class Conv(Module):
         if b_init is None:
             b_init = initializers.zeros
 
-        self.register_parameter("weight", w_init(w_shape, jnp.float32, w_rng_key))
+        self.weight = tree.Parameter(w_init(w_shape, jnp.float32, w_rng_key))
         b_shape = [out_features]
-        self.register_parameter("bias", b_init(b_shape, jnp.float32, b_rng_key))
+        self.bias = tree.Parameter(b_init(b_shape, jnp.float32, b_rng_key))
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         assert len(x.shape) == len(self.kernel_format)
@@ -345,9 +345,9 @@ class ConvTranspose(Module):
         if b_init is None:
             b_init = initializers.zeros
 
-        self.register_parameter("weight", w_init(w_shape, jnp.float32, w_rng_key))
+        self.weight = tree.Parameter(w_init(w_shape, jnp.float32, w_rng_key))
         b_shape = [out_features]
-        self.register_parameter("bias", b_init(b_shape, jnp.float32, b_rng_key))
+        self.bias = tree.Parameter(b_init(b_shape, jnp.float32, b_rng_key))
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         assert len(x.shape) == len(self.kernel_format)

@@ -28,7 +28,7 @@ def test_type_union():
 
         def __init__(self):
             super().__init__()
-            self.register_state("count", [0])
+            self.count = pax.State([0])
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -54,7 +54,7 @@ def test_type_sequence():
 
         def __init__(self):
             super().__init__()
-            self.register_parameter_subtree("count", [0])
+            self.count = pax.ParameterTree([0])
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -67,9 +67,7 @@ def test_type_dict():
 
         def __init__(self):
             super().__init__()
-            self.register_state_subtree(
-                "count", {"conv1": [1, 2, 3], "conv2": ["a", "b"]}
-            )
+            self.count = pax.StateTree({"conv1": [1, 2, 3], "conv2": ["a", "b"]})
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -82,8 +80,8 @@ def test_type_dict_dict1():
 
         def __init__(self):
             super().__init__()
-            self.register_state_subtree(
-                "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
+            self.count = pax.StateTree(
+                {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
     counter = Counter()
@@ -97,8 +95,8 @@ def test_type_dict_dict_optional():
 
         def __init__(self):
             super().__init__()
-            self.register_state_subtree(
-                "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
+            self.count = pax.StateTree(
+                {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
     counter = Counter()
@@ -138,7 +136,7 @@ def test_type_optional():
 
         def __init__(self):
             super().__init__()
-            self.register_state("count", 0)
+            self.count = pax.State(0)
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -163,14 +161,14 @@ def test_state_of_param():
     class M1(pax.Module):
         def __init__(self):
             super().__init__()
-            self.register_parameter("p1", jnp.array(0.0, dtype=jnp.float32))
+            self.p1 = pax.Parameter(jnp.array(0.0, dtype=jnp.float32))
 
     m1 = M1()
 
     class M2(pax.Module):
         def __init__(self, m11):
             super().__init__()
-            self.register_state_subtree("m2", {"m1": m11})
+            self.m2 = pax.StateTree({"m1": m11})
 
     m2 = M2(m1)
     assert len(jax.tree_leaves(m1.filter("state"))) == 0

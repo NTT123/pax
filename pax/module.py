@@ -24,7 +24,7 @@ import jax.numpy as jnp
 import jax.tree_util
 import jmp
 
-from . import ctx
+from . import ctx, tree
 
 T = TypeVar("T", bound="Module")
 
@@ -137,6 +137,31 @@ class Module:
             )
 
         kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
+
+        if kind == PaxFieldKind.OTHERS and isinstance(value, tree.ParameterTree):
+            kind = PaxFieldKind.PARAMETER_SUBTREE
+            value = value.root
+            self._update_name_to_kind_dict(name, kind)
+        elif kind == PaxFieldKind.OTHERS and isinstance(value, tree.StateTree):
+            kind = PaxFieldKind.STATE_SUBTREE
+            value = value.root
+            self._update_name_to_kind_dict(name, kind)
+        elif kind == PaxFieldKind.OTHERS and isinstance(value, tree.ModuleTree):
+            kind = PaxFieldKind.MODULE_SUBTREE
+            value = value.root
+            self._update_name_to_kind_dict(name, kind)
+        elif kind == PaxFieldKind.OTHERS and isinstance(value, tree.Parameter):
+            kind = PaxFieldKind.PARAMETER
+            value = value.root
+            self._update_name_to_kind_dict(name, kind)
+        elif kind == PaxFieldKind.OTHERS and isinstance(value, tree.State):
+            kind = PaxFieldKind.STATE
+            value = value.root
+            self._update_name_to_kind_dict(name, kind)
+        elif kind == PaxFieldKind.OTHERS and isinstance(value, tree.Module):
+            kind = PaxFieldKind.MODULE
+            value = value.root
+            self._update_name_to_kind_dict(name, kind)
 
         if ctx.state._enable_mutability:
             super().__setattr__(name, value)

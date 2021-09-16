@@ -16,7 +16,7 @@ import jax.numpy as jnp
 import numpy as np
 from haiku import initializers
 
-from .. import initializers
+from .. import initializers, tree
 from ..module import Module
 from ..rng import next_rng_key
 
@@ -83,12 +83,10 @@ class LayerNorm(Module):
         rng_key = next_rng_key() if rng_key is None else rng_key
         rng1, rng2 = jax.random.split(rng_key)
         if create_scale:
-            self.register_parameter(
-                "scale", self.scale_init(param_shape, jnp.float32, rng1)
-            )
+            self.scale = tree.Parameter(self.scale_init(param_shape, jnp.float32, rng1))
         if create_offset:
-            self.register_parameter(
-                "offset", self.offset_init(param_shape, jnp.float32, rng2)
+            self.offset = tree.Parameter(
+                self.offset_init(param_shape, jnp.float32, rng2)
             )
 
     def __call__(

@@ -45,8 +45,8 @@ import pax
 class Counter(pax.Module):
     def __init__(self, start_value: int = 0):
         super().__init__()
-        self.register_state("counter", jnp.array(start_value))
-        self.register_parameter("bias", jnp.array(0.0))
+        self.counter = pax.State(jnp.array(start_value))
+        self.bias = jax.tree.Parameter(jnp.array(0.0))
 
 
     def __call__(self, x):
@@ -70,8 +70,8 @@ print(grads.bias) # 60.0
 
 There are a few important things in the above example:
 
-* ``counter`` is registered as a non-trainable state using ``register_state`` method.
-* ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
+* ``counter`` is registered as a non-trainable state with ``pax.State`` definition.
+* ``bias`` is registered as a trainable parameter with ``pax.Parameter`` definition.
 * ``model = model.update(params)`` causes ``model`` to use ``params`` in the forward computation.
 * ``loss_fn`` returns the updated `model` in its output.
 * ``net.parameters()`` returns a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. 
@@ -83,8 +83,7 @@ This is needed to make sure that we only compute gradients w.r.t trainable param
 Pax module has several methods that are similar to Pytorch. 
 
 - ``self.parameters()`` returns parameters of the module.
-- ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameters.
-- ``self.register_module(name, mod)`` registers ``mod`` as a submodule of ``self``.
+- ``self.name = pax.Parameter(value)`` registers ``name`` as a trainable parameters.
 - ``self.apply(func)`` applies ``func`` on all modules of ``self`` recursively.
 - ``self.train()`` and ``self.eval()`` returns a new module in ``train/eval`` mode.
 - ``self.training`` returns if ``self`` is in training mode.
@@ -153,7 +152,7 @@ class SGD(pax.Module):
         super().__init__()
         self.momentum = momentum
         self.learning_rate = learning_rate
-        self.register_state_subtree('velocity', jax.tree_map(lambda x: jnp.zeros_like(x), params))
+        self.velocity = pax.ParameterTree(jax.tree_map(lambda x: jnp.zeros_like(x), params))
         
     def step(self, grads: pax.Module, params: pax.Module):
         self.velocity = jax.tree_map(
@@ -165,7 +164,7 @@ class SGD(pax.Module):
         return new_params
 ```
 
-Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally. Note that: ``self.register_state_subtree`` registers ``velocity`` as part of the pytree.
+Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally. Note that: ``pax.ParameterTree`` declares ``velocity`` as part of the pytree.
 
 Pax has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's github repository for more information. 
 

@@ -7,6 +7,7 @@ import jax
 import jax.tree_util
 import optax
 
+from . import tree
 from .module import Module
 
 T = TypeVar("T", bound="Module")
@@ -26,7 +27,7 @@ def from_optax(optax_obj: optax.GradientTransformation):
 
         def __init__(self, params: T):
             super().__init__()
-            self.register_state_subtree("state", optax_obj.init(params))
+            self.state = tree.StateTree(optax_obj.init(params))
 
         def step(self, grads: T, params: T) -> T:
             """Update model parameters and optimizer state.

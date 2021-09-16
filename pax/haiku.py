@@ -7,7 +7,7 @@ import jax.numpy as jnp
 
 import haiku as hk
 
-from . import ctx
+from . import ctx, tree
 from .module import Module
 from .rng import next_rng_key
 
@@ -50,8 +50,8 @@ def from_haiku(
                     hk.data_structures.to_mutable_dict,
                     hk_fwd.init(rng_key_1, *u, **v),
                 )
-                self.register_parameter_subtree("params", params)
-                self.register_state_subtree("state", state)
+                self.params = tree.ParameterTree(params)
+                self.state = tree.StateTree(state)
                 self.rng_key = rng_key_2
                 self._is_haiku_initialized = True
 
@@ -60,8 +60,8 @@ def from_haiku(
                 if pass_is_training:
                     v["is_training"] = self.training
 
-                self.register_state(
-                    "rng_key", next_rng_key() if rng_key is None else rng_key
+                self.rng_key = tree.State(
+                    next_rng_key() if rng_key is None else rng_key
                 )
 
                 if delay == False:

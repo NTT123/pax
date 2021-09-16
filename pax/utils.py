@@ -6,7 +6,7 @@ from typing import Any, Callable, List, Optional, Sequence, Tuple, TypeVar, Unio
 import jax
 import jax.numpy as jnp
 
-from . import rng
+from . import rng, tree
 from .jax_transforms import grad
 from .module import Module
 
@@ -183,7 +183,7 @@ class RngSeq(Module):
         else:
             rng_key = rng.next_rng_key()
 
-        self.register_state("_rng_key", rng_key)
+        self._rng_key = tree.State(rng_key)
 
     def next_rng_key(
         self, num_keys: int = 1
@@ -227,10 +227,10 @@ class EMA(Module):
         """
 
         super().__init__()
-        self.register_state_subtree("averages", initial_value)
+        self.averages = tree.StateTree(initial_value)
         self.decay_rate = decay_rate
         if debias:
-            self.register_state("debias", jnp.array(False))
+            self.debias = tree.State(jnp.array(False))
 
     def __call__(self, xs):
         if self.debias is not None:

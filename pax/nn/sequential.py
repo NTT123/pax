@@ -1,5 +1,6 @@
 from typing import Callable, List, Optional
 
+from .. import tree
 from ..module import Module
 from ..utils import Lambda
 
@@ -26,8 +27,8 @@ class Sequential(Module):
     def __init__(self, *layers, name: str = None):
         """Create a Sequential module."""
         super().__init__(name=name)
-        self.register_module_subtree(
-            "modules", [(f if isinstance(f, Module) else Lambda(f)) for f in layers]
+        self.modules = tree.ModuleTree(
+            [(f if isinstance(f, Module) else Lambda(f)) for f in layers]
         )
 
     def __call__(self, x):

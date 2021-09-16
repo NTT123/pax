@@ -40,7 +40,7 @@ def test_assign_int_to_param():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            self.register_parameter("a", np.array([3, 1], dtype=np.int32))
+            self.a = pax.Parameter(np.array([3, 1], dtype=np.int32))
 
     with pytest.raises(ValueError):
         m = M()
@@ -50,7 +50,7 @@ def test_assign_int_to_param_deepscan():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            self.register_state("a", np.array([3, 1], dtype=np.int32))
+            self.a = pax.State(np.array([3, 1], dtype=np.int32))
 
     m = M()
     m = m.freeze()

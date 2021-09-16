@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 
+from .. import tree
 from ..module import Module
 from ..rng import next_rng_key
 from ..utils import dropout
@@ -26,7 +27,7 @@ class Dropout(Module):
         assert 0 <= dropout_rate < 1.0
 
         self.dropout_rate = dropout_rate
-        self.register_state("rng_key", next_rng_key())
+        self.rng_key = tree.State(next_rng_key())
 
     def __call__(self, x):
         """Dropout `x` randomly.
