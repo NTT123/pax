@@ -58,7 +58,7 @@ def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
 
 @pax.jit
 def test_loss_fn(model: ConvNet, batch: Batch):
-    model = model.eval()
+    assert model.training == False
     return loss_fn(model.parameters(), model, batch)[0]
 
 
@@ -122,7 +122,7 @@ for epoch in range(0, 10):
     test_losses = 0.0
     for batch in tqdm(test_data, desc="eval", leave=False):
         batch = jax.tree_map(lambda x: x.numpy(), batch)
-        test_losses = test_losses + test_loss_fn(net, batch)
+        test_losses = test_losses + test_loss_fn(net.eval(), batch)
     test_loss = test_losses / len(test_data)
 
     print(f"[Epoch {epoch}]  train loss {loss:.3f}  test loss {test_loss:.3f}")

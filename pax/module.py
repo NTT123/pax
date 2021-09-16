@@ -75,6 +75,8 @@ class Module:
     def __new__(cls, *args, **kwargs):
         """Initialize _name_to_kind and _training in `__new__` method
         to avoid calling ``super().__init__()`` in the every subclass of Module."""
+        if not ctx.state._enable_mutability:
+            raise ValueError("Cannot create new module in immutable mode")
 
         obj = object.__new__(cls)
         obj.__dict__.update(
@@ -90,6 +92,9 @@ class Module:
 
     def __init__(self, name: Optional[str] = None):
         """Initialize module's name."""
+        if not ctx.state._enable_mutability:
+            raise ValueError("Cannot create new module in immutable mode")
+
         super().__setattr__("name", name)
 
     @property
@@ -101,6 +106,11 @@ class Module:
 
         Create a new dictionary and wrap it with
         `MappingProxyType`to avoid side effects."""
+        if not ctx.state._enable_mutability:
+            raise ValueError(
+                "Cannot update `_name_to_kind` dictionary in immutable mode."
+            )
+
         new_dict = OrderedDict(self._name_to_kind)
         new_dict[name] = value
         super().__setattr__("_name_to_kind", MappingProxyType(new_dict))
@@ -121,7 +131,7 @@ class Module:
         """
 
         if name in ["_name_to_kind", "_training", "_name_to_kind_to_unfreeze"]:
-            raise RuntimeError(
+            raise ValueError(
                 f"You SHOULD NOT modify `{name}`. "
                 f"If you _really_ want to, use `self.__dict__[name] = value` instead."
             )
@@ -134,12 +144,10 @@ class Module:
             if kind in [
                 PaxFieldKind.STATE,
                 PaxFieldKind.STATE_SUBTREE,
-                PaxFieldKind.MODULE,
-                PaxFieldKind.MODULE_SUBTREE,
             ]:
                 super().__setattr__(name, value)
             else:
-                raise RuntimeError(
+                raise ValueError(
                     f"Cannot set an attribute of kind `{kind}` in immutable mode."
                 )
 
@@ -152,7 +160,7 @@ class Module:
         if ctx.state._enable_mutability:
             super().__delattr__(name)
         else:
-            raise RuntimeError(
+            raise ValueError(
                 "Cannot delete module's attribute {name} in immutable mode."
             )
 
@@ -247,7 +255,7 @@ class Module:
         assert keep in ["parameter", "state"]
         fields = vars(self)
         cls = self.__class__
-        module = cls.__new__(cls)
+        module = object.__new__(cls)
 
         for name, value in fields.items():
             field_type = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
@@ -295,6 +303,8 @@ class Module:
         Arguments:
             mode: return a copy module in ``train`` mode module if ``True``.
         """
+        if not ctx.state._enable_mutability:
+            raise ValueError("Cannot modify `_training` in immutable mode.")
 
         def _train_apply_fn(mod: T) -> T:
             mod.__dict__["_training"] = mode
@@ -313,6 +323,8 @@ class Module:
 
     def freeze(self: T) -> T:
         """Return a copy module with all trainable parameters are converted to non-trainable states."""
+        if not ctx.state._enable_mutability:
+            raise ValueError("Cannot freeze a module in immutable mode.")
 
         def _freeze_fn(mod: T) -> T:
             if mod._name_to_kind_to_unfreeze is not None:
@@ -337,6 +349,8 @@ class Module:
 
     def unfreeze(self: T) -> T:
         """Return the original module before frozen."""
+        if not ctx.state._enable_mutability:
+            raise ValueError("Cannot unfreeze a module in immutable mode.")
 
         def _unfreeze_fn(mod: T) -> T:
             if mod._name_to_kind_to_unfreeze is None:
@@ -359,6 +373,8 @@ class Module:
             args, kwargs: dummy inputs to the module.
             enable_jit: to use `jax.jit` for the init function.
         """
+        if not ctx.state._enable_mutability:
+            raise ValueError("Cannot call hk_init in immutable mode.")
 
         def init_fn(mod, args, kwargs):
             mod = mod.copy()
@@ -489,6 +505,9 @@ class Module:
             mp_policy: a ``jmp`` mixed precision policy.
             method_name: name of the method that will be affected.
         """
+        if not ctx.state._enable_mutability:
+            raise ValueError("Cannot apply mixed-precision policy in immutable mode.")
+
         if hasattr(self, "unwrap_mixed_precision"):
             raise ValueError(
                 "Enforcing mixed-precision policy on an object twice is not allowed. "

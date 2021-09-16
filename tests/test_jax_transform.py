@@ -16,5 +16,5 @@ def test_jit_immutability():
 
     m = M()
     x = jnp.zeros((1, 1))
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         y = pax.jit(lambda y: m(y))(x)
