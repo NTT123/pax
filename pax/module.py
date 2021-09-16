@@ -23,7 +23,6 @@ import jax
 import jax.numpy as jnp
 import jax.tree_util
 import jmp
-import pyrsistent as pt
 
 from . import ctx
 
@@ -51,7 +50,7 @@ class PaxFieldKind(Enum):
     STATE_SUBTREE: int = 4
     PARAMETER_SUBTREE: int = 5
     MODULE_SUBTREE: int = 6
-    OTHERS: int = 7
+    OTHERS: int = -1
 
 
 class Module:
@@ -108,8 +107,6 @@ class Module:
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
-        If an attribute is of OTHERS kind, it will be converted to immutable using the pyrsistent
-
         Whenever a user sets ``value`` to attribute ``name``, we will check the assignment:
 
         * Setting ``_name_to_kind`` and ``_training`` are forbidden.
@@ -130,9 +127,6 @@ class Module:
             )
 
         kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
-        old_value = value
-        if kind == PaxFieldKind.OTHERS:
-            value = pt.freeze(value)
 
         if ctx.state._enable_mutability:
             super().__setattr__(name, value)
@@ -152,7 +146,7 @@ class Module:
         if isinstance(value, Module) and name not in self._name_to_kind:
             self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
 
-        self._scan_fields(fields={name: old_value})
+        self._scan_fields(fields=(name,))
 
     def __delattr__(self, name: str) -> None:
         if ctx.state._enable_mutability:
@@ -430,18 +424,19 @@ class Module:
     def deep_scan(self):
         """Scan a module recursively to find any *potential* bug."""
 
-        fields = vars(self)
+        fields = vars(self).keys()
         self._scan_fields(fields)
 
         for mod in self.sub_modules():
             mod.deep_scan()
 
-    def _scan_fields(self, fields: Sequence[Any]):
+    def _scan_fields(self, fields: Sequence[str]):
         """Scan fields for *potential* bugs."""
 
         from jax.dtypes import issubdtype as isdt
 
-        for name, value in fields.items():
+        for name in fields:
+            value = getattr(self, name)
             kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
             leaves = jax.tree_leaves(value)
             # Check if a parameter or parameter subtree
