@@ -59,7 +59,7 @@ def loss_fn(params: Counter, model: Counter, x:  jnp.ndarray):
     loss = jnp.mean(jnp.square(x - y))
     return loss, (loss, model)
 
-grad_fn = jax.grad(loss_fn, has_aux=True)
+grad_fn = pax.grad(loss_fn, has_aux=True)
 
 net = Counter(3)
 x = jnp.array(10.)
@@ -74,6 +74,7 @@ There are a few important things in the above example:
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``model = model.update(params)`` causes ``model`` to use ``params`` in the forward computation.
 * ``loss_fn`` returns the updated `model` in its output.
+* ``pax.grad`` is the same as `jax.grad` with additional checks to prevent potential bugs.
 * ``net.parameters()`` returns a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. 
 This is needed to make sure that we only compute gradients w.r.t trainable parameters.
 
