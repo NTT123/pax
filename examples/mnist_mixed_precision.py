@@ -65,7 +65,7 @@ def test_loss_fn(model: ConvNet, batch: Batch):
 @pax.jit
 def update_fn(model: ConvNet, optimizer: pax.Module, batch: Batch):
     params = model.parameters()
-    grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(params, model, batch)
+    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
     model = model.update(
         optimizer.step(grads, model.parameters()),
     )

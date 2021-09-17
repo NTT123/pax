@@ -552,6 +552,9 @@ class Module:
         for name in fields:
             value = getattr(self, name)
             kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
+            mods, _ = jax.tree_flatten(
+                value, is_leaf=lambda x: isinstance(x, Module)
+            )
             leaves = jax.tree_leaves(value)
             # Check if a parameter or parameter subtree
             # contains non-differentiable ndarray (e.g., uint32 array)
@@ -566,14 +569,24 @@ class Module:
                             f"(type={leaf.dtype}, value={leaf})."
                         )
 
-            # Check if a field contains unregistered ndarray
             if kind == PaxFieldKind.OTHERS:
+                # Check if a field contains unregistered module
+                for leaf in mods:
+                    if isinstance(leaf, Module):
+                        raise ValueError(
+                            f"Unregistered field ``{self}.{name}`` of kind `{kind.name}` contains a Module "
+                            f"({leaf}). "
+                            f"This is usually not a good thing. "
+                            f"Consider registering it as a MODULE or MODULE_SUBTREE."
+                        )
+
+                # Check if a field contains unregistered ndarray
                 for leaf in leaves:
                     if isinstance(leaf, jnp.ndarray):
                         raise ValueError(
                             f"Unregistered field ``{self}.{name}`` of kind `{kind.name}` contains a ndarray "
                             f"(type={leaf.dtype}, value={leaf}). "
-                            f"This is usually not a good idea. "
+                            f"This is usually not a good thing. "
                             f"Consider registering it as a STATE or STATE_SUBTREE."
                         )
 
@@ -584,9 +597,6 @@ class Module:
                 PaxFieldKind.STATE,
                 PaxFieldKind.STATE_SUBTREE,
             ]:
-                mods, _ = jax.tree_flatten(
-                    value, is_leaf=lambda x: isinstance(x, Module)
-                )
                 for mod in mods:
                     if isinstance(mod, Module):
                         raise ValueError(

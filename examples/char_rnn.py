@@ -120,7 +120,7 @@ def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
 
 def update_step(prev, batch: jnp.ndarray):
     model, optimizer = prev
-    grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(
+    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
         model.parameters(), model, batch
     )
     grads = jax.lax.pmean(grads, axis_name="i")

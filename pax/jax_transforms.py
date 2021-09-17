@@ -11,6 +11,8 @@ def _deep_scan(mod):
 
 def enable_strict_mode(f):
     def wrapper(fn, *args, **kwds):
+        assert callable(fn), "Expecting a callable object as the first argument."
+
         def fake_fn(*u, **v):
 
             # scan for bugs
