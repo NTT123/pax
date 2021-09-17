@@ -83,9 +83,13 @@ class LayerNorm(Module):
         rng_key = next_rng_key() if rng_key is None else rng_key
         rng1, rng2 = jax.random.split(rng_key)
         if create_scale:
-            self.scale = self.scale_init(param_shape, jnp.float32, rng1)
+            self.register_parameter(
+                "scale", self.scale_init(param_shape, jnp.float32, rng1)
+            )
         if create_offset:
-            self.offset = self.offset_init(param_shape, jnp.float32, rng2)
+            self.register_parameter(
+                "offset", self.offset_init(param_shape, jnp.float32, rng2)
+            )
 
     def __call__(
         self,

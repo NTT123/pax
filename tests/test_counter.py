@@ -11,7 +11,7 @@ def test_counter():
         def __init__(self, start_value: int = 0):
             super().__init__()
             self.register_state("counter", jnp.array(start_value, dtype=jnp.int32))
-            self.bias = jnp.array(0.0)
+            self.register_parameter("bias", jnp.array(0.0))
 
         def __call__(self, x):
             self.counter = self.counter + 1

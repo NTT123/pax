@@ -45,7 +45,7 @@ import pax
 class Counter(pax.Module):
     def __init__(self, start_value: int = 0):
         super().__init__()
-        self.bias = jnp.array(0.0)
+        self.register_parameter("bias", jnp.array(0.0))
         self.register_state("counter", jnp.array(start_value))
 
 
@@ -70,7 +70,7 @@ print(grads.bias) # 60.0
 
 There are a few important things in the above example:
 
-* ``bias`` is registered as a trainable parameter by default.
+* ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``model = model.update(params)`` causes ``model`` to use ``params`` in the forward computation.
 * ``loss_fn`` returns the updated `model` in its output.

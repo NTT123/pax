@@ -142,6 +142,7 @@ class Module:
         leaves = jax.tree_flatten(value, is_leaf=lambda x: isinstance(x, Module))[0]
         ndarray_leaves = jax.tree_flatten(value)[0]
         all_modules = all(isinstance(mod, Module) for mod in leaves)
+        any_modules = any(isinstance(mod, Module) for mod in leaves)
 
         if (
             len(ndarray_leaves) == 0
@@ -156,6 +157,7 @@ class Module:
             return isinstance(x, jnp.ndarray)
 
         all_ndarray = all(is_ndarray(x) for x in ndarray_leaves)
+        any_ndarray = any(is_ndarray(x) for x in ndarray_leaves)
 
         if kind != PaxFieldKind.OTHERS:
             if kind in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]:
@@ -195,17 +197,22 @@ class Module:
         # The automatic kind registering system:
         #   - if a value is a Module's instance, it is registered as MODULE,
         #   - if it contains Module's instances only, it is registered MODULE_SUBTREE,
-        #   - if it is ndarray, it is registered as PARAMETER,
-        #   - if it contains ndarray's only, it is registered as PARAMETER_SUBTREE.
+        #   - if it contains a Module, raise ValueError,
+        #   - if it contains a ndarray, raise ValueError.
         if name not in self._name_to_kind and value is not None:
             if isinstance(value, Module):
                 self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
             elif all_modules:
                 self._update_name_to_kind_dict(name, PaxFieldKind.MODULE_SUBTREE)
-            elif is_ndarray(value):
-                self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
-            elif all_ndarray:
-                self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER_SUBTREE)
+            elif any_modules:
+                raise ValueError(
+                    "Cannot mix a `pax.Module` with other kind in the same attribute."
+                )
+            elif any_ndarray:
+                raise ValueError(
+                    "Cannot assign ndarray to an attribute directly. "
+                    "Use `self.register_*` methods to assign your value."
+                )
             else:
                 pass
 
