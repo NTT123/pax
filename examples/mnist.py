@@ -18,6 +18,7 @@ batch_size = 32
 num_epochs = 5
 learning_rate = 1e-4
 weight_decay = 1e-4
+pax.seed_rng_key(42)
 
 
 class ConvNet(pax.Module):
