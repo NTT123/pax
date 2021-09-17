@@ -71,8 +71,8 @@ print(grads.bias) # 60.0
 
 There are a few important things in the above example:
 
-* ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``bias`` is registered as a trainable parameter by default.
+* ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``model = model.update(params)`` causes ``model`` to use ``params`` in the forward computation.
 * ``loss_fn`` returns the updated `model` in its output.
 * ``net.parameters()`` returns a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. 
