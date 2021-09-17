@@ -5,6 +5,7 @@ https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda807690385362
 which is under MIT License.
 """
 
+import copy
 from enum import Enum
 from types import MappingProxyType
 from typing import (
@@ -18,12 +19,12 @@ from typing import (
     TypeVar,
     Union,
 )
+from unittest import TestCase
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
 import jmp
-import numpy as np
 
 from . import ctx
 
@@ -144,11 +145,7 @@ class Module:
         all_modules = all(isinstance(mod, Module) for mod in leaves)
         any_modules = any(isinstance(mod, Module) for mod in leaves)
 
-        if (
-            len(leaves) == 0
-            and kind == PaxFieldKind.OTHERS
-            and value is not None
-        ):
+        if len(leaves) == 0 and kind == PaxFieldKind.OTHERS and value is not None:
             raise ValueError(
                 f"Cannot assign an empty pytree of value `{value}` to an attribute of a Pax's Module."
             )
@@ -314,6 +311,11 @@ class Module:
             else:
                 not_tree[name] = value
 
+        if not ctx.state._enable_mutability:
+            a, b = jax.tree_flatten(not_tree)
+            a = [x if isinstance(x, MappingProxyType) else copy.deepcopy(x) for x in a]
+            not_tree = jax.tree_unflatten(b, a)
+
         return children, (children_names, not_tree)
 
     @classmethod
@@ -336,6 +338,45 @@ class Module:
     def copy(self: T) -> T:
         """Return a copy of current module."""
         return jax.tree_map(lambda x: x, self)
+
+    def assertStructureEqual(self, other):
+        """Assert that the two modules are structurally the same.
+
+        Print out the difference.
+        """
+        if jax.tree_structure(self) == jax.tree_structure(other):
+            return True
+
+        def check(a, b):
+            if isinstance(a, Module) and isinstance(b, Module):
+                a.assertStructureEqual(b)
+
+        tc = TestCase()
+        tc.maxDiff = None
+
+        def filter_out_module(d):
+            return {
+                k: ((v.shape, v.dtype) if isinstance(v, jnp.ndarray) else v)
+                for (k, v) in d.items()
+                if (k not in self._name_to_kind)
+                or (
+                    self._name_to_kind[k]
+                    not in [PaxFieldKind.MODULE, PaxFieldKind.MODULE_SUBTREE]
+                )
+            }
+
+        tc.assertDictEqual(
+            filter_out_module(vars(self)), filter_out_module(vars(other))
+        )
+
+        jax.tree_map(
+            check,
+            self,
+            other,
+            is_leaf=lambda x: isinstance(x, Module)
+            and x is not self
+            and x is not other,
+        )
 
     def filter(self: T, keep: str = "parameter") -> T:
         """Filtering a module by trainable parameters and non-trainable states.
