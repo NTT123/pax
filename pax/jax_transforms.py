@@ -1,22 +1,30 @@
 import jax
 
 from . import ctx
+from .module import Module
 
 
-def enable_immutable_mode(f):
-    def wrapper(*args, **kwds):
-        real_fn = f(*args, **kwds)
+def _deep_scan(mod):
+    if isinstance(mod, Module):
+        mod.deep_scan()
 
+
+def enable_strict_mode(f):
+    def wrapper(fn, *args, **kwds):
         def fake_fn(*u, **v):
-            with ctx.immutable():
-                return real_fn(*u, **v)
 
-        return fake_fn
+            # scan for bugs
+            jax.tree_map(_deep_scan, (u, v), is_leaf=lambda x: isinstance(x, Module))
+
+            with ctx.immutable():
+                return fn(*u, **v)
+
+        return f(fake_fn, *args, **kwds)
 
     return wrapper
 
 
-jit = enable_immutable_mode(jax.jit)
-vmap = enable_immutable_mode(jax.vmap)
-pmap = enable_immutable_mode(jax.pmap)
-grad = enable_immutable_mode(jax.grad)
+jit = enable_strict_mode(jax.jit)
+vmap = enable_strict_mode(jax.vmap)
+pmap = enable_strict_mode(jax.pmap)
+grad = enable_strict_mode(jax.grad)

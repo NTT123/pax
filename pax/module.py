@@ -143,6 +143,15 @@ class Module:
         ndarray_leaves = jax.tree_flatten(value)[0]
         all_modules = all(isinstance(mod, Module) for mod in leaves)
 
+        if (
+            len(ndarray_leaves) == 0
+            and kind == PaxFieldKind.OTHERS
+            and value is not None
+        ):
+            raise ValueError(
+                f"Cannot assign an empty pytree of value `{value}` to an attribute of a Pax's Module."
+            )
+
         from jax.dtypes import issubdtype as isdt
 
         def is_ndarray(x):
@@ -198,7 +207,7 @@ class Module:
         #   - if it contains differentiable ndarray's only, it is registered as PARAMETER_SUBTREE,
         #   - if it is a non-differentiable ndarray,  it is registered as STATE,
         #   - if it contains non-differentiable ndarray's only, it is registered as STATE_SUBTREE.
-        if name not in self._name_to_kind:
+        if name not in self._name_to_kind and value is not None:
             if isinstance(value, Module):
                 self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
             elif all_modules:

@@ -34,7 +34,7 @@ class ConvNet(pax.Module):
             bn = pax.nn.BatchNorm2D(32)
             layers.append((conv, bn))
 
-        self.register_module_subtree("layers", layers)
+        self.layers = layers
         self.output = pax.nn.Conv2D(32, 10, 3, padding="VALID")
 
     def __call__(self, x: jnp.ndarray):
