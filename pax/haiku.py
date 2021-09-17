@@ -60,9 +60,7 @@ def from_haiku(
                 if pass_is_training:
                     v["is_training"] = self.training
 
-                self.register_state(
-                    "rng_key", next_rng_key() if rng_key is None else rng_key
-                )
+                self.rng_key = next_rng_key() if rng_key is None else rng_key
 
                 if delay == False:
                     self.init_haiku_module(u, v)

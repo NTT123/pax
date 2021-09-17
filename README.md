@@ -45,8 +45,9 @@ import pax
 class Counter(pax.Module):
     def __init__(self, start_value: int = 0):
         super().__init__()
-        self.register_state("counter", jnp.array(start_value))
-        self.register_parameter("bias", jnp.array(0.0))
+        self.bias = jnp.array(0.0)
+        self.counter =  jnp.array(start_value)
+        self.register_state("counter")
 
 
     def __call__(self, x):
@@ -71,7 +72,7 @@ print(grads.bias) # 60.0
 There are a few important things in the above example:
 
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
-* ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
+* ``bias`` is registered as a trainable parameter by default.
 * ``model = model.update(params)`` causes ``model`` to use ``params`` in the forward computation.
 * ``loss_fn`` returns the updated `model` in its output.
 * ``net.parameters()`` returns a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. 
@@ -153,7 +154,8 @@ class SGD(pax.Module):
         super().__init__()
         self.momentum = momentum
         self.learning_rate = learning_rate
-        self.register_state_subtree('velocity', jax.tree_map(lambda x: jnp.zeros_like(x), params))
+        self.velocity = jax.tree_map(lambda x: jnp.zeros_like(x), params)
+        self.register_state_subtree("velocity")
         
     def step(self, grads: pax.Module, params: pax.Module):
         self.velocity = jax.tree_map(
@@ -165,7 +167,8 @@ class SGD(pax.Module):
         return new_params
 ```
 
-Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally. Note that: ``self.register_state_subtree`` registers ``velocity`` as part of the pytree.
+Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally. 
+Note that: ``self.register_state_subtree`` registers ``velocity`` as non-trainable states.
 
 Pax has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's github repository for more information. 
 

@@ -23,6 +23,7 @@ import jax
 import jax.numpy as jnp
 import jax.tree_util
 import jmp
+import numpy as np
 
 from . import ctx
 
@@ -138,6 +139,45 @@ class Module:
 
         kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
 
+        leaves = jax.tree_flatten(value, is_leaf=lambda x: isinstance(x, Module))[0]
+        ndarray_leaves = jax.tree_flatten(value)[0]
+        all_modules = all(isinstance(mod, Module) for mod in leaves)
+
+        from jax.dtypes import issubdtype as isdt
+
+        def is_ndarray(x):
+            return isinstance(x, jnp.ndarray)
+
+        def is_differentable(x):
+            return is_ndarray(x) and (
+                isdt(x.dtype, jnp.complexfloating) or isdt(x.dtype, jnp.floating)
+            )
+
+        all_differentable = all(is_differentable(x) for x in ndarray_leaves)
+        all_ndarray = all(is_ndarray(x) for x in ndarray_leaves)
+
+        if kind != PaxFieldKind.OTHERS:
+            if kind in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]:
+                if not is_ndarray(value):
+                    raise ValueError(
+                        f"Assigning a non-ndarray value to an attribute of kind {kind}"
+                    )
+            elif kind in [PaxFieldKind.PARAMETER_SUBTREE, PaxFieldKind.STATE_SUBTREE]:
+                if not all_ndarray:
+                    raise ValueError(
+                        f"Assigning a value which contains a non-ndarray object to an attribute of kind {kind}"
+                    )
+            elif kind == PaxFieldKind.MODULE:
+                if not isinstance(value, Module):
+                    raise ValueError(
+                        f"Assigning a non-Module object to an attribute of kind {kind}"
+                    )
+            elif kind == PaxFieldKind.MODULE_SUBTREE:
+                if not all_modules:
+                    raise ValueError(
+                        f"Assigning a value which contains a non-Module object to an attribute of kind {kind}"
+                    )
+
         if ctx.state._enable_mutability:
             super().__setattr__(name, value)
         else:
@@ -151,10 +191,36 @@ class Module:
                     f"Cannot set an attribute of kind `{kind}` in immutable mode."
                 )
 
-        if isinstance(value, Module) and name not in self._name_to_kind:
-            self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
+        # The automatic kind registering system:
+        #   - if a value is a Module's instance, it is registered as Module,
+        #   - if it contains Module's instances only, it is registered  Module_SUBTREE,
+        #   - if it is differentiable ndarray,  it is registered as PARAMETER,
+        #   - if it contains differentiable ndarray's only, it is registered as PARAMETER_SUBTREE,
+        #   - if it is a non-differentiable ndarray,  it is registered as STATE,
+        #   - if it contains non-differentiable ndarray's only, it is registered as STATE_SUBTREE.
+        if name not in self._name_to_kind:
+            if isinstance(value, Module):
+                self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
+            elif all_modules:
+                self._update_name_to_kind_dict(name, PaxFieldKind.MODULE_SUBTREE)
+            elif is_differentable(value):
+                self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
+            elif all_differentable:
+                self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER_SUBTREE)
+            elif is_ndarray(value):
+                self._update_name_to_kind_dict(name, PaxFieldKind.STATE)
+            elif all_ndarray:
+                self._update_name_to_kind_dict(name, PaxFieldKind.STATE_SUBTREE)
+            else:
+                pass
 
         self._scan_fields(fields=(name,))
+
+    def get_kind(self, name: str) -> PaxFieldKind:
+        return self._name_to_kind[name]
+
+    def set_kind(self, name: str, value: PaxFieldKind):
+        self._name_to_kind[name] = value
 
     def __delattr__(self, name: str) -> None:
         if ctx.state._enable_mutability:
@@ -164,48 +230,71 @@ class Module:
                 "Cannot delete module's attribute {name} in immutable mode."
             )
 
-    def register_parameter(self, name: str, value: jnp.ndarray):
+    def register_parameter(self, name: str, value: Optional[jnp.ndarray] = None):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
-        setattr(self, name, value)
 
-    def register_state(self, name: str, value: jnp.ndarray):
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
+
+    def register_state(self, name: str, value: Optional[jnp.ndarray] = None):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.STATE)
 
-        setattr(self, name, value)
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
 
     def register_module(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.MODULE`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
-        setattr(self, name, value)
+
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
 
     def register_parameter_subtree(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER_SUBTREE)
-        setattr(self, name, value)
+
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
 
     def register_state_subtree(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.STATE_SUBTREE)
-        setattr(self, name, value)
+
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
 
     def register_module_subtree(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.MODULE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.MODULE_SUBTREE)
-        setattr(self, name, value)
+
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
 
     def tree_flatten(self):
         """Convert a module to ``(children, treedef)``."""
