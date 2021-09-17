@@ -52,7 +52,7 @@ def from_haiku(
                 )
                 self.params = params
                 self.register_state_subtree("state", state)
-                self.rng_key = rng_key_2
+                self.register_state("rng_key", rng_key_2)
                 self._is_haiku_initialized = True
 
             def __init__(self, *u, rng_key: Optional[jnp.ndarray] = None, **v) -> None:
@@ -60,7 +60,9 @@ def from_haiku(
                 if pass_is_training:
                     v["is_training"] = self.training
 
-                self.rng_key = next_rng_key() if rng_key is None else rng_key
+                self.register_state(
+                    "rng_key", next_rng_key() if rng_key is None else rng_key
+                )
 
                 if delay == False:
                     self.init_haiku_module(u, v)
@@ -91,7 +93,7 @@ def from_haiku(
                 if self.training:
                     # only update state in training mode.
                     if use_rng:
-                        self.rng_key = new_rng_key
+                        self.register_state("rng_key", new_rng_key)
                     self.state = hk.data_structures.to_mutable_dict(state)
                 return out
 

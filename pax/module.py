@@ -152,17 +152,9 @@ class Module:
                 f"Cannot assign an empty pytree of value `{value}` to an attribute of a Pax's Module."
             )
 
-        from jax.dtypes import issubdtype as isdt
-
         def is_ndarray(x):
             return isinstance(x, jnp.ndarray)
 
-        def is_differentable(x):
-            return is_ndarray(x) and (
-                isdt(x.dtype, jnp.complexfloating) or isdt(x.dtype, jnp.floating)
-            )
-
-        all_differentable = all(is_differentable(x) for x in ndarray_leaves)
         all_ndarray = all(is_ndarray(x) for x in ndarray_leaves)
 
         if kind != PaxFieldKind.OTHERS:
@@ -201,25 +193,19 @@ class Module:
                 )
 
         # The automatic kind registering system:
-        #   - if a value is a Module's instance, it is registered as Module,
-        #   - if it contains Module's instances only, it is registered  Module_SUBTREE,
-        #   - if it is differentiable ndarray,  it is registered as PARAMETER,
-        #   - if it contains differentiable ndarray's only, it is registered as PARAMETER_SUBTREE,
-        #   - if it is a non-differentiable ndarray,  it is registered as STATE,
-        #   - if it contains non-differentiable ndarray's only, it is registered as STATE_SUBTREE.
+        #   - if a value is a Module's instance, it is registered as MODULE,
+        #   - if it contains Module's instances only, it is registered MODULE_SUBTREE,
+        #   - if it is ndarray, it is registered as PARAMETER,
+        #   - if it contains ndarray's only, it is registered as PARAMETER_SUBTREE.
         if name not in self._name_to_kind and value is not None:
             if isinstance(value, Module):
                 self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
             elif all_modules:
                 self._update_name_to_kind_dict(name, PaxFieldKind.MODULE_SUBTREE)
-            elif is_differentable(value):
-                self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
-            elif all_differentable:
-                self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER_SUBTREE)
             elif is_ndarray(value):
-                self._update_name_to_kind_dict(name, PaxFieldKind.STATE)
+                self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
             elif all_ndarray:
-                self._update_name_to_kind_dict(name, PaxFieldKind.STATE_SUBTREE)
+                self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER_SUBTREE)
             else:
                 pass
 
@@ -552,9 +538,7 @@ class Module:
         for name in fields:
             value = getattr(self, name)
             kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
-            mods, _ = jax.tree_flatten(
-                value, is_leaf=lambda x: isinstance(x, Module)
-            )
+            mods, _ = jax.tree_flatten(value, is_leaf=lambda x: isinstance(x, Module))
             leaves = jax.tree_leaves(value)
             # Check if a parameter or parameter subtree
             # contains non-differentiable ndarray (e.g., uint32 array)

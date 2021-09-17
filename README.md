@@ -46,8 +46,7 @@ class Counter(pax.Module):
     def __init__(self, start_value: int = 0):
         super().__init__()
         self.bias = jnp.array(0.0)
-        self.counter =  jnp.array(start_value)
-        self.register_state("counter")
+        self.register_state("counter", jnp.array(start_value))
 
 
     def __call__(self, x):
@@ -154,8 +153,10 @@ class SGD(pax.Module):
         super().__init__()
         self.momentum = momentum
         self.learning_rate = learning_rate
-        self.velocity = jax.tree_map(lambda x: jnp.zeros_like(x), params)
-        self.register_state_subtree("velocity")
+        self.register_state_subtree(
+            "velocity",
+            jax.tree_map(lambda x: jnp.zeros_like(x), params),
+        )
         
     def step(self, grads: pax.Module, params: pax.Module):
         self.velocity = jax.tree_map(
