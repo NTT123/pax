@@ -50,7 +50,7 @@ def from_haiku(
                     hk.data_structures.to_mutable_dict,
                     hk_fwd.init(rng_key_1, *u, **v),
                 )
-                self.register_parameter_subtree("params", params)
+                self.params = params
                 self.register_state_subtree("state", state)
                 self.rng_key = rng_key_2
                 self._is_haiku_initialized = True

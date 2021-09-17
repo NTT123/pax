@@ -147,8 +147,7 @@ def test_linear_wo_bias():
     x = jnp.zeros((32, 5), dtype=jnp.float32)
     y = fc(x)
     assert y.shape == (32, 7)
-
-    assert fc.bias is None
+    assert hasattr(fc, "bias") == False
 
 
 def test_linear_input_shape_error():
