@@ -145,7 +145,7 @@ class Module:
         any_modules = any(isinstance(mod, Module) for mod in leaves)
 
         if (
-            len(ndarray_leaves) == 0
+            len(leaves) == 0
             and kind == PaxFieldKind.OTHERS
             and value is not None
         ):

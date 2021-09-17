@@ -8,13 +8,9 @@ def test_transformer_flatten_unflatten():
     class MyTransformer(pax.Module):
         def __init__(self, num_layers: int):
             super().__init__()
-            self.register_module_subtree(
-                "layers",
-                [
-                    pax.nn.MultiHeadAttention(8, 512 // 8, 1.0)
-                    for i in range(num_layers)
-                ],
-            )
+            self.layers = [
+                pax.nn.MultiHeadAttention(8, 512 // 8, 1.0) for i in range(num_layers)
+            ]
 
     f = MyTransformer(16)
 
