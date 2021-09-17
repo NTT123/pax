@@ -79,7 +79,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         grads, (loss, model) = grad(loss_fn, has_aux=True)(
             model.parameters(), model, inputs
         )
-        grads.assertStructureEqual(grads, model.parameters())
+        grads.assertStructureEqual(model.parameters())
         model = model.update(
             optimizer.step(grads, model.parameters()),
         )
