@@ -1,4 +1,6 @@
-# Pax
+<div align="left">
+<img src="./images/pax_logo.png" alt="logo" width="94px"></img>
+</div>
 
 [**Introduction**](#introduction)
 | [**Getting started**](#gettingstarted)
