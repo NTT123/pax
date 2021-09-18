@@ -215,12 +215,6 @@ class Module:
 
         self._scan_fields(fields=(name,))
 
-    def get_kind(self, name: str) -> PaxFieldKind:
-        return self._name_to_kind[name]
-
-    def set_kind(self, name: str, value: PaxFieldKind):
-        self._name_to_kind[name] = value
-
     def __delattr__(self, name: str) -> None:
         if ctx.state._enable_mutability:
             super().__delattr__(name)
