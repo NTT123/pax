@@ -188,7 +188,7 @@ class Module:
                 super().__setattr__(name, value)
             else:
                 raise ValueError(
-                    f"Cannot set an attribute of kind `{kind}` in immutable mode."
+                    f"Cannot assign an attribute of kind `{kind}` in immutable mode."
                 )
 
         # The automatic kind registering system:
@@ -508,7 +508,7 @@ class Module:
             enable_jit: to use `jax.jit` for the init function.
         """
         if not ctx.state._enable_mutability:
-            raise ValueError("Cannot call hk_init in immutable mode.")
+            raise ValueError("Cannot call `hk_init` in immutable mode.")
 
         def init_fn(mod, args, kwargs):
             mod = mod.copy()
