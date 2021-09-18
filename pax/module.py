@@ -312,18 +312,15 @@ class Module:
             leaves, treedef = jax.tree_flatten(not_tree)
             leaves_clone = []
 
-            non_clone_classes = (
-                jax.custom_jvp,
-                jax.custom_vjp,
-                jax.custom_ivjp,
-                MappingProxyType,
-            )
-
             for leaf in leaves:
-                if isinstance(leaf, non_clone_classes):
+                if isinstance(leaf, MappingProxyType):
                     leaves_clone.append(leaf)
                 else:
-                    leaves_clone.append(copy.deepcopy(leaf))
+                    # TODO: fix this!
+                    x = copy.deepcopy(leaf)
+                    if x != leaf:
+                        x = leaf
+                    leaves_clone.append(x)
 
             not_tree = jax.tree_unflatten(treedef, leaves_clone)
 
