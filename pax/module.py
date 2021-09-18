@@ -90,6 +90,9 @@ class Module:
             ]
         )
 
+        # scan for unregistered submodules and ndarray's.
+        obj.deep_scan()
+
         return obj
 
     def __init__(self, name: Optional[str] = None):
@@ -574,8 +577,8 @@ class Module:
     def deep_scan(self):
         """Scan a module recursively to find any *potential* bug."""
 
-        fields = vars(self).keys()
-        self._scan_fields(fields)
+        self._scan_fields(self.__class__.__dict__)
+        self._scan_fields(self.__dict__)
 
         for mod in self.sub_modules():
             mod.deep_scan()
@@ -599,18 +602,27 @@ class Module:
                         or isdt(leaf.dtype, jnp.floating)
                     ):
                         raise ValueError(
-                            f"Field ``{self}.{name}`` of kind `{kind.name}` contains a non-differentiable leaf "
+                            f"Field `{self}.{name}` ({kind}) contains a non-differentiable leaf "
                             f"(type={leaf.dtype}, value={leaf})."
                         )
 
             if kind == PaxFieldKind.OTHERS:
+                # if a field contains empty pytree
+                leaves, _ = jax.tree_flatten(
+                    value, is_leaf=lambda x: isinstance(x, Module)
+                )
+                if len(leaves) == 0 and value is not None:
+                    raise ValueError(
+                        f"Cannot assign an empty pytree of value `{value}` to attribute "
+                        f"`{name}` of the Module class {self.__class__.__name__}."
+                    )
+
                 # Check if a field contains unregistered module
                 for leaf in mods:
                     if isinstance(leaf, Module):
                         raise ValueError(
-                            f"Unregistered field ``{self}.{name}`` of kind `{kind.name}` contains a Module "
+                            f"Unregistered field `{self}.{name}` ({kind}) contains a Module "
                             f"({leaf}). "
-                            f"This is usually not a good thing. "
                             f"Consider registering it as a MODULE or MODULE_SUBTREE."
                         )
 
@@ -618,10 +630,8 @@ class Module:
                 for leaf in leaves:
                     if isinstance(leaf, jnp.ndarray):
                         raise ValueError(
-                            f"Unregistered field ``{self}.{name}`` of kind `{kind.name}` contains a ndarray "
-                            f"(type={leaf.dtype}, value={leaf}). "
-                            f"This is usually not a good thing. "
-                            f"Consider registering it as a STATE or STATE_SUBTREE."
+                            f"Unregistered field `{self}.{name}` ({kind}) contains a ndarray. "
+                            f"Consider registering it using `self.register_*` methods."
                         )
 
             # Check if an unregistered field contains pax.Module instance
@@ -634,7 +644,7 @@ class Module:
                 for mod in mods:
                     if isinstance(mod, Module):
                         raise ValueError(
-                            f"Field ``{self}.{name}`` of kind `{kind.name}` "
+                            f"Field `{self}.{name}` ({kind}) "
                             f"SHOULD NOT contains a pax.Module instance: {mod}"
                         )
 
