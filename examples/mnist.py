@@ -58,7 +58,7 @@ def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
 
 @pax.jit
 def test_loss_fn(model: ConvNet, batch: Batch):
-    assert model.training == False
+    model = model.eval()
     return loss_fn(model.parameters(), model, batch)[0]
 
 
@@ -125,7 +125,7 @@ for epoch in range(last_epoch + 1, 10):
     test_losses = 0.0
     for batch in tqdm(test_data, desc="eval", leave=False):
         batch = jax.tree_map(lambda x: x.numpy(), batch)
-        test_losses = test_losses + test_loss_fn(net.eval(), batch)
+        test_losses = test_losses + test_loss_fn(net, batch)
     test_loss = test_losses / len(test_data)
 
     save_ckpt(epoch, net, Path(f"/tmp/pax_mnist_ckpt_{epoch:02d}.pickle"))

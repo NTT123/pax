@@ -52,7 +52,7 @@ def from_haiku(
                 )
                 self.register_parameter_subtree("params", params)
                 self.register_state_subtree("state", state)
-                self.register_state("rng_key", rng_key_2)
+                self.rng_key = rng_key_2
                 self._is_haiku_initialized = True
 
             def __init__(self, *u, rng_key: Optional[jnp.ndarray] = None, **v) -> None:

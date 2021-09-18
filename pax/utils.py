@@ -7,7 +7,7 @@ import jax
 import jax.numpy as jnp
 
 from . import rng
-from .jax_transforms import grad
+from .pax_transforms import grad
 from .module import Module
 
 T = TypeVar("T", bound="Module")
