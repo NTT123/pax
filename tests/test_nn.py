@@ -147,8 +147,7 @@ def test_linear_wo_bias():
     x = jnp.zeros((32, 5), dtype=jnp.float32)
     y = fc(x)
     assert y.shape == (32, 7)
-
-    assert fc.bias is None
+    assert hasattr(fc, "bias") == False
 
 
 def test_linear_input_shape_error():
@@ -810,7 +809,7 @@ def test_list_sub_modules_in_state():
         def __init__(self):
             super().__init__()
             self.fc = pax.nn.Linear(2, 2)
-            self.register_state("state_of_module", pax.nn.Linear(2, 5))
+            self.register_state_subtree("state_of_module", pax.nn.Linear(2, 5))
 
     m = M()
     mods = m.sub_modules()
@@ -826,3 +825,23 @@ def test_sequential_get_set_item():
     a[-1] = fc3
     assert a[-1] == fc3
     assert a[0] == fc1
+
+
+def test_apply_no_side_effect():
+    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(4, 4))
+
+    def f(mod):
+        with pax.ctx.mutable():
+            mod.test__ = 123
+        return mod
+
+    b = a.apply(f)
+    assert not hasattr(a[0], "test__")
+    assert hasattr(b[0], "test__")
+
+
+def test_new_method_no_side_effects():
+    init_fn = pax.nn.Linear.__init__
+    a = pax.nn.Linear(1, 1)
+    b = pax.nn.Linear(2, 2)
+    assert pax.nn.Linear.__init__ == init_fn

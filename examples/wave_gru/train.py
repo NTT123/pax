@@ -84,7 +84,7 @@ def train(
     test_iter = split_loader(split="test")
     test_logmel, _ = next(test_iter)
 
-    update_fn = jax.jit(pax.utils.build_update_fn(loss_fn))
+    update_fn = pax.jit(pax.utils.build_update_fn(loss_fn))
     total_loss = 0.0
     tr = tqdm(range(1, 1 + num_training_steps))
     for step in tr:

@@ -15,7 +15,7 @@ def test_haiku_conv1d_online_jit():
     f = pax.from_haiku(hk.Conv1D)(4, 3, padding="VALID")
     x = np.zeros((3, 5, 3), dtype=np.float32)
 
-    @jax.jit
+    @pax.jit
     def init(x, model):
         model(x)
         return model

@@ -7,6 +7,7 @@ import jax
 import jax.numpy as jnp
 
 from . import rng
+from .pax_transforms import grad
 from .module import Module
 
 T = TypeVar("T", bound="Module")
@@ -37,7 +38,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
     The returned ``update_fn`` function is:
 
     >>> def _update_fn(model: T, optimizer: Module, inputs: Any):
-    ...     grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(
+    ...     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
     ...         model.parameters(), model, inputs
     ...     )
     ...     model = model.update(
@@ -75,9 +76,10 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
             model: updated model
             optimizer: updated optimizer
         """
-        grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(
+        grads, (loss, model) = grad(loss_fn, has_aux=True)(
             model.parameters(), model, inputs
         )
+        grads.assertStructureEqual(model.parameters())
         model = model.update(
             optimizer.step(grads, model.parameters()),
         )

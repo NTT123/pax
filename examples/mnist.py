@@ -18,6 +18,7 @@ batch_size = 32
 num_epochs = 5
 learning_rate = 1e-4
 weight_decay = 1e-4
+pax.seed_rng_key(42)
 
 
 class ConvNet(pax.Module):
@@ -33,7 +34,7 @@ class ConvNet(pax.Module):
             conv = pax.nn.Conv2D((1 if i == 0 else 32), 32, 6, padding="VALID")
             bn = pax.nn.BatchNorm2D(32, True, True, 0.9)
             layers.append((conv, bn))
-        self.register_module_subtree("layers", layers)
+        self.layers = layers
         self.output = pax.nn.Conv2D(32, 10, 3, padding="VALID")
 
     def __call__(self, x: jnp.ndarray):
@@ -55,16 +56,16 @@ def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
     return loss, (loss, model)
 
 
-@jax.jit
+@pax.jit
 def test_loss_fn(model: ConvNet, batch: Batch):
     model = model.eval()
     return loss_fn(model.parameters(), model, batch)[0]
 
 
-@jax.jit
+@pax.jit
 def update_fn(model: ConvNet, optimizer: pax.Module, batch: Batch):
     params = model.parameters()
-    grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(params, model, batch)
+    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
     model = model.update(
         optimizer.step(grads, model.parameters()),
     )

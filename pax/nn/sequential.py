@@ -26,9 +26,7 @@ class Sequential(Module):
     def __init__(self, *layers, name: str = None):
         """Create a Sequential module."""
         super().__init__(name=name)
-        self.register_module_subtree(
-            "modules", [(f if isinstance(f, Module) else Lambda(f)) for f in layers]
-        )
+        self.modules = [(f if isinstance(f, Module) else Lambda(f)) for f in layers]
 
     def __call__(self, x):
         """Call layers in order."""

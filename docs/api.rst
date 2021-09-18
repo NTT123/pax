@@ -256,6 +256,67 @@ from_haiku_initializer
 
 .. autofunction:: from_haiku_initializer
 
+Context Managers
+================
+
+.. currentmodule:: pax.ctx
+
+.. autosummary::
+    mutable
+    immutable
+
+mutable
+-------
+
+.. autoclass:: mutable
+
+
+
+immutable
+---------
+
+.. autoclass:: immutable
+
+
+Pax Transformations
+===================
+
+Pax transformations are thin wrappers of Jax transformations. 
+
+These wrappers enable immutable mode and additional checking to prevent potential bugs.
+
+
+.. currentmodule:: pax
+
+
+pax.jit
+-------
+
+``pax.jit`` is a wrapper of ``jax.jit``. 
+
+
+pax.grad
+--------
+
+
+``pax.grad`` is a wrapper of ``jax.grad``. 
+
+
+
+pax.vmap
+--------
+
+
+``pax.vmap`` is a wrapper of ``jax.vmap``. 
+
+
+pax.pmap
+--------
+
+
+``pax.pmap`` is a wrapper of ``jax.pmap``. 
+
+
 
 Utilities
 =========
@@ -318,3 +379,8 @@ from_optax
 ----------
 
 .. autofunction:: from_optax
+
+
+.. currentmodule:: pax.optim
+
+

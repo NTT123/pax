@@ -1,12 +1,11 @@
 """Test important pax stuffs."""
 
 from typing import Dict, List, Optional, Sequence, Tuple, Union
-
+import pytest
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pax
-import pytest
 
 
 def test_pax_next_rng_key():
@@ -31,9 +30,10 @@ def test_type_union():
             super().__init__()
             self.register_state("count", [0])
 
-    counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
-    assert leaves == [0]
+    with pytest.raises(ValueError):
+        counter = Counter()
+        leaves, treedef = jax.tree_flatten(counter)
+        assert leaves == [0]
 
 
 def test_type_list_int():
@@ -55,11 +55,11 @@ def test_type_sequence():
 
         def __init__(self):
             super().__init__()
-            self.register_parameter_subtree("count", [0])
+            self.register_parameter_subtree("count", jnp.array([0.0]))
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
-    assert leaves == [0]
+    assert leaves == [jnp.array(0.0)]
 
 
 def test_type_dict():
@@ -72,9 +72,10 @@ def test_type_dict():
                 "count", {"conv1": [1, 2, 3], "conv2": ["a", "b"]}
             )
 
-    counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
-    assert leaves == [1, 2, 3, "a", "b"]
+    with pytest.raises(ValueError):
+        counter = Counter()
+        leaves, treedef = jax.tree_flatten(counter)
+        assert leaves == [1, 2, 3, "a", "b"]
 
 
 def test_type_dict_dict1():
@@ -87,9 +88,10 @@ def test_type_dict_dict1():
                 "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
-    counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
-    assert leaves == [1, 2, 3, "a", "b"]
+    with pytest.raises(ValueError):
+        counter = Counter()
+        leaves, treedef = jax.tree_flatten(counter)
+        assert leaves == [1, 2, 3, "a", "b"]
 
 
 def test_type_dict_dict_optional():
@@ -102,9 +104,10 @@ def test_type_dict_dict_optional():
                 "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
-    counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
-    assert leaves == [1, 2, 3, "a", "b"]
+    with pytest.raises(ValueError):
+        counter = Counter()
+        leaves, treedef = jax.tree_flatten(counter)
+        assert leaves == [1, 2, 3, "a", "b"]
 
 
 def test_type_dict_dict_optional1():
@@ -139,7 +142,7 @@ def test_type_optional():
 
         def __init__(self):
             super().__init__()
-            self.register_state("count", 0)
+            self.register_state("count", jnp.array(0))
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -214,10 +217,24 @@ def test_forget_call_super_at_init():
         def __init__(self):
             self.fc = pax.nn.Linear(3, 3)
 
-    with pytest.raises(RuntimeError):
-        m = M()
+    # with initialization in the `__new__` method,
+    # no need to call `super().__init__()` anymore.
+    m = M()
 
 
 def test_name_repr():
     fc = pax.nn.Linear(2, 3, name="fc1")
     assert "(fc1)" in fc.__repr__()
+
+
+def test_not_tree_clone():
+    net = pax.nn.Sequential(
+        pax.nn.Linear(2, 3),
+        jax.nn.relu,
+        pax.nn.Linear(3, 4),
+        jnp.tanh,
+        pax.nn.Linear(4, 2),
+        jax.nn.one_hot,
+    )
+    with pax.ctx.immutable():
+        net = net.copy()

@@ -16,7 +16,7 @@ def test_util_update_fn():
 
     net = pax.nn.Linear(2, 1)
     opt = opax.adamw(learning_rate=1e-1)(net.parameters())
-    update_fn = jax.jit(pax.utils.build_update_fn(loss_fn))
+    update_fn = pax.jit(pax.utils.build_update_fn(loss_fn))
     x = np.random.normal(size=(32, 2))
     y = np.random.normal(size=(32, 1))
     for step in range(3):

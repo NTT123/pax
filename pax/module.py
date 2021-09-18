@@ -5,6 +5,7 @@ https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda807690385362
 which is under MIT License.
 """
 
+import copy
 from enum import Enum
 from types import MappingProxyType
 from typing import (
@@ -18,11 +19,14 @@ from typing import (
     TypeVar,
     Union,
 )
+from unittest import TestCase
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
 import jmp
+
+from . import ctx
 
 T = TypeVar("T", bound="Module")
 
@@ -48,7 +52,7 @@ class PaxFieldKind(Enum):
     STATE_SUBTREE: int = 4
     PARAMETER_SUBTREE: int = 5
     MODULE_SUBTREE: int = 6
-    OTHERS: int = 7
+    OTHERS: int = -1
 
 
 class Module:
@@ -65,19 +69,34 @@ class Module:
     """
 
     # Field Name To Kind
-    _name_to_kind: Dict[str, PaxFieldKind] = None
-    _training: bool = True
-    name: str = None
+    _name_to_kind: Optional[Dict[str, PaxFieldKind]] = None
+    _name_to_kind_to_unfreeze: Optional[Dict[str, PaxFieldKind]]
+    _training: bool
+    name: str
+
+    def __new__(cls, *args, **kwargs):
+        """Initialize _name_to_kind and _training in `__new__` method
+        to avoid calling ``super().__init__()`` in the every subclass of Module."""
+        if not ctx.state._enable_mutability:
+            raise ValueError("Cannot create new module in immutable mode")
+
+        obj = object.__new__(cls)
+        obj.__dict__.update(
+            [
+                ("_name_to_kind", MappingProxyType(OrderedDict())),
+                ("_name_to_kind_to_unfreeze", None),
+                ("_training", True),
+                ("name", None),
+            ]
+        )
+
+        return obj
 
     def __init__(self, name: Optional[str] = None):
-        """Initialize the ``_training`` flag and ``_name_to_kind`` dictionary.
+        """Initialize module's name."""
+        if not ctx.state._enable_mutability:
+            raise ValueError("Cannot create new module in immutable mode")
 
-        It is required that any subclass of ``Module`` has to call ``super().__init__()`` for initialization.
-        We implement a safeguard mechanism to enforce that by checking if ``_name_to_kind`` is ``None`` in the ``__setattr__`` method.
-        """
-        super().__init__()
-        super().__setattr__("_name_to_kind", MappingProxyType(OrderedDict()))
-        super().__setattr__("_training", True)
         super().__setattr__("name", name)
 
     @property
@@ -89,80 +108,186 @@ class Module:
 
         Create a new dictionary and wrap it with
         `MappingProxyType`to avoid side effects."""
+        if not ctx.state._enable_mutability:
+            raise ValueError(
+                "Cannot update `_name_to_kind` dictionary in immutable mode."
+            )
+
         new_dict = OrderedDict(self._name_to_kind)
         new_dict[name] = value
         super().__setattr__("_name_to_kind", MappingProxyType(new_dict))
 
     def __setattr__(self, name: str, value: Any) -> None:
-        """Whenever a user sets ``value`` to attribute ``name``, we will check the assignment:
+        """
+        Whenever a user sets ``value`` to attribute ``name``, we will check the assignment:
 
         * Setting ``_name_to_kind`` and ``_training`` are forbidden.
 
         * Setting ``value`` to a wrong kind attribute is also forbidden.
 
+        * In `immutable` mode, only STATE and MODULE kinds are allowed to be set.
+
+        * With `mutable` mode, all kinds are allowed to be set.
+
         * If ``value`` is a ``Module``'s instance and ``name`` is not in ``_name_to_kind``, its kind will be ``PaxFieldKind.MODULE``.
         """
-        if self._name_to_kind is None:
-            raise RuntimeError(
-                "You forgot to call `super().__init__()`` "
-                "inside your pax.Module's ``__init__`` method."
-            )
 
-        if name in ["_name_to_kind", "_training"]:
-            raise RuntimeError(
+        if name in ["_name_to_kind", "_training", "_name_to_kind_to_unfreeze"]:
+            raise ValueError(
                 f"You SHOULD NOT modify `{name}`. "
                 f"If you _really_ want to, use `self.__dict__[name] = value` instead."
             )
 
-        super().__setattr__(name, value)
+        kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
 
-        if isinstance(value, Module) and name not in self._name_to_kind:
-            self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
+        leaves = jax.tree_flatten(value, is_leaf=lambda x: isinstance(x, Module))[0]
+        ndarray_leaves = jax.tree_flatten(value)[0]
+        all_modules = all(isinstance(mod, Module) for mod in leaves)
+        any_modules = any(isinstance(mod, Module) for mod in leaves)
 
-        self._scan_fields(fields={name: value})
+        if len(leaves) == 0 and kind == PaxFieldKind.OTHERS and value is not None:
+            raise ValueError(
+                f"Cannot assign an empty pytree of value `{value}` to an attribute of a Pax's Module."
+            )
 
-    def register_parameter(self, name: str, value: jnp.ndarray):
+        def is_ndarray(x):
+            return isinstance(x, jnp.ndarray)
+
+        all_ndarray = all(is_ndarray(x) for x in ndarray_leaves)
+        any_ndarray = any(is_ndarray(x) for x in ndarray_leaves)
+
+        if kind != PaxFieldKind.OTHERS:
+            if kind in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]:
+                if not is_ndarray(value):
+                    raise ValueError(
+                        f"Assigning a non-ndarray value to an attribute of kind {kind}"
+                    )
+            elif kind in [PaxFieldKind.PARAMETER_SUBTREE, PaxFieldKind.STATE_SUBTREE]:
+                if not all_ndarray:
+                    raise ValueError(
+                        f"Assigning a value which contains a non-ndarray object to an attribute of kind {kind}"
+                    )
+            elif kind == PaxFieldKind.MODULE:
+                if not isinstance(value, Module):
+                    raise ValueError(
+                        f"Assigning a non-Module object to an attribute of kind {kind}"
+                    )
+            elif kind == PaxFieldKind.MODULE_SUBTREE:
+                if not all_modules:
+                    raise ValueError(
+                        f"Assigning a value which contains a non-Module object to an attribute of kind {kind}"
+                    )
+
+        if ctx.state._enable_mutability:
+            super().__setattr__(name, value)
+        else:
+            if kind in [
+                PaxFieldKind.STATE,
+                PaxFieldKind.STATE_SUBTREE,
+            ]:
+                super().__setattr__(name, value)
+            else:
+                raise ValueError(
+                    f"Cannot set an attribute of kind `{kind}` in immutable mode."
+                )
+
+        # The automatic kind registering system:
+        #   - if a value is a Module's instance, it is registered as MODULE,
+        #   - if it contains Module's instances only, it is registered MODULE_SUBTREE,
+        #   - if it contains a Module, raise ValueError,
+        #   - if it contains a ndarray, raise ValueError.
+        if name not in self._name_to_kind and value is not None:
+            if isinstance(value, Module):
+                self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
+            elif all_modules:
+                self._update_name_to_kind_dict(name, PaxFieldKind.MODULE_SUBTREE)
+            elif any_modules:
+                raise ValueError(
+                    "Cannot mix a `pax.Module` with other kind in the same attribute."
+                )
+            elif any_ndarray:
+                raise ValueError(
+                    "Cannot assign ndarray to an attribute directly. "
+                    "Use `self.register_*` methods to assign your value."
+                )
+            else:
+                pass
+
+        self._scan_fields(fields=(name,))
+
+    def __delattr__(self, name: str) -> None:
+        if ctx.state._enable_mutability:
+            super().__delattr__(name)
+        else:
+            raise ValueError(
+                "Cannot delete module's attribute {name} in immutable mode."
+            )
+
+    def register_parameter(self, name: str, value: Optional[jnp.ndarray] = None):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
-        setattr(self, name, value)
 
-    def register_state(self, name: str, value: jnp.ndarray):
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
+
+    def register_state(self, name: str, value: Optional[jnp.ndarray] = None):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.STATE)
 
-        setattr(self, name, value)
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
 
     def register_module(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.MODULE`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
-        setattr(self, name, value)
+
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
 
     def register_parameter_subtree(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER_SUBTREE)
-        setattr(self, name, value)
+
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
 
     def register_state_subtree(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.STATE_SUBTREE)
-        setattr(self, name, value)
+
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
 
     def register_module_subtree(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.MODULE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.MODULE_SUBTREE)
-        setattr(self, name, value)
+
+        if value is not None:
+            setattr(self, name, value)
+        elif not hasattr(self, name):
+            raise ValueError("Cannot create a `None` attribute.")
 
     def tree_flatten(self):
         """Convert a module to ``(children, treedef)``."""
@@ -180,12 +305,31 @@ class Module:
             else:
                 not_tree[name] = value
 
+        if not ctx.state._enable_mutability:
+            leaves, treedef = jax.tree_flatten(not_tree)
+            leaves_clone = []
+
+            non_clone_classes = (
+                jax.custom_jvp,
+                jax.custom_vjp,
+                jax.custom_ivjp,
+                MappingProxyType,
+            )
+
+            for leaf in leaves:
+                if isinstance(leaf, non_clone_classes):
+                    leaves_clone.append(leaf)
+                else:
+                    leaves_clone.append(copy.deepcopy(leaf))
+
+            not_tree = jax.tree_unflatten(treedef, leaves_clone)
+
         return children, (children_names, not_tree)
 
     @classmethod
     def tree_unflatten(cls, aux_data: ModuleAuxiliaryData, children):
         """Recreate a module from its ``(children, treedef)``."""
-        module = cls.__new__(cls)
+        module = object.__new__(cls)
         children_names, _not_tree = aux_data
         md = module.__dict__
         md.update(_not_tree)
@@ -203,6 +347,45 @@ class Module:
         """Return a copy of current module."""
         return jax.tree_map(lambda x: x, self)
 
+    def assertStructureEqual(self, other):
+        """Assert that the two modules are structurally the same.
+
+        Print out the difference.
+        """
+        if jax.tree_structure(self) == jax.tree_structure(other):
+            return True
+
+        def check(a, b):
+            if isinstance(a, Module) and isinstance(b, Module):
+                a.assertStructureEqual(b)
+
+        tc = TestCase()
+        tc.maxDiff = None
+
+        def filter_out_module(d):
+            return {
+                k: ((v.shape, v.dtype) if isinstance(v, jnp.ndarray) else v)
+                for (k, v) in d.items()
+                if (k not in self._name_to_kind)
+                or (
+                    self._name_to_kind[k]
+                    not in [PaxFieldKind.MODULE, PaxFieldKind.MODULE_SUBTREE]
+                )
+            }
+
+        tc.assertDictEqual(
+            filter_out_module(vars(self)), filter_out_module(vars(other))
+        )
+
+        jax.tree_map(
+            check,
+            self,
+            other,
+            is_leaf=lambda x: isinstance(x, Module)
+            and x is not self
+            and x is not other,
+        )
+
     def filter(self: T, keep: str = "parameter") -> T:
         """Filtering a module by trainable parameters and non-trainable states.
 
@@ -212,7 +395,7 @@ class Module:
         assert keep in ["parameter", "state"]
         fields = vars(self)
         cls = self.__class__
-        module = cls.__new__(cls)
+        module = object.__new__(cls)
 
         for name, value in fields.items():
             field_type = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
@@ -260,18 +443,12 @@ class Module:
         Arguments:
             mode: return a copy module in ``train`` mode module if ``True``.
         """
-        submods, treedef = jax.tree_flatten(
-            self, is_leaf=lambda x: isinstance(x, Module) and x is not self
-        )
-        new_submods = []
-        for mod in submods:
-            if isinstance(mod, Module):
-                new_submods.append(mod.train(mode=mode))
-            else:
-                new_submods.append(mod)
-        new_module = jax.tree_unflatten(treedef, new_submods)
-        new_module.__dict__["_training"] = mode
-        return new_module
+
+        def _train_apply_fn(mod: T) -> T:
+            mod.__dict__["_training"] = mode
+            return mod
+
+        return self.apply(_train_apply_fn)
 
     def eval(self: T) -> T:
         """Return a copy module in ``eval`` mode."""
@@ -284,26 +461,42 @@ class Module:
 
     def freeze(self: T) -> T:
         """Return a copy module with all trainable parameters are converted to non-trainable states."""
-        submods, treedef = jax.tree_flatten(
-            self, is_leaf=lambda x: isinstance(x, Module) and x is not self
-        )
-        new_submods = []
-        for mod in submods:
-            if isinstance(mod, Module):
-                new_submods.append(mod.freeze())
+
+        def _freeze_fn(mod: T) -> T:
+            if mod._name_to_kind_to_unfreeze is not None:
+                raise ValueError("Freezing a frozen module is NOT allowed")
+
+            new_name_to_kind = OrderedDict()
+            for k, v in mod._name_to_kind.items():
+                if v == PaxFieldKind.PARAMETER:
+                    new_name_to_kind[k] = PaxFieldKind.STATE
+                elif v == PaxFieldKind.PARAMETER_SUBTREE:
+                    new_name_to_kind[k] = PaxFieldKind.STATE_SUBTREE
+                else:
+                    new_name_to_kind[k] = v
+
+            # save a backup for later unfreeze calls
+            mod.__dict__["_name_to_kind_to_unfreeze"] = mod.__dict__["_name_to_kind"]
+            # use proxy to avoid any side effects
+            mod.__dict__["_name_to_kind"] = MappingProxyType(new_name_to_kind)
+            return mod
+
+        return self.apply(_freeze_fn)
+
+    def unfreeze(self: T) -> T:
+        """Return the original module before frozen."""
+
+        def _unfreeze_fn(mod: T) -> T:
+            if mod._name_to_kind_to_unfreeze is None:
+                return mod
             else:
-                new_submods.append(mod)
-        model = jax.tree_unflatten(treedef, new_submods)
-        model.__dict__["_name_to_kind"] = dict(
-            model._name_to_kind
-        )  # copy to avoid side effects.
-        name_to_kind = model._name_to_kind
-        for k, v in name_to_kind.items():
-            if v == PaxFieldKind.PARAMETER:
-                name_to_kind[k] = PaxFieldKind.STATE
-            elif v == PaxFieldKind.PARAMETER_SUBTREE:
-                name_to_kind[k] = PaxFieldKind.STATE_SUBTREE
-        return model
+                mod.__dict__["_name_to_kind"] = mod.__dict__[
+                    "_name_to_kind_to_unfreeze"
+                ]
+                mod.__dict__["_name_to_kind_to_unfreeze"] = None
+                return mod
+
+        return self.apply(_unfreeze_fn)
 
     def hk_init(self, *args, enable_jit: bool = False, **kwargs):
         """Return a new initialized module.
@@ -314,6 +507,8 @@ class Module:
             args, kwargs: dummy inputs to the module.
             enable_jit: to use `jax.jit` for the init function.
         """
+        if not ctx.state._enable_mutability:
+            raise ValueError("Cannot call hk_init in immutable mode.")
 
         def init_fn(mod, args, kwargs):
             mod = mod.copy()
@@ -379,19 +574,21 @@ class Module:
     def deep_scan(self):
         """Scan a module recursively to find any *potential* bug."""
 
-        fields = vars(self)
+        fields = vars(self).keys()
         self._scan_fields(fields)
 
         for mod in self.sub_modules():
             mod.deep_scan()
 
-    def _scan_fields(self, fields: Sequence[Any]):
+    def _scan_fields(self, fields: Sequence[str]):
         """Scan fields for *potential* bugs."""
 
         from jax.dtypes import issubdtype as isdt
 
-        for name, value in fields.items():
+        for name in fields:
+            value = getattr(self, name)
             kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
+            mods, _ = jax.tree_flatten(value, is_leaf=lambda x: isinstance(x, Module))
             leaves = jax.tree_leaves(value)
             # Check if a parameter or parameter subtree
             # contains non-differentiable ndarray (e.g., uint32 array)
@@ -406,14 +603,24 @@ class Module:
                             f"(type={leaf.dtype}, value={leaf})."
                         )
 
-            # Check if a field contains unregistered ndarray
             if kind == PaxFieldKind.OTHERS:
+                # Check if a field contains unregistered module
+                for leaf in mods:
+                    if isinstance(leaf, Module):
+                        raise ValueError(
+                            f"Unregistered field ``{self}.{name}`` of kind `{kind.name}` contains a Module "
+                            f"({leaf}). "
+                            f"This is usually not a good thing. "
+                            f"Consider registering it as a MODULE or MODULE_SUBTREE."
+                        )
+
+                # Check if a field contains unregistered ndarray
                 for leaf in leaves:
                     if isinstance(leaf, jnp.ndarray):
                         raise ValueError(
                             f"Unregistered field ``{self}.{name}`` of kind `{kind.name}` contains a ndarray "
                             f"(type={leaf.dtype}, value={leaf}). "
-                            f"This is usually not a good idea. "
+                            f"This is usually not a good thing. "
                             f"Consider registering it as a STATE or STATE_SUBTREE."
                         )
 
@@ -424,9 +631,6 @@ class Module:
                 PaxFieldKind.STATE,
                 PaxFieldKind.STATE_SUBTREE,
             ]:
-                mods, _ = jax.tree_flatten(
-                    value, is_leaf=lambda x: isinstance(x, Module)
-                )
                 for mod in mods:
                     if isinstance(mod, Module):
                         raise ValueError(
@@ -535,6 +739,8 @@ class Module:
         new_self = jax.tree_map(
             rec_fn, self, is_leaf=lambda x: isinstance(x, Module) and x is not self
         )
+        # tree_map already created a copy of self,
+        # hence `apply_fn` is guaranteed to have no side effects.
         return apply_fn(new_self)
 
     def __repr__(self, info: Optional[Dict[str, Any]] = None) -> str:

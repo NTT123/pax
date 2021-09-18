@@ -18,7 +18,7 @@ def test_finetune():
             layers = []
             for in_dim, out_dim in zip(dims[:-1], dims[1:]):
                 layers.append(pax.nn.Linear(in_dim, out_dim))
-            self.register_module_subtree("layers", layers)
+            self.layers = layers
 
         def __call__(self, x):
             for f in self.layers:
@@ -43,10 +43,10 @@ def test_finetune():
     # net.layers[-1] = pax.nn.Linear(2, 10)
     optimizer = opax.adam(1e-2)(net.parameters())
 
-    @jax.jit
+    @pax.jit
     def update_fn(model: MLP, optimizer: pax.Module, x):
         params = model.parameters()
-        grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(params, model, x)
+        grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, x)
         model = model.update(
             optimizer.step(grads, model.parameters()),
         )

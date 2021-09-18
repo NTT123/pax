@@ -43,8 +43,6 @@ class Linear(Module):
         super().__init__(name=name)
         self.in_dim = in_dim
         self.out_dim = out_dim
-        self.weight = None
-        self.bias = None
         self.with_bias = with_bias
 
         rng_key = next_rng_key() if rng_key is None else rng_key

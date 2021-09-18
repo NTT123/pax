@@ -2,15 +2,12 @@
 Manage the global variable ``state._rng_key``. Generate new ``rng_key`` if requested.
 """
 import logging
-import threading
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
 
-state = threading.local()
-state._rng_key = None
-state._seed = None
+from .ctx import state
 
 
 def seed_rng_key(seed: int) -> None:
