@@ -229,7 +229,7 @@ def test_name_repr():
 
 def test_not_tree_clone():
     net = pax.nn.Sequential(
-        pax.nn.Linear(2,3),
+        pax.nn.Linear(2, 3),
         jax.nn.relu,
         pax.nn.Linear(3, 4),
         jnp.tanh,
@@ -238,4 +238,3 @@ def test_not_tree_clone():
     )
     with pax.ctx.immutable():
         net = net.copy()
-        

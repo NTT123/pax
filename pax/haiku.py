@@ -93,7 +93,7 @@ def from_haiku(
                 if self.training:
                     # only update state in training mode.
                     if use_rng:
-                        self.register_state("rng_key", new_rng_key)
+                        self.rng_key = new_rng_key
                     self.state = hk.data_structures.to_mutable_dict(state)
                 return out
 

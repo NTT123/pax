@@ -11,10 +11,11 @@ def _deep_scan(mod):
 
 def enable_strict_mode(f):
     """The strict mode includes two things:
-    
+
     - enable immutability mode.
     - call deep_scan on input modules.
     """
+
     def wrapper(fn, *args, **kwds):
         assert callable(fn), "Expecting a callable object as the first argument."
 
