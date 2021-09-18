@@ -225,3 +225,17 @@ def test_forget_call_super_at_init():
 def test_name_repr():
     fc = pax.nn.Linear(2, 3, name="fc1")
     assert "(fc1)" in fc.__repr__()
+
+
+def test_not_tree_clone():
+    net = pax.nn.Sequential(
+        pax.nn.Linear(2,3),
+        jax.nn.relu,
+        pax.nn.Linear(3, 4),
+        jnp.tanh,
+        pax.nn.Linear(4, 2),
+        jax.nn.one_hot,
+    )
+    with pax.ctx.immutable():
+        net = net.copy()
+        

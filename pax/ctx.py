@@ -12,7 +12,7 @@ state._enable_mutability = True
 
 
 class mutable(object):
-    r"""Context-manager that turns on mutable mode.
+    r"""A context manager that turns on mutable mode.
 
     Example::
 
@@ -36,14 +36,14 @@ class mutable(object):
 
 
 class immutable(object):
-    r"""Context-manager that turns on immutable mode.
+    r"""A context manager that turns on immutable mode.
 
     Example::
 
         >>> x = pax.nn.Linear(2,2)
         >>> with pax.ctx.immutable():
         ...   x.new_field = 123
-        ... RuntimeError: Cannot set an attribute of kind `PaxFieldKind.OTHERS` in immutable mode.`
+        RuntimeError: Cannot set an attribute of kind `PaxFieldKind.OTHERS` in immutable mode.`
     """
 
     def __init__(self):

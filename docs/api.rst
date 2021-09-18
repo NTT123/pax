@@ -256,6 +256,27 @@ from_haiku_initializer
 
 .. autofunction:: from_haiku_initializer
 
+Context Managers
+================
+
+.. currentmodule:: pax.ctx
+
+.. autosummary::
+    mutable
+    immutable
+
+mutable
+-------
+
+.. autoclass:: mutable
+
+
+
+immutable
+---------
+
+.. autoclass:: immutable
+
 
 Utilities
 =========

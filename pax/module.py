@@ -312,9 +312,23 @@ class Module:
                 not_tree[name] = value
 
         if not ctx.state._enable_mutability:
-            a, b = jax.tree_flatten(not_tree)
-            a = [x if isinstance(x, MappingProxyType) else copy.deepcopy(x) for x in a]
-            not_tree = jax.tree_unflatten(b, a)
+            leaves, treedef = jax.tree_flatten(not_tree)
+            leaves_clone = []
+
+            non_clone_classes = (
+                jax.custom_jvp,
+                jax.custom_vjp,
+                jax.custom_ivjp,
+                MappingProxyType,
+            )
+
+            for leaf in leaves:
+                if isinstance(leaf, non_clone_classes):
+                    leaves_clone.append(leaf)
+                else:
+                    leaves_clone.append(copy.deepcopy(leaf))
+
+            not_tree = jax.tree_unflatten(treedef, leaves_clone)
 
         return children, (children_names, not_tree)
 
@@ -435,8 +449,6 @@ class Module:
         Arguments:
             mode: return a copy module in ``train`` mode module if ``True``.
         """
-        if not ctx.state._enable_mutability:
-            raise ValueError("Cannot modify `_training` in immutable mode.")
 
         def _train_apply_fn(mod: T) -> T:
             mod.__dict__["_training"] = mode
@@ -455,8 +467,6 @@ class Module:
 
     def freeze(self: T) -> T:
         """Return a copy module with all trainable parameters are converted to non-trainable states."""
-        if not ctx.state._enable_mutability:
-            raise ValueError("Cannot freeze a module in immutable mode.")
 
         def _freeze_fn(mod: T) -> T:
             if mod._name_to_kind_to_unfreeze is not None:
@@ -481,8 +491,6 @@ class Module:
 
     def unfreeze(self: T) -> T:
         """Return the original module before frozen."""
-        if not ctx.state._enable_mutability:
-            raise ValueError("Cannot unfreeze a module in immutable mode.")
 
         def _unfreeze_fn(mod: T) -> T:
             if mod._name_to_kind_to_unfreeze is None:
@@ -645,9 +653,6 @@ class Module:
             mp_policy: a ``jmp`` mixed precision policy.
             method_name: name of the method that will be affected.
         """
-        if not ctx.state._enable_mutability:
-            raise ValueError("Cannot apply mixed-precision policy in immutable mode.")
-
         if hasattr(self, "unwrap_mixed_precision"):
             raise ValueError(
                 "Enforcing mixed-precision policy on an object twice is not allowed. "
