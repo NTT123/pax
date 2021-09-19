@@ -9,6 +9,7 @@ import jax.numpy as jnp
 from . import rng
 from .module import Module
 from .pax_transforms import grad
+from .rng import KeyArray
 
 T = TypeVar("T", bound="Module")
 
@@ -59,7 +60,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         """
         )
 
-    from opax import GradientTransformation  # type: ignore
+    from opax import GradientTransformation
 
     def _update_fn(model: T, optimizer: GradientTransformation, inputs: Any):
         """An update function.
@@ -90,7 +91,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
     return _update_fn
 
 
-def dropout(rng_key: jnp.ndarray, dropout_rate: float, x: jnp.ndarray) -> jnp.ndarray:
+def dropout(rng_key: KeyArray, dropout_rate: float, x: jnp.ndarray) -> jnp.ndarray:
     """Dropout input `x` randomly.
 
     Scaling the input by ``1 / (1-dropout_rate)`` makes ``E[output] = input``.
@@ -167,9 +168,9 @@ class Lambda(Module):
 class RngSeq(Module):
     """A module which generates an infinite sequence of rng keys."""
 
-    _rng_key: jnp.ndarray
+    _rng_key: KeyArray
 
-    def __init__(self, seed: int = None, rng_key: jnp.ndarray = None):
+    def __init__(self, seed: int = None, rng_key: Optional[KeyArray] = None):
         """Initialize a random key sequence.
 
         **Note**: ``rng_key`` has higher priority than ``seed``.
@@ -180,17 +181,20 @@ class RngSeq(Module):
         """
         super().__init__()
         if rng_key is not None:
-            rng_key = rng_key
+            _rng_key = rng_key
         elif seed is not None:
-            rng_key = jax.random.PRNGKey(seed)
+            _rng_key = jax.random.PRNGKey(seed)  # type: ignore
         else:
-            rng_key = rng.next_rng_key()
+            _rng_key = rng.next_rng_key()
 
-        self.register_state("_rng_key", rng_key)
+        if isinstance(_rng_key, jnp.ndarray):
+            self.register_state("_rng_key", _rng_key)
+        else:
+            raise ValueError("Impossible")
 
     def next_rng_key(
         self, num_keys: int = 1
-    ) -> Union[jnp.ndarray, Sequence[jnp.ndarray]]:
+    ) -> Union[rng.KeyArray, Sequence[rng.KeyArray]]:
         """Return the next random key of the sequence.
 
         **Note**:

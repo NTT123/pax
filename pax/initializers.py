@@ -1,10 +1,12 @@
-from typing import Any, Callable, Optional, Sequence
+from typing import Any, Callable, Sequence
 
 import jax
 import jax.numpy as jnp
-import numpy as np  # type: ignore
+import numpy as np
 
-Initializer = Callable[[Sequence[int], Any, Optional[jnp.ndarray]], jnp.ndarray]
+from .rng import KeyArray
+
+Initializer = Callable[[Sequence[int], Any, KeyArray], jnp.ndarray]
 
 # source:
 # https://github.com/deepmind/dm-haiku/blob/48f5d5d9b7faabffb3860900c633229bc57e01df/haiku/_src/initializers.py#L34

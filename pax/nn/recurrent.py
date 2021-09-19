@@ -7,7 +7,7 @@ import jax.numpy as jnp
 
 from ..initializers import Initializer
 from ..module import Module
-from ..rng import next_rng_key
+from ..rng import KeyArray, next_rng_key
 from .linear import Linear
 
 
@@ -46,7 +46,7 @@ class LSTM(RNN):
         w_init: Initializer = None,
         forget_gate_bias: float = 0.0,
         *,
-        rng_key: jnp.ndarray = None,
+        rng_key: KeyArray = None,
         name: str = None
     ):
         """Create a LSTM module.
@@ -118,7 +118,7 @@ class GRU(RNN):
         input_dim: int,
         hidden_dim: int,
         *,
-        rng_key: jnp.ndarray = None,
+        rng_key: KeyArray = None,
         name: str = None
     ):
         """Create a GRU module.

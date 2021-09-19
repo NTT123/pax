@@ -13,11 +13,11 @@ from typing import Optional, Sequence, Union
 
 import jax
 import jax.numpy as jnp
-import numpy as np  # type: ignore
+import numpy as np
 
 from .. import initializers
 from ..module import Module
-from ..rng import next_rng_key
+from ..rng import KeyArray, next_rng_key
 
 
 class LayerNorm(Module):
@@ -38,7 +38,7 @@ class LayerNorm(Module):
         scale_init: Optional[initializers.Initializer] = None,
         offset_init: Optional[initializers.Initializer] = None,
         use_fast_variance: bool = False,
-        rng_key: Optional[jnp.ndarray] = None,
+        rng_key: Optional[KeyArray] = None,
     ):
         """Constructs a LayerNorm module.
 

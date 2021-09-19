@@ -33,4 +33,4 @@ jobs:
     - name: Test with mypy
       run: |
         pip install mypy
-        mypy -p pax
+        mypy --ignore-missing-imports -p pax

@@ -3,7 +3,7 @@ from typing import Optional
 
 import jax
 import jax.numpy as jnp
-import numpy as np  # type: ignore
+import numpy as np
 import pax
 
 from .. import initializers

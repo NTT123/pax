@@ -2,11 +2,13 @@
 Manage the global variable ``state._rng_key``. Generate new ``rng_key`` if requested.
 """
 import logging
+from typing import Any, Union
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
 
+KeyArray = Union[Any, jnp.ndarray]
 from .ctx import state
 
 
@@ -20,7 +22,7 @@ def seed_rng_key(seed: int) -> None:
     state._rng_key = None  # reset `_rng_key`
 
 
-def next_rng_key() -> jnp.ndarray:
+def next_rng_key() -> KeyArray:
     """Return a random rng key. Renew the global random key ``state._rng_key``.
 
     If ``state._rng_key`` is ``None``, generate a new ``state._rng_key`` from ``state._seed``.

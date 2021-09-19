@@ -6,11 +6,11 @@ from typing import Optional, Sequence, Tuple, Union
 
 import jax
 import jax.numpy as jnp
-import numpy as np  # type: ignore
+import numpy as np
 
 from .. import initializers
 from ..module import Module
-from ..rng import next_rng_key
+from ..rng import KeyArray, next_rng_key
 
 
 class Conv(Module):
@@ -33,7 +33,7 @@ class Conv(Module):
         data_format=None,
         *,
         name: Optional[str] = None,
-        rng_key: Optional[jnp.ndarray] = None,
+        rng_key: Optional[KeyArray] = None,
     ):
         assert in_features > 0 and out_features > 0, "positive values"
         assert data_format in [
@@ -160,7 +160,7 @@ class Conv1D(Conv):
         data_format: str = "NWC",
         *,
         name: Optional[str] = None,
-        rng_key: Optional[jnp.ndarray] = None,
+        rng_key: Optional[KeyArray] = None,
     ):
         """Initializes the module.
 
@@ -226,7 +226,7 @@ class Conv2D(Conv):
         data_format: str = "NHWC",
         *,
         name: Optional[str] = None,
-        rng_key: Optional[jnp.ndarray] = None,
+        rng_key: Optional[KeyArray] = None,
     ):
         """Initializes the module.
 
@@ -294,7 +294,7 @@ class ConvTranspose(Module):
         data_format=None,
         *,
         name: Optional[str] = None,
-        rng_key: Optional[jnp.ndarray] = None,
+        rng_key: Optional[KeyArray] = None,
     ):
         assert in_features > 0 and out_features > 0, "positive values"
         assert data_format in [
@@ -408,7 +408,7 @@ class Conv1DTranspose(ConvTranspose):
         data_format: str = "NWC",
         *,
         name: Optional[str] = None,
-        rng_key: Optional[jnp.ndarray] = None,
+        rng_key: Optional[KeyArray] = None,
     ):
         """Initializes the module.
 
@@ -470,7 +470,7 @@ class Conv2DTranspose(ConvTranspose):
         data_format: str = "NHWC",
         *,
         name: Optional[str] = None,
-        rng_key: Optional[jnp.ndarray] = None,
+        rng_key: Optional[KeyArray] = None,
     ):
         """Initializes the module.
 

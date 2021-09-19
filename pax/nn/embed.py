@@ -2,7 +2,7 @@ import jax.numpy as jnp
 
 from .. import initializers
 from ..module import Module
-from ..rng import next_rng_key
+from ..rng import KeyArray, next_rng_key
 
 
 class Embed(Module):
@@ -20,7 +20,7 @@ class Embed(Module):
         embed_dim: int,
         w_init: initializers.Initializer = None,
         *,
-        rng_key: jnp.ndarray = None,
+        rng_key: KeyArray = None,
         name: str = None
     ):
         """

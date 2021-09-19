@@ -25,7 +25,7 @@ from unittest import TestCase
 import jax
 import jax.numpy as jnp
 import jax.tree_util
-import jmp  # type: ignore
+import jmp
 
 from . import ctx
 
