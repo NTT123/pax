@@ -577,7 +577,9 @@ class Module:
                             f"SHOULD NOT contains a pax.Module instance: {mod}"
                         )
 
-    def mixed_precision(self: T, mp_policy: jmp.Policy, method_name="__call__") -> T:
+    def mixed_precision(
+        self: T, mp_policy: jmp.Policy, method_name: str = "__call__"
+    ) -> T:
         """Convert the module to a MixedPrecision module.
 
         Return a clone object whose ``method_name`` method is wrapped to enforce the mixed-precision policy.
@@ -654,6 +656,9 @@ class Module:
             output = mp_policy.cast_to_output(output)
             return output
 
+        assert hasattr(
+            MixedPrecisionWrapper, method_name
+        ), f"The method {self.__class__.__name__}.{method_name} does not exists."
         setattr(MixedPrecisionWrapper, method_name, mp_call)
         MixedPrecisionWrapper.__name__ = self.__class__.__name__ + "@MixedPrecision"
         new = MixedPrecisionWrapper.__new__(MixedPrecisionWrapper)
