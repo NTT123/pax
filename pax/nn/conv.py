@@ -320,10 +320,6 @@ class ConvTranspose(Module):
 
         if isinstance(padding, str):
             assert padding in ["SAME", "VALID"], f"Not supported padding `{padding}`"
-        elif isinstance(padding, tuple):
-            raise ValueError(
-                "Tuple type padding is not supported. Use `[ (int, int) ]` instead."
-            )
         self.padding = padding
 
         self.with_bias = with_bias

@@ -62,6 +62,7 @@ Common Modules
     LSTM
     GRU
     MultiHeadAttention
+    Identity
     avg_pool
     max_pool
 
@@ -184,6 +185,12 @@ MultiHeadAttention
 .. autoclass:: MultiHeadAttention
    :members:
 
+
+Identity
+--------
+
+.. autoclass:: Identity
+   :members:
 
 
 Sequential

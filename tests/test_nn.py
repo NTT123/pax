@@ -845,3 +845,10 @@ def test_new_method_no_side_effects():
     a = pax.nn.Linear(1, 1)
     b = pax.nn.Linear(2, 2)
     assert pax.nn.Linear.__init__ == init_fn
+
+
+def test_identity_module():
+    ident = pax.nn.Identity()
+    x = jnp.zeros((3, 3))
+    y = ident(x)
+    assert jnp.array_equal(x, y) == True

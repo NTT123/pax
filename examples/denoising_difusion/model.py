@@ -2,9 +2,11 @@
 # https://github.com/lucidrains/denoising-diffusion-pytorch/blob/master/denoising_diffusion_pytorch/denoising_diffusion_pytorch.py
 
 import math
+from typing import List
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import pax
 from einops import rearrange
 from pax.nn import GroupNorm, LayerNorm
@@ -44,7 +46,7 @@ class Mish(pax.Module):
 class Upsample(pax.Module):
     def __init__(self, dim):
         super().__init__()
-        self.conv = pax.nn.Conv2DTranspose(dim, dim, 4, 2, "VALID")
+        self.conv = pax.nn.Conv2DTranspose(dim, dim, 4, 2, padding="SAME")
 
     def __call__(self, x):
         return self.conv(x)
@@ -53,7 +55,7 @@ class Upsample(pax.Module):
 class Downsample(pax.Module):
     def __init__(self, dim):
         super().__init__()
-        self.conv = pax.nn.Conv2D(dim, dim, 3, 2, "SAME")
+        self.conv = pax.nn.Conv2D(dim, dim, 3, 2, padding="SAME")
 
     def __call__(self, x):
         return self.conv(x)
@@ -63,7 +65,7 @@ class PreNorm(pax.Module):
     def __init__(self, dim, fn):
         super().__init__()
         self.fn = fn
-        self.norm = LayerNorm(dim)
+        self.norm = LayerNorm(dim, -1, True, True)
 
     def __call__(self, x):
         x = self.norm(x)
@@ -74,11 +76,13 @@ class Block(pax.Module):
     def __init__(self, dim, dim_out, groups: int = 8):
         super().__init__()
         self.blocks = pax.nn.Sequential(
-            pax.nn.Conv2D(dim, dim_out, 3, "SAME"), GroupNorm(groups, dim_out), Mish()
+            pax.nn.Conv2D(dim, dim_out, 3, padding="SAME"),
+            GroupNorm(groups, dim_out),
+            Mish(),
         )
 
-    def forward(self, x):
-        return self.block(x)
+    def __call__(self, x):
+        return self.blocks(x)
 
 
 class ResnetBlock(pax.Module):
@@ -93,16 +97,16 @@ class ResnetBlock(pax.Module):
         self.block1 = Block(dim, dim_out)
         self.block2 = Block(dim_out, dim_out)
         self.res_conv = (
-            pax.nn.Conv2D(dim, dim_out, 1) if dim != dim_out else lambda x: x
+            pax.nn.Conv2D(dim, dim_out, 1) if dim != dim_out else pax.nn.Identity()
         )
 
     def __call__(self, x, time_emb):
         h = self.block1(x)
 
         if self.mlp is not None:
-            h = h + self.mlp(time_emb)[:, :, None, None]
+            h = h + self.mlp(time_emb)[:, None, None, :]
 
-        h = self.block2(2)
+        h = self.block2(h)
         return h + self.res_conv(x)
 
 
@@ -118,21 +122,35 @@ class LinearAttention(pax.Module):
         b, h, w, c = x.shape
         qkv = self.to_qkv(x)
         q, k, v = rearrange(
-            qkv, "b h w (qkv heads c) -> qkv b h w heads c", heads=self.heads, qkv=3
+            qkv, "b h w (qkv heads c) -> qkv b heads c (h w)", heads=self.heads, qkv=3
         )
         k = jax.nn.softmax(k, axis=-1)
         context = jnp.einsum("bhdn,bhen->bhde", k, v)
         out = jnp.einsum("bhde,bhdn->bhen", context, q)
         out = rearrange(
-            out, "b heads (h w) c -> b h w (heads c)", heads=self.heads, h=h, w=w
+            out, "b heads c (h w) -> b h w (heads c)", heads=self.heads, h=h, w=w
         )
         return self.to_out(out)
 
 
 ### model
+from inspect import isfunction
+
+
+def exists(x):
+    return x is not None
+
+
+def default(val, d):
+    if exists(val):
+        return val
+    return d() if isfunction(d) else d
 
 
 class UNet(pax.Module):
+    ups: List[List[pax.Module]]
+    downs: List[List[pax.Module]]
+
     def __init__(
         self,
         dim,
@@ -160,5 +178,243 @@ class UNet(pax.Module):
             time_dim = None
             self.time_mlp = None
 
-        ups, downs = [], []
+        self.register_module_subtree("downs", [])
+        self.register_module_subtree("ups", [])
         num_resolutions = len(in_out)
+
+        for ind, (dim_in, dim_out) in enumerate(in_out):
+            is_last = ind >= (num_resolutions - 1)
+            self.downs.append(
+                [
+                    ResnetBlock(dim_in, dim_out, time_emb_dim=time_dim),
+                    ResnetBlock(dim_out, dim_out, time_emb_dim=time_dim),
+                    Residual(PreNorm(dim_out, LinearAttention(dim_out))),
+                    Downsample(dim_out) if not is_last else pax.nn.Identity(),
+                ]
+            )
+
+        mid_dim = dims[-1]
+        self.mid_block1 = ResnetBlock(mid_dim, mid_dim, time_emb_dim=time_dim)
+        self.mid_attn = Residual(PreNorm(mid_dim, LinearAttention(mid_dim)))
+        self.mid_block2 = ResnetBlock(mid_dim, mid_dim, time_emb_dim=time_dim)
+
+        for ind, (dim_in, dim_out) in enumerate(reversed(in_out[1:])):
+            is_last = ind >= (num_resolutions - 1)
+
+            self.ups.append(
+                [
+                    ResnetBlock(dim_out * 2, dim_in, time_emb_dim=time_dim),
+                    ResnetBlock(dim_in, dim_in, time_emb_dim=time_dim),
+                    Residual(PreNorm(dim_in, LinearAttention(dim_in))),
+                    Upsample(dim_in) if not is_last else pax.nn.Identity(),
+                ]
+            )
+
+        out_dim = default(out_dim, channels)
+
+        self.final_conv = pax.nn.Sequential(
+            Block(dim, dim), pax.nn.Conv2D(dim, out_dim, 1)
+        )
+
+    def __call__(self, x, time):
+        t = self.time_mlp(time) if exists(self.time_mlp) else None
+        h = []
+        for resnet, resnet2, attn, downsample in self.downs:
+            x = resnet(x, t)
+            x = resnet2(x, t)
+            x = attn(x)
+            h.append(x)
+            x = downsample(x)
+
+        x = self.mid_block1(x, t)
+        x = self.mid_attn(x)
+        x = self.mid_block2(x, t)
+
+        for resnet, resnet2, attn, upsample in self.ups:
+            x = jnp.concatenate((x, h.pop()), axis=-1)
+            x = resnet(x, t)
+            x = resnet2(x, t)
+            x = attn(x)
+            x = upsample(x)
+
+        return self.final_conv(x)
+
+
+def extract(a, t, x_shape):
+    b, *_ = t.shape
+    out = jnp.take_along_axis(a, t, axis=-1)
+    out = jnp.reshape(out, (b,) + (1,) * (len(x_shape) - 1))
+    return out
+
+
+# def noise_like(shape, device, repeat=False):
+#     repeat_noise = lambda: torch.randn((1, *shape[1:]), device=device).repeat(shape[0], *((1,) * (len(shape) - 1)))
+#     noise = lambda: torch.randn(shape, device=device)
+#     return repeat_noise() if repeat else noise()
+
+
+def cosine_beta_schedule(timesteps, s=0.008):
+    """
+    cosine schedule
+    as proposed in https://openreview.net/forum?id=-NEXDKk8gZ
+    """
+    steps = timesteps + 1
+    x = np.linspace(0, steps, steps)
+    alphas_cumprod = np.cos(((x / steps) + s) / (1 + s) * np.pi * 0.5) ** 2
+    alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
+    betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
+    return np.clip(betas, a_min=0, a_max=0.999)
+
+
+class GaussianDiffusion(pax.Module):
+    def __init__(
+        self,
+        denoise_fn,
+        *,
+        image_size,
+        channels=3,
+        timesteps=1000,
+        loss_type="l1",
+        betas=None,
+    ):
+        super().__init__()
+        self.channels = channels
+        self.image_size = image_size
+        self.denoise_fn = denoise_fn
+        self.rng_seq = pax.utils.RngSeq(42)
+
+        if exists(betas):
+            betas = jnp.array(betas)
+        else:
+            betas = cosine_beta_schedule(timesteps)
+
+        alphas = 1.0 - betas
+        alphas_cumprod = np.cumprod(alphas, axis=0)
+        alphas_cumprod_prev = np.append(1.0, alphas_cumprod[:-1])
+        (timesteps,) = betas.shape
+        self.num_timesteps = int(timesteps)
+        self.loss_type = loss_type
+
+        self.register_state("betas", betas)
+        self.register_state("alphas_cumprod", alphas_cumprod)
+        self.register_state("alphas_cumprod_prev", alphas_cumprod_prev)
+
+        # calculations for diffusion q(x_t | x_{t-1}) and others
+        self.register_state("sqrt_alphas_cumprod", np.sqrt(alphas_cumprod))
+        self.register_state(
+            "sqrt_one_minus_alphas_cumprod", np.sqrt(1.0 - alphas_cumprod)
+        )
+        self.register_state(
+            "log_one_minus_alphas_cumprod", np.log(1.0 - alphas_cumprod)
+        )
+        self.register_state("sqrt_recip_alphas_cumprod", np.sqrt(1.0 / alphas_cumprod))
+        self.register_state(
+            "sqrt_recipm1_alphas_cumprod", np.sqrt(1.0 / alphas_cumprod - 1)
+        )
+
+        # calculations for posterior q(x_{t-1} | x_t, x_0)
+        posterior_variance = (
+            betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
+        )
+        # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
+        self.register_state("posterior_variance", posterior_variance)
+        # below: log calculation clipped because the posterior variance is 0 at the beginning of the diffusion chain
+        self.register_state(
+            "posterior_log_variance_clipped",
+            np.log(np.maximum(posterior_variance, 1e-20)),
+        )
+        self.register_state(
+            "posterior_mean_coef1",
+            betas * np.sqrt(alphas_cumprod_prev) / (1.0 - alphas_cumprod),
+        )
+        self.register_state(
+            "posterior_mean_coef2",
+            (1.0 - alphas_cumprod_prev) * np.sqrt(alphas) / (1.0 - alphas_cumprod),
+        )
+
+    def q_mean_variance(self, x_start, t):
+        mean = extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
+        variance = extract(1.0 - self.alphas_cumprod, t, x_start.shape)
+        log_variance = extract(self.log_one_minus_alphas_cumprod, t, x_start.shape)
+        return mean, variance, log_variance
+
+    def predict_start_from_noise(self, x_t, t, noise):
+        return (
+            extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t
+            - extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
+        )
+
+    def q_posterior(self, x_start, x_t, t):
+        posterior_mean = (
+            extract(self.posterior_mean_coef1, t, x_t.shape) * x_start
+            + extract(self.posterior_mean_coef2, t, x_t.shape) * x_t
+        )
+        posterior_variance = extract(self.posterior_variance, t, x_t.shape)
+        posterior_log_variance_clipped = extract(
+            self.posterior_log_variance_clipped, t, x_t.shape
+        )
+        return posterior_mean, posterior_variance, posterior_log_variance_clipped
+
+    def p_mean_variance(self, x, t, clip_denoised: bool):
+        x_recon = self.predict_start_from_noise(x, t=t, noise=self.denoise_fn(x, t))
+
+        if clip_denoised:
+            x_recon = jnp.clip(x_recon, -1.0, 1.0)
+
+        model_mean, posterior_variance, posterior_log_variance = self.q_posterior(
+            x_start=x_recon, x_t=x, t=t
+        )
+        return model_mean, posterior_variance, posterior_log_variance
+
+    def q_sample(self, x_start, t, noise=None):
+        noise = default(
+            noise,
+            lambda: jax.random.normal(
+                self.rng_seq.next_rng_key(), x_start.shape, x_start.dtype
+            ),
+        )
+
+        return (
+            extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
+            + extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
+        )
+
+    def p_losses(self, x_start, t, noise=None):
+        b, c, h, w = x_start.shape
+
+        noise = default(
+            noise,
+            lambda: jax.random.normal(
+                self.rng_seq.next_rng_key(), x_start.shape, x_start.dtype
+            ),
+        )
+
+        x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
+        x_recon = self.denoise_fn(x_noisy, t)
+
+        if self.loss_type == "l1":
+            loss = jnp.mean(jnp.abs(noise - x_recon))
+        elif self.loss_type == "l2":
+            loss = jnp.mean(jnp.square(noise - x_recon))
+        else:
+            raise NotImplementedError()
+
+        return loss
+
+    def __call__(self, x, *args, **kwargs):
+        b, h, w, c, img_size, = (
+            *x.shape,
+            self.image_size,
+        )
+        assert (
+            h == img_size and w == img_size
+        ), f"height and width of image must be {img_size}"
+
+        t = jax.random.randint(
+            self.rng_seq.next_rng_key(),
+            (b,),
+            minval=0,
+            maxval=self.num_timesteps,
+            dtype=jnp.int32,
+        )
+        return self.p_losses(x, t, *args, **kwargs)
