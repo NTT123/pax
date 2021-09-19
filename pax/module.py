@@ -153,7 +153,7 @@ class Module:
         all_ndarray = all(is_ndarray(x) for x in ndarray_leaves)
         any_ndarray = any(is_ndarray(x) for x in ndarray_leaves)
 
-        if kind != PaxFieldKind.OTHERS:
+        if kind != PaxFieldKind.OTHERS and value is not None:
             if kind in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]:
                 if not is_ndarray(value):
                     raise ValueError(
@@ -360,42 +360,26 @@ class Module:
             and x is not other,
         )
 
-    def filter(self: T, keep: str = "parameter") -> T:
+    def filter(self: T, keep: PaxFieldKind) -> T:
         """Filtering a module by trainable parameters and non-trainable states.
 
         Arguments:
-            keep: type of leaves that will be kept ("parameter" or "state").
+            keep: kind of leaves that will be kept.
         """
-        assert keep in ["parameter", "state"]
-        fields = vars(self)
-        cls = self.__class__
-        module = object.__new__(cls)
+        assert keep in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]
+        if keep == PaxFieldKind.STATE:
+            none_list = [PaxFieldKind.PARAMETER, PaxFieldKind.PARAMETER_SUBTREE]
+        else:
+            none_list = [PaxFieldKind.STATE, PaxFieldKind.STATE_SUBTREE]
 
-        for name, value in fields.items():
-            field_type = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
-            if field_type in [PaxFieldKind.MODULE, PaxFieldKind.MODULE_SUBTREE]:
-                value = jax.tree_map(
-                    lambda x: x.filter(keep),
-                    value,
-                    is_leaf=lambda x: isinstance(x, Module),
-                )
-            elif field_type in [PaxFieldKind.PARAMETER, PaxFieldKind.PARAMETER_SUBTREE]:
-                fn1 = lambda x: x
-                fn2 = lambda x: None
-                fn = fn1 if keep == "parameter" else fn2
-                value = jax.tree_map(fn, value)
-            elif field_type in [PaxFieldKind.STATE, PaxFieldKind.STATE_SUBTREE]:
-                fn1 = lambda x: x
-                fn2 = lambda x: None
-                fn = fn1 if keep == "state" else fn2
-                value = jax.tree_map(fn, value)
-            elif field_type == PaxFieldKind.OTHERS:
-                pass
-            else:
-                raise ValueError("Not expected this!")
-            module.__dict__[name] = value
+        def _filter_fn(mod: T) -> T:
+            for k, v in mod._name_to_kind.items():
+                if v in none_list:
+                    none_v = jax.tree_map(lambda _: None, v)
+                    setattr(mod, k, none_v)
+            return mod
 
-        return module
+        return self.apply(_filter_fn)
 
     def update(self: T, other: T, in_place: bool = False) -> T:
         """Use parameters/state from ``other``.
@@ -430,7 +414,7 @@ class Module:
 
     def parameters(self):
         """Return trainable parameters of the module."""
-        params = self.filter("parameter")
+        params = self.filter(PaxFieldKind.PARAMETER)
         return params
 
     def freeze(self: T) -> T:
@@ -691,9 +675,8 @@ class Module:
             else:
                 return x
 
-        new_self = jax.tree_map(
-            rec_fn, self, is_leaf=lambda x: isinstance(x, Module) and x is not self
-        )
+        sub_modules = self.sub_modules()
+        new_self = jax.tree_map(rec_fn, self, is_leaf=lambda x: x in sub_modules)
         # tree_map already created a copy of self,
         # hence `apply_fn` is guaranteed to have no side effects.
         return apply_fn(new_self)
@@ -707,3 +690,15 @@ class Module:
             lst_info = [f"{k}={v}" for (k, v) in info.items() if v is not None]
             str_info = ", ".join(lst_info)
             return f"{name}{cls_name}[{str_info}]"
+
+    def __eq__(self, o: object) -> bool:
+        """Compare two modules."""
+        self_leaves, self_treedef = jax.tree_flatten(self)
+        o_leaves, o_treedef = jax.tree_flatten(o)
+        if len(self_leaves) != len(o_leaves):
+            return False
+        elif self_treedef != o_treedef:
+            return False
+        else:
+            leaves_equal = jax.tree_map(lambda a, b: a is b, self_leaves, o_leaves)
+            return all(leaves_equal)

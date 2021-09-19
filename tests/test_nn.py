@@ -62,7 +62,7 @@ def test_batchnorm_params_filter():
     bn = pax.nn.batch_norm.BatchNorm(
         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
     )
-    params = bn.filter("parameter")
+    params = bn.filter(pax.PaxFieldKind.PARAMETER)
     bn = bn.update(params)
 
 

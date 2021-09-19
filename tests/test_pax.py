@@ -178,8 +178,11 @@ def test_state_of_param():
             self.register_state_subtree("m2", {"m1": m11})
 
     m2 = M2(m1)
-    assert len(jax.tree_leaves(m1.filter("state"))) == 0
-    assert len(jax.tree_leaves(m2.filter("parameter"))) == 0
+    assert len(jax.tree_leaves(m1.filter(pax.PaxFieldKind.STATE))) == 0
+    assert len(jax.tree_leaves(m2.filter(pax.PaxFieldKind.PARAMETER))) == 0
+
+    assert len(jax.tree_leaves(m1.filter(pax.PaxFieldKind.PARAMETER))) == 1
+    assert len(jax.tree_leaves(m2.filter(pax.PaxFieldKind.STATE))) == 1
 
 
 def test_module_properties_modify():
@@ -289,3 +292,26 @@ def test_assign_empty_list_2():
 
     m = M()
     m.deep_scan()
+
+
+def test_compare_modules():
+    a = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(4, 4))
+    b = a.copy()
+    assert a == b
+    assert a.eval() != b
+    assert a.freeze() != b
+    assert a.freeze().unfreeze() == b
+
+
+def test_apply_inside_state_subtree():
+    class M2(pax.Module):
+        def __init__(self, m11):
+            super().__init__()
+            self.register_state_subtree("m2", {"m1": m11})
+
+    m2 = M2(pax.nn.Linear(2, 2))
+    assert m2.training == True
+    assert m2.m2["m1"].training == True
+    m2 = m2.eval()
+    assert m2.training == False
+    assert m2.m2["m1"].training == True
