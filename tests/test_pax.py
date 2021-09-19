@@ -1,11 +1,12 @@
 """Test important pax stuffs."""
 
 from typing import Dict, List, Optional, Sequence, Tuple, Union
-import pytest
+
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pax
+import pytest
 
 
 def test_pax_next_rng_key():
@@ -238,3 +239,27 @@ def test_not_tree_clone():
     )
     with pax.ctx.immutable():
         net = net.copy()
+
+
+def test_class_attribute_copy():
+    class M(pax.Module):
+        a_list = [1, 2]
+
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(3, 3)
+
+    m = M()
+    print(m.__class__.__dict__)
+    m1 = m.copy()
+    m.a_list.append(3)
+    assert m.a_list == m1.a_list
+
+
+def test_assign_empty_list_dict():
+    fc = pax.nn.Linear(3, 3)
+    fc.a = []
+    fc.a.append(1)
+    assert fc.a == [1]
+    fc.b = {}
+    fc.b[1] = 2

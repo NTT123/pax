@@ -40,4 +40,5 @@ class Sequential(Module):
 
     def __setitem__(self, index: int, value: Module):
         """Set an item to the `modules` list."""
+        assert isinstance(value, Module), "expecting a module."
         self.modules[index] = value

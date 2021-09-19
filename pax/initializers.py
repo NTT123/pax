@@ -4,8 +4,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from .rng import next_rng_key
-
 Initializer = Callable[[Sequence[int], Any, Optional[jnp.ndarray]], jnp.ndarray]
 
 # source:
