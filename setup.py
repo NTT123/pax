@@ -10,6 +10,7 @@ install_requires = [
 setup_requires = []
 tests_require = [
     "chex",
+    "dm-haiku",
     "opax >= 0.1.6",
     "pytest",
     "tensorflow_datasets",

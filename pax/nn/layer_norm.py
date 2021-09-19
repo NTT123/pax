@@ -14,7 +14,6 @@ from typing import Optional, Sequence, Union
 import jax
 import jax.numpy as jnp
 import numpy as np
-from haiku import initializers
 
 from .. import initializers
 from ..module import Module
