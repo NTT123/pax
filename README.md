@@ -126,36 +126,6 @@ We intent to add new modules in the near future.
 
 ## Optimizers<a id="optimizers"></a>
 
-Pax implements optimizers in a stateful fashion. Bellow is a simple sgd optimizer with momentum.
-
-```python
-class SGD(pax.Module):
-    velocity: pax.Module
-    learning_rate: float
-    momentum: float 
-    
-    def __init__(self, params, learning_rate: float = 1e-2, momentum: float = 0.9):
-        super().__init__()
-        self.momentum = momentum
-        self.learning_rate = learning_rate
-        self.register_state_subtree(
-            "velocity",
-            jax.tree_map(lambda x: jnp.zeros_like(x), params),
-        )
-        
-    def step(self, grads: pax.Module, params: pax.Module):
-        self.velocity = jax.tree_map(
-            lambda v, g: v * self.momentum + g * self.learning_rate,
-            self.velocity,
-            grads
-        )
-        new_params = jax.tree_map(lambda p, v: p - v, params, self.velocity)
-        return new_params
-```
-
-Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally. 
-Note that: ``self.register_state_subtree`` registers ``velocity`` as non-trainable states.
-
 Pax has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's github repository for more information. 
 
 
