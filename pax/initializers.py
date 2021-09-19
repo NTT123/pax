@@ -4,8 +4,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-import haiku as hk
-
 from .rng import next_rng_key
 
 Initializer = Callable[[Sequence[int], Any, Optional[jnp.ndarray]], jnp.ndarray]
@@ -131,13 +129,3 @@ def variance_scaling(
             return random_uniform(minval=-limit, maxval=limit)(shape, dtype, rng_key)
 
     return _variance_scaling_init
-
-
-def from_haiku_initializer(fn: hk.initializers.Initializer) -> Initializer:
-    """Convert haiku initializer to pax initializer."""
-
-    def _fn(shape: Sequence[int], dtype: Any, rng_key: Optional[jnp.ndarray] = None):
-        rng_key = next_rng_key() if rng_key is None else rng_key
-        return hk.transform(fn).apply({}, rng_key, shape, dtype)
-
-    return _fn

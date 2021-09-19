@@ -4,19 +4,17 @@ __version__ = "0.2.9rc"
 url = "https://github.com/ntt123/pax"
 
 install_requires = [
-    "dm-haiku",
     "jax",
-    "optax",
     "jmp",
 ]
 setup_requires = []
 tests_require = [
-    "tensorflow",
-    "tensorflow_datasets",
-    "tqdm",
     "chex",
-    "pytest",
     "opax >= 0.1.6",
+    "pytest",
+    "tensorflow_datasets",
+    "tensorflow",
+    "tqdm",
 ]
 
 setup(

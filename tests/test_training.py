@@ -31,18 +31,16 @@ def test_train_linear_regression():
     print(f"[step {step}]  loss {loss:.3f}")
 
 
-def test_train_hk_linear_regression():
+def test_train_linear_regression():
     x = jax.random.normal(jax.random.PRNGKey(42), (32, 1), dtype=jnp.float32)
     noise = jax.random.normal(jax.random.PRNGKey(43), (32, 1), dtype=jnp.float32) * 0.2
     y = x * 2.5 - 3.1 + noise
 
-    import haiku as hk
-
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            self.fc1 = pax.from_haiku(hk.Linear)(32)
-            self.fc2 = pax.from_haiku(hk.Linear)(1)
+            self.fc1 = pax.nn.Linear(1, 32)
+            self.fc2 = pax.nn.Linear(32, 1)
 
         def __call__(self, x):
             x = self.fc1(x)
@@ -62,7 +60,7 @@ def test_train_hk_linear_regression():
         return loss, (loss, model)
 
     update_fn = pax.utils.build_update_fn(loss_fn)
-    net = M().hk_init(x)
+    net = M()
     optimizer = opax.adamw(1e-1)(net.parameters())
     for step in range(100):
         loss, net, optimizer = update_fn(net, optimizer, (x, y))

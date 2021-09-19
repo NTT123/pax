@@ -69,7 +69,7 @@ class Module:
     """
 
     # Field Name To Kind
-    _name_to_kind: Optional[Dict[str, PaxFieldKind]] = None
+    _name_to_kind: Dict[str, PaxFieldKind]
     _name_to_kind_to_unfreeze: Optional[Dict[str, PaxFieldKind]]
     _training: bool
     name: str
@@ -497,27 +497,6 @@ class Module:
                 return mod
 
         return self.apply(_unfreeze_fn)
-
-    def hk_init(self, *args, enable_jit: bool = False, **kwargs):
-        """Return a new initialized module.
-
-        **Note**: This function is only useful if a module is/includes a converted module from the haiku library.
-
-        Arguments:
-            args, kwargs: dummy inputs to the module.
-            enable_jit: to use `jax.jit` for the init function.
-        """
-        if not ctx.state._enable_mutability:
-            raise ValueError("Cannot call `hk_init` in immutable mode.")
-
-        def init_fn(mod, args, kwargs):
-            mod = mod.copy()
-            mod(*args, **kwargs)
-            return mod
-
-        if enable_jit:
-            init_fn = jax.jit(init_fn)
-        return init_fn(self, args, kwargs)
 
     def sub_modules(self):
         """Return a list of sub-modules."""

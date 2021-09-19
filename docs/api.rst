@@ -211,7 +211,6 @@ Initializers
    random_normal
    random_uniform
    variance_scaling
-   from_haiku_initializer    
 
 
 
@@ -250,11 +249,6 @@ variance_scaling
 
 .. autofunction:: variance_scaling
 
-
-from_haiku_initializer
-----------------------
-
-.. autofunction:: from_haiku_initializer
 
 Context Managers
 ================
@@ -360,27 +354,3 @@ RngSeq
 
 .. autoclass:: RngSeq
    :members:
-
-.. currentmodule:: pax.haiku
-
-from_haiku
-----------
-
-.. autofunction:: from_haiku
-
-
-See https://dm-haiku.readthedocs.io/en/latest/api.html#common-modules for more information about converted modules.    
-
-
-.. currentmodule:: pax.optim
-
-
-from_optax
-----------
-
-.. autofunction:: from_optax
-
-
-.. currentmodule:: pax.optim
-
-
