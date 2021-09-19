@@ -25,7 +25,7 @@ class BatchNorm(Module):
     create_offset: bool
     create_scale: bool
     eps: float
-    data_format: str
+    data_format: Optional[str]
 
     def __init__(
         self,
@@ -34,7 +34,7 @@ class BatchNorm(Module):
         create_offset: bool = True,
         decay_rate: float = 0.9,
         eps: float = 1e-5,
-        data_format: str = None,
+        data_format: Optional[str] = None,
         reduced_axes=None,
         param_shape=None,
         *,

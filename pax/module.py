@@ -16,6 +16,7 @@ from typing import (
     OrderedDict,
     Sequence,
     Tuple,
+    Type,
     TypeVar,
     Union,
 )
@@ -24,7 +25,7 @@ from unittest import TestCase
 import jax
 import jax.numpy as jnp
 import jax.tree_util
-import jmp
+import jmp  # type: ignore
 
 from . import ctx
 
@@ -192,7 +193,11 @@ class Module:
         #   - if it contains Module's instances only, it is registered MODULE_SUBTREE,
         #   - if it contains a Module, raise ValueError,
         #   - if it contains a ndarray, raise ValueError.
-        if name not in self._name_to_kind and value is not None:
+        if (
+            value is not None
+            and len(module_leaves) > 0
+            and name not in self._name_to_kind
+        ):
             if isinstance(value, Module):
                 self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
             elif all_modules:
@@ -219,21 +224,21 @@ class Module:
                 "Cannot delete module's attribute {name} in immutable mode."
             )
 
-    def register_parameter(self, name: str, value: Optional[jnp.ndarray] = None):
+    def register_parameter(self, name: str, value: jnp.ndarray):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
         setattr(self, name, value)
 
-    def register_state(self, name: str, value: Optional[jnp.ndarray] = None):
+    def register_state(self, name: str, value: jnp.ndarray):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
 
         self._update_name_to_kind_dict(name, PaxFieldKind.STATE)
         setattr(self, name, value)
 
-    def register_module(self, name: str, value: Any):
+    def register_module(self, name: str, value: "Module"):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.MODULE`` in the ``_name_to_kind`` dictionary."""
 
@@ -316,7 +321,7 @@ class Module:
         """Return a copy of current module."""
         return jax.tree_map(lambda x: x, self)
 
-    def assertStructureEqual(self, other):
+    def assertStructureEqual(self: T, other: T):
         """Assert that the two modules are structurally the same.
 
         Print out the difference.
@@ -556,11 +561,6 @@ class Module:
                 leaves, _ = jax.tree_flatten(
                     value, is_leaf=lambda x: isinstance(x, Module)
                 )
-                if len(leaves) == 0 and value is not None:
-                    raise ValueError(
-                        f"Cannot assign an empty pytree of value `{value}` to attribute "
-                        f"`{name}` of the Module class {self.__class__.__name__}."
-                    )
 
                 # Check if a field contains unregistered module
                 for leaf in mods:
@@ -609,9 +609,9 @@ class Module:
             )
         casted_self = mp_policy.cast_to_param(self)
 
-        cls = casted_self.__class__
+        cls: Type[T] = casted_self.__class__
 
-        class MixedPrecisionWrapper(cls):
+        class MixedPrecisionWrapper(cls):  # type: ignore
             def unwrap_mixed_precision(self):
                 """Recreate the original class.
 
@@ -704,6 +704,6 @@ class Module:
         if info is None:
             return f"{name}{cls_name}"
         else:
-            info = [f"{k}={v}" for (k, v) in info.items() if v is not None]
-            info = ", ".join(info)
-            return f"{name}{cls_name}[{info}]"
+            lst_info = [f"{k}={v}" for (k, v) in info.items() if v is not None]
+            str_info = ", ".join(lst_info)
+            return f"{name}{cls_name}[{str_info}]"

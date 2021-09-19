@@ -93,11 +93,10 @@ class ResnetBlock(Module):
                 True,
                 True,
                 0.9,
-                scale_init=jnp.zeros,
                 data_format="NCHW",
                 name="bn3",
             )
-            layers = layers + ((conv_2, bn_2))
+            layers = layers + ((conv_2, bn_2),)  # type: ignore
 
         self.layers = layers
 
@@ -280,7 +279,7 @@ class ResNet18(ResNet):
             num_classes=num_classes,
             initial_conv_config=initial_conv_config,
             logits_config=logits_config,
-            **ResNet.CONFIGS[18],
+            **ResNet.CONFIGS[18],  # type: ignore
             name="ResNet18",
         )
 
@@ -300,7 +299,7 @@ class ResNet34(ResNet):
             num_classes=num_classes,
             initial_conv_config=initial_conv_config,
             logits_config=logits_config,
-            **ResNet.CONFIGS[34],
+            **ResNet.CONFIGS[34],  # type: ignore
         )
 
 
@@ -319,5 +318,5 @@ class ResNet50(ResNet):
             num_classes=num_classes,
             initial_conv_config=initial_conv_config,
             logits_config=logits_config,
-            **ResNet.CONFIGS[50],
+            **ResNet.CONFIGS[50],  # type: ignore
         )

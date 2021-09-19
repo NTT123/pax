@@ -6,7 +6,7 @@ from typing import Optional, Sequence, Tuple, Union
 
 import jax
 import jax.numpy as jnp
-import numpy as np
+import numpy as np  # type: ignore
 
 from .. import initializers
 from ..module import Module

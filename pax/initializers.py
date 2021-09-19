@@ -2,7 +2,7 @@ from typing import Any, Callable, Optional, Sequence
 
 import jax
 import jax.numpy as jnp
-import numpy as np
+import numpy as np  # type: ignore
 
 Initializer = Callable[[Sequence[int], Any, Optional[jnp.ndarray]], jnp.ndarray]
 

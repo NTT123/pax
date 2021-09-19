@@ -37,7 +37,10 @@ def next_rng_key() -> jnp.ndarray:
         # Delay the generating of state._rng_key until `next_rng_key` is called.
         # This helps to avoid the problem when `seed_rng_key` is called
         # before jax found TPU cores.
-        state._rng_key = jax.random.PRNGKey(state._seed)
+        if state._seed is not None:
+            state._rng_key = jax.random.PRNGKey(state._seed)
+        else:
+            raise ValueError("Impossible")
 
     key, state._rng_key = jax.random.split(state._rng_key)
 

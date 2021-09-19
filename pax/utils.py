@@ -7,8 +7,8 @@ import jax
 import jax.numpy as jnp
 
 from . import rng
-from .pax_transforms import grad
 from .module import Module
+from .pax_transforms import grad
 
 T = TypeVar("T", bound="Module")
 
@@ -59,7 +59,9 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         """
         )
 
-    def _update_fn(model: T, optimizer: Module, inputs: Any):
+    from opax import GradientTransformation  # type: ignore
+
+    def _update_fn(model: T, optimizer: GradientTransformation, inputs: Any):
         """An update function.
 
         Note that: ``model`` and ``optimizer`` have internal states.
@@ -145,7 +147,7 @@ class Lambda(Module):
     def __call__(self, x):
         return self.f(x)
 
-    def __repr__(self) -> str:
+    def __repr__(self, info=None) -> str:
         if self.name is not None:
             return super().__repr__()
         else:

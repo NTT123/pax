@@ -21,7 +21,7 @@ import warnings
 from typing import Optional, Sequence, Tuple, Union
 
 import jax.numpy as jnp
-import numpy as np
+import numpy as np  # type: ignore
 from jax import lax
 
 

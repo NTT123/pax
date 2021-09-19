@@ -13,7 +13,7 @@ from typing import Optional, Sequence, Union
 
 import jax
 import jax.numpy as jnp
-import numpy as np
+import numpy as np  # type: ignore
 
 from .. import initializers
 from ..module import Module
@@ -62,11 +62,11 @@ class LayerNorm(Module):
         if isinstance(axis, slice):
             self.axis = axis
         elif isinstance(axis, int):
-            self.axis = (axis,)
+            self.axis = (axis,)  # type: ignore
         elif isinstance(axis, collections.abc.Iterable) and all(
             isinstance(ax, int) for ax in axis
         ):
-            self.axis = tuple(axis)
+            self.axis = tuple(axis)  # type: ignore
         else:
             raise ValueError("`axis` should be an int, slice or iterable of ints.")
 
@@ -121,7 +121,7 @@ class LayerNorm(Module):
 
         axis = self.axis
         if isinstance(axis, slice):
-            axis = tuple(range(inputs.ndim)[axis])
+            axis = tuple(range(inputs.ndim)[axis])  # type: ignore
 
         mean = jnp.mean(inputs, axis=axis, keepdims=True)
         if self.use_fast_variance:
@@ -149,7 +149,7 @@ class LayerNorm(Module):
         inv = scale * jax.lax.rsqrt(variance + eps)
         return inv * (inputs - mean) + offset
 
-    def __repr__(self) -> str:
+    def __repr__(self, info=None) -> str:
         info = {
             "num_channels": self.num_channels,
             "axis": self.axis,

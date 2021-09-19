@@ -3,7 +3,7 @@ from typing import Optional
 
 import jax
 import jax.numpy as jnp
-import numpy as np
+import numpy as np  # type: ignore
 import pax
 
 from .. import initializers
@@ -72,6 +72,6 @@ class MultiHeadAttention(Module):
         attn_vec = jnp.reshape(attn, (*query.shape[:-1], -1))
         return self.output_projection(attn_vec)
 
-    def __repr__(self) -> str:
+    def __repr__(self, info=None) -> str:
         info = {"num_heads": self.num_heads, "key_size": self.key_size}
         return super().__repr__(info)

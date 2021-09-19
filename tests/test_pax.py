@@ -263,3 +263,29 @@ def test_assign_empty_list_dict():
     assert fc.a == [1]
     fc.b = {}
     fc.b[1] = 2
+
+
+def test_assign_empty_list_1():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            # self.register_module_subtree("fc", [])
+            self.fc = []
+            for i in range(5):
+                self.fc.append(pax.nn.Linear(3, 3))
+
+    with pytest.raises(ValueError):
+        m = M()
+        m.deep_scan()
+
+
+def test_assign_empty_list_2():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.register_module_subtree("fc", [])
+            for i in range(5):
+                self.fc.append(pax.nn.Linear(3, 3))
+
+    m = M()
+    m.deep_scan()

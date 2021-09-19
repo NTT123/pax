@@ -30,3 +30,7 @@ jobs:
       run: |
         pip install pytest pytest-xdist
         pytest -n auto tests
+    - name: Test with mypy
+      run: |
+        pip install mypy
+        mypy -p pax
