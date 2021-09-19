@@ -318,6 +318,6 @@ def test_apply_inside_state_subtree():
 
 
 def test_hash_module():
-    a = pax.nn.LSTM()
+    a = pax.nn.LSTM(3, 3)
     b = a.copy()
     assert hash(a) == hash(b)
