@@ -707,3 +707,8 @@ class Module:
         else:
             leaves_equal = jax.tree_map(lambda a, b: a is b, self_leaves, o_leaves)
             return all(leaves_equal)
+
+    def __hash__(self) -> int:
+        leaves, treedef = jax.tree_flatten(self)
+        leaves = jax.tree_map(lambda x: (x.shape, x.dtype), leaves)
+        return hash((tuple(leaves), treedef))

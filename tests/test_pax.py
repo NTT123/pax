@@ -315,3 +315,9 @@ def test_apply_inside_state_subtree():
     m2 = m2.eval()
     assert m2.training == False
     assert m2.m2["m1"].training == True
+
+
+def test_hash_module():
+    a = pax.nn.LSTM()
+    b = a.copy()
+    assert hash(a) == hash(b)
