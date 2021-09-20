@@ -681,7 +681,11 @@ class Module:
                 return x
 
         sub_modules = self.sub_modules()
-        new_self = jax.tree_map(rec_fn, self, is_leaf=lambda x: x in sub_modules)
+        new_self = jax.tree_map(
+            rec_fn,
+            self,
+            is_leaf=lambda x: isinstance(x, Module) and (x in sub_modules),
+        )
         # tree_map already created a copy of self,
         # hence `apply_fn` is guaranteed to have no side effects.
         return apply_fn(new_self)

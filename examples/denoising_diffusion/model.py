@@ -402,10 +402,8 @@ class GaussianDiffusion(pax.Module):
         return loss
 
     def __call__(self, x, *args, **kwargs):
-        b, h, w, c, img_size, = (
-            *x.shape,
-            self.image_size,
-        )
+        b, h, w, c = x.shape
+        img_size = self.image_size
         assert (
             h == img_size and w == img_size
         ), f"height and width of image must be {img_size}"
