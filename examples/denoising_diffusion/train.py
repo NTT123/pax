@@ -1,17 +1,45 @@
+import math
+
+import fire
 import jax
+import jax.numpy as jnp
+import numpy as np
 import opax
 import pax
 import tensorflow as tf
+from PIL import Image
 
 from data_loader import load_celeb_a
 from model import GaussianDiffusion, UNet
 
 
+def make_image_grid(images, padding=2):
+    """Place images in a square grid."""
+    n = images.shape[0]
+    size = int(math.sqrt(n))
+    assert size * size == n, "expecting a square grid"
+    img = images[0]
+
+    H = img.shape[0] * size + padding * (size + 1)
+    W = img.shape[1] * size + padding * (size + 1)
+    out = np.zeros((H, W, img.shape[-1]), dtype=img.dtype)
+    for i in range(n):
+        x = i % size
+        y = i // size
+        xstart = x * (img.shape[0] + padding) + padding
+        xend = xstart + img.shape[0]
+        ystart = y * (img.shape[1] + padding) + padding
+        yend = ystart + img.shape[1]
+        out[xstart:xend, ystart:yend, :] = images[i]
+    return out
+
+
 def train(
-    batch_size: int = 64,
-    learning_rate: float = 2e-5,
+    batch_size: int = 32,
+    learning_rate: float = 1e-4,
     num_training_steps: int = 10_000,
     log_freq: int = 1000,
+    image_size: int = 64,
     random_seed: int = 42,
 ):
 
@@ -21,7 +49,7 @@ def train(
 
     diffusion = GaussianDiffusion(
         model,
-        image_size=64,
+        image_size=image_size,
         timesteps=1000,
         loss_type="l1",  # L1 or L2
     )
@@ -50,8 +78,8 @@ def train(
     from tqdm.auto import tqdm
 
     total_loss = 0.0
-
-    for step, batch in enumerate(tqdm(dataloader), 1):
+    tr = tqdm(dataloader)
+    for step, batch in enumerate(tr, 1):
         batch = jax.tree_map(lambda x: x.numpy(), batch)
         loss, diffusion, optimizer = fast_update_fn(diffusion, optimizer, batch)
         total_loss = total_loss + loss
@@ -59,17 +87,14 @@ def train(
         if step % log_freq == 0:
             loss = total_loss / log_freq
             total_loss = 0.0
-            print(f"[step {step:05d}]  train loss {loss:.3f}")
+            tr.write(f"[step {step:05d}]  train loss {loss:.3f}")
 
-            img = jax.device_get(diffusion.sample(1)[0])
-            from PIL import Image
-
-            im = Image.fromarray(img)
+            imgs = jax.device_get(diffusion.eval().sample(16))
+            imgs = ((imgs * 0.5 + 0.5) * 255).astype(jnp.uint8)
+            imgs = make_image_grid(imgs)
+            im = Image.fromarray(imgs)
             im.save(f"sample_{step:05d}.png")
 
 
-train()
-
 if __name__ == "__main__":
-    import fire
     fire.Fire(train)

@@ -247,12 +247,12 @@ def extract(a, t, x_shape):
     return out
 
 
-def noise_like(rng_seq, shape, repeat=False):
+def noise_like(rng_key, shape, repeat=False):
     repeat_noise = lambda: jnp.tile(
-        jax.random.normal(rng_seq.next_rng_key(), (1, *shape[1:])),
+        jax.random.normal(rng_key, (1, *shape[1:])),
         (shape[0],) + (1,) * (len(shape) - 1),
     )
-    noise = lambda: jax.random.normal(rng_seq.next_rng_key(), shape)
+    noise = lambda: jax.random.normal(rng_key, shape)
     return repeat_noise() if repeat else noise()
 
 
@@ -279,12 +279,13 @@ class GaussianDiffusion(pax.Module):
         timesteps=1000,
         loss_type="l1",
         betas=None,
+        random_seed=42,
     ):
         super().__init__()
         self.channels = channels
         self.image_size = image_size
         self.denoise_fn = denoise_fn
-        self.rng_seq = pax.utils.RngSeq(42)
+        self.rng_seq = pax.utils.RngSeq(random_seed)
 
         if exists(betas):
             betas = jnp.array(betas)
@@ -383,36 +384,38 @@ class GaussianDiffusion(pax.Module):
         )
 
     @pax.jit
-    def p_sample(self, x, t, clip_denoised=True, repeat_noise=False):
+    def p_sample(self, x, t, rng_key, clip_denoised=True, repeat_noise=False):
         b = x.shape[0]
         model_mean, _, model_log_variance = self.p_mean_variance(
             x=x, t=t, clip_denoised=clip_denoised
         )
-        noise = noise_like(self.rng_seq, x.shape, repeat_noise)
+        noise = noise_like(rng_key, x.shape, repeat_noise)
         # no noise when t == 0
         nonzero_mask = jnp.reshape(
-            (1 - (t == 0).astype(jnp.float32)), (b,) + (1,) * (len(x.shape) - 1)
+            (1 - (t == 0).astype(jnp.float32)),
+            (b,) + (1,) * (len(x.shape) - 1),
         )
 
-        img = model_mean + nonzero_mask * jnp.exp(0.5 * model_log_variance) * noise
+        return model_mean + nonzero_mask * jnp.exp(0.5 * model_log_variance) * noise
 
-        return self, img
-
-    def p_sample_loop(self, shape):
+    def p_sample_loop(self, shape, rng_key):
         b = shape[0]
-        img = jax.random.normal(self.rng_seq.next_rng_key(), shape)
-
-        model = self.copy()
+        rng_key_, rng_key = jax.random.split(rng_key)
+        img = jax.random.normal(rng_key_, shape)
 
         for i in reversed(range(0, self.num_timesteps)):
-            model, img = model.p_sample(img, jnp.full((b,), i, dtype=jnp.int32))
+            rng_key_, rng_key = jax.random.split(rng_key)
+            img = self.p_sample(img, jnp.full((b,), i, dtype=jnp.int32), rng_key_)
 
         return img
 
-    def sample(self, batch_size=16):
+    def sample(self, batch_size=16, random_seed=42):
         image_size = self.image_size
         channels = self.channels
-        return self.p_sample_loop((batch_size, image_size, image_size, channels))
+        return self.p_sample_loop(
+            (batch_size, image_size, image_size, channels),
+            jax.random.PRNGKey(random_seed),
+        )
 
     def p_losses(self, x_start, t, noise=None):
         b, c, h, w = x_start.shape
