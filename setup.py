@@ -11,6 +11,7 @@ setup_requires = []
 tests_require = [
     "chex",
     "dm-haiku",
+    "fire",
     "mypy",
     "opax >= 0.1.6",
     "pytest",
