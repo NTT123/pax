@@ -1,4 +1,4 @@
-## pax version of
+# Source:
 # https://github.com/lucidrains/denoising-diffusion-pytorch/blob/master/denoising_diffusion_pytorch/denoising_diffusion_pytorch.py
 
 import math
@@ -247,10 +247,13 @@ def extract(a, t, x_shape):
     return out
 
 
-# def noise_like(shape, device, repeat=False):
-#     repeat_noise = lambda: torch.randn((1, *shape[1:]), device=device).repeat(shape[0], *((1,) * (len(shape) - 1)))
-#     noise = lambda: torch.randn(shape, device=device)
-#     return repeat_noise() if repeat else noise()
+def noise_like(rng_seq, shape, repeat=False):
+    repeat_noise = lambda: jnp.tile(
+        jax.random.normal(rng_seq.next_rng_key(), (1, *shape[1:])),
+        (shape[0],) + (1,) * (len(shape) - 1),
+    )
+    noise = lambda: jax.random.normal(rng_seq.next_rng_key(), shape)
+    return repeat_noise() if repeat else noise()
 
 
 def cosine_beta_schedule(timesteps, s=0.008):
@@ -378,6 +381,38 @@ class GaussianDiffusion(pax.Module):
             extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
             + extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
         )
+
+    @pax.jit
+    def p_sample(self, x, t, clip_denoised=True, repeat_noise=False):
+        b = x.shape[0]
+        model_mean, _, model_log_variance = self.p_mean_variance(
+            x=x, t=t, clip_denoised=clip_denoised
+        )
+        noise = noise_like(self.rng_seq, x.shape, repeat_noise)
+        # no noise when t == 0
+        nonzero_mask = jnp.reshape(
+            (1 - (t == 0).astype(jnp.float32)), (b,) + (1,) * (len(x.shape) - 1)
+        )
+
+        img = model_mean + nonzero_mask * jnp.exp(0.5 * model_log_variance) * noise
+
+        return self, img
+
+    def p_sample_loop(self, shape):
+        b = shape[0]
+        img = jax.random.normal(self.rng_seq.next_rng_key(), shape)
+
+        model = self.copy()
+
+        for i in reversed(range(0, self.num_timesteps)):
+            model, img = model.p_sample(img, jnp.full((b,), i, dtype=jnp.int32))
+
+        return img
+
+    def sample(self, batch_size=16):
+        image_size = self.image_size
+        channels = self.channels
+        return self.p_sample_loop((batch_size, image_size, image_size, channels))
 
     def p_losses(self, x_start, t, noise=None):
         b, c, h, w = x_start.shape

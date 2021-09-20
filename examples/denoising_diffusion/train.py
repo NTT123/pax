@@ -8,9 +8,14 @@ from model import GaussianDiffusion, UNet
 
 
 def train(
-    batch_size: int = 32,
-    num_training_steps: int = 100_000,
+    batch_size: int = 64,
+    learning_rate: float = 2e-5,
+    num_training_steps: int = 10_000,
+    log_freq: int = 1000,
+    random_seed: int = 42,
 ):
+
+    pax.seed_rng_key(random_seed)
 
     model = UNet(dim=64, dim_mults=(1, 2, 4, 8))
 
@@ -20,14 +25,6 @@ def train(
         timesteps=1000,
         loss_type="l1",  # L1 or L2
     )
-
-    diffusion.parameters()
-
-    print(diffusion.summary())
-
-    training_images = jax.random.normal(jax.random.PRNGKey(42), (2, 64, 64, 3))
-    loss = diffusion(training_images)
-    print(loss)
 
     dataset = load_celeb_a()
 
@@ -48,18 +45,31 @@ def train(
     update_fn = pax.utils.build_update_fn(loss_fn)
     fast_update_fn = pax.jit(update_fn)
 
-    optimizer = opax.adamw(1e-4)(diffusion.parameters())
+    optimizer = opax.adam(learning_rate)(diffusion.parameters())
 
     from tqdm.auto import tqdm
 
-    for step, batch in enumerate(tqdm(dataloader)):
+    total_loss = 0.0
+
+    for step, batch in enumerate(tqdm(dataloader), 1):
         batch = jax.tree_map(lambda x: x.numpy(), batch)
         loss, diffusion, optimizer = fast_update_fn(diffusion, optimizer, batch)
+        total_loss = total_loss + loss
+
+        if step % log_freq == 0:
+            loss = total_loss / log_freq
+            total_loss = 0.0
+            print(f"[step {step:05d}]  train loss {loss:.3f}")
+
+            img = jax.device_get(diffusion.sample(1)[0])
+            from PIL import Image
+
+            im = Image.fromarray(img)
+            im.save(f"sample_{step:05d}.png")
 
 
 train()
 
 if __name__ == "__main__":
     import fire
-
     fire.Fire(train)
