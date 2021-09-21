@@ -66,6 +66,9 @@ class GroupNorm(Module):
         then the values fed in at call time.
     """
 
+    scale: jnp.ndarray
+    offset: jnp.ndarray
+
     def __init__(
         self,
         groups: int,
@@ -110,13 +113,13 @@ class GroupNorm(Module):
         super().__init__(name=name)
 
         if isinstance(axis, slice):
-            self.axis = axis
+            self.axis = axis # type: ignore
         elif isinstance(axis, int):
-            self.axis = (axis,)
+            self.axis = (axis,) # type: ignore
         elif isinstance(axis, collections.abc.Iterable) and all(
             isinstance(ax, int) for ax in axis
         ):
-            self.axis = axis
+            self.axis = axis # type: ignore
         else:
             raise ValueError("`axis` should be an int, slice or iterable of ints.")
 
