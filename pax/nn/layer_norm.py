@@ -99,7 +99,7 @@ class LayerNorm(Module):
         scale: Optional[jnp.ndarray] = None,
         offset: Optional[jnp.ndarray] = None,
     ) -> jnp.ndarray:
-        """Connects the layer norm.
+        """Returns normalized inputs.
 
         Arguments:
             inputs: An array, where the data format is ``[N, ..., C]``.
