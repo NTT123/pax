@@ -53,6 +53,7 @@ To install the latest version::
    notebooks/understanding
    notebooks/immutability
    notebooks/limitations
+   notebooks/cost
 
 
 
