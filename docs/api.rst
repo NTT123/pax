@@ -58,6 +58,7 @@ Common Modules
     BatchNorm1D
     BatchNorm2D
     LayerNorm
+    GroupNorm
     Sequential
     LSTM
     GRU
@@ -119,8 +120,9 @@ Conv2DTranspose
    :members:
 
 
-BatchNorm
----------
+Normalization
+-------------
+
 
 BatchNorm1D
 ~~~~~~~~~~~
@@ -137,11 +139,20 @@ BatchNorm2D
 
 
 LayerNorm
----------
+~~~~~~~~~
 
     
 .. autoclass:: LayerNorm
    :members:
+
+
+GroupNorm
+~~~~~~~~~
+
+    
+.. autoclass:: GroupNorm
+   :members:
+
 
 
 Recurrent

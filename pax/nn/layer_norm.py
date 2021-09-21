@@ -38,7 +38,9 @@ class LayerNorm(Module):
         scale_init: Optional[initializers.Initializer] = None,
         offset_init: Optional[initializers.Initializer] = None,
         use_fast_variance: bool = False,
+        *,
         rng_key: Optional[KeyArray] = None,
+        name: Optional[str] = None,
     ):
         """Constructs a LayerNorm module.
 
@@ -52,8 +54,9 @@ class LayerNorm(Module):
             offset_init: Optional initializer for bias (aka offset). By default, zero.
             use_fast_variance: If true, use a faster but less numerically stable formulation for computing variance.
             rng_key: RNG key.
+            name: module name.
         """
-        super().__init__()
+        super().__init__(name=name)
         if not create_scale and scale_init is not None:
             raise ValueError("Cannot set `scale_init` if `create_scale=False`.")
         if not create_offset and offset_init is not None:
