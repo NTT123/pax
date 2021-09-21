@@ -587,7 +587,7 @@ class Module:
 
         cls: Type[T] = casted_self.__class__
 
-        class MixedPrecisionWrapper(cls):  # type: ignore
+        class MixedPrecisionWrapper(cls):
             def unwrap_mixed_precision(self):
                 """Recreate the original class.
 

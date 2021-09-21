@@ -65,11 +65,11 @@ class LayerNorm(Module):
         if isinstance(axis, slice):
             self.axis = axis
         elif isinstance(axis, int):
-            self.axis = (axis,)  # type: ignore
+            self.axis = (axis,)
         elif isinstance(axis, collections.abc.Iterable) and all(
             isinstance(ax, int) for ax in axis
         ):
-            self.axis = tuple(axis)  # type: ignore
+            self.axis = tuple(axis)
         else:
             raise ValueError("`axis` should be an int, slice or iterable of ints.")
 
@@ -124,7 +124,7 @@ class LayerNorm(Module):
 
         axis = self.axis
         if isinstance(axis, slice):
-            axis = tuple(range(inputs.ndim)[axis])  # type: ignore
+            axis = tuple(range(inputs.ndim)[axis])
 
         mean = jnp.mean(inputs, axis=axis, keepdims=True)
         if self.use_fast_variance:

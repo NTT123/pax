@@ -183,7 +183,7 @@ class RngSeq(Module):
         if rng_key is not None:
             _rng_key = rng_key
         elif seed is not None:
-            _rng_key = jax.random.PRNGKey(seed)  # type: ignore
+            _rng_key = jax.random.PRNGKey(seed)
         else:
             _rng_key = rng.next_rng_key()
 

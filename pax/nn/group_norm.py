@@ -112,13 +112,13 @@ class GroupNorm(Module):
         super().__init__(name=name)
 
         if isinstance(axis, slice):
-            self.axis = axis  # type: ignore
+            self.axis = axis
         elif isinstance(axis, int):
-            self.axis = (axis,)  # type: ignore
+            self.axis = (axis,)
         elif isinstance(axis, collections.abc.Iterable) and all(
             isinstance(ax, int) for ax in axis
         ):
-            self.axis = axis  # type: ignore
+            self.axis = axis
         else:
             raise ValueError("`axis` should be an int, slice or iterable of ints.")
 
