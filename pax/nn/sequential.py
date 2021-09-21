@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from ..module import Module
 from ..utils import Lambda
@@ -22,7 +22,7 @@ class Sequential(Module):
     # therefore, we have to convert a jax function to ``Lambda`` module first.
     modules: List[Module]
 
-    def __init__(self, *layers, name: str = None):
+    def __init__(self, *layers, name: Optional[str] = None):
         """Create a Sequential module."""
         super().__init__(name=name)
         self.modules = [(f if isinstance(f, Module) else Lambda(f)) for f in layers]

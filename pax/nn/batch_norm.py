@@ -38,7 +38,7 @@ class BatchNorm(Module):
         reduced_axes=None,
         param_shape=None,
         *,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """Create a new BatchNorm module.
 
@@ -129,7 +129,7 @@ class BatchNorm1D(BatchNorm):
         eps: float = 1e-5,
         data_format: str = "NWC",
         *,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         assert data_format in ["NWC", "NCW"], "expecting a correct `data_format`"
 
@@ -167,7 +167,7 @@ class BatchNorm2D(BatchNorm):
         eps: float = 1e-5,
         data_format: str = "NHWC",
         *,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         assert data_format in ["NHWC", "NCHW"], "expecting a correct `data_format`"
 

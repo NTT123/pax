@@ -1,5 +1,6 @@
+from typing import Optional
+
 import jax
-import jax.numpy as jnp
 
 from ..module import Module
 from ..rng import KeyArray, next_rng_key
@@ -15,7 +16,7 @@ class Dropout(Module):
     rng_key: KeyArray
     dropout_rate: float
 
-    def __init__(self, dropout_rate: float, *, name: str = None):
+    def __init__(self, dropout_rate: float, *, name: Optional[str] = None):
         """Create a dropout module.
 
         Arguments:

@@ -6,20 +6,10 @@ which is under MIT License.
 """
 
 import copy
+from collections import OrderedDict
 from enum import Enum
 from types import MappingProxyType
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    OrderedDict,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 from unittest import TestCase
 
 import jax

@@ -1,3 +1,5 @@
+from typing import Optional
+
 import jax.numpy as jnp
 
 from .. import initializers
@@ -18,10 +20,10 @@ class Embed(Module):
         self,
         vocab_size: int,
         embed_dim: int,
-        w_init: initializers.Initializer = None,
+        w_init: Optional[initializers.Initializer] = None,
         *,
-        rng_key: KeyArray = None,
-        name: str = None
+        rng_key: Optional[KeyArray] = None,
+        name: Optional[str] = None
     ):
         """
         An embed module.

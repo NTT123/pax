@@ -141,7 +141,7 @@ class Lambda(Module):
     Note: We put ``Lambda`` module definition here so both ``haiku`` and ``nn`` modules can use it.
     """
 
-    def __init__(self, f: Callable, name: str = None):
+    def __init__(self, f: Callable, name: Optional[str] = None):
         super().__init__(name=name)
         self.f = f
 
@@ -170,7 +170,7 @@ class RngSeq(Module):
 
     _rng_key: KeyArray
 
-    def __init__(self, seed: int = None, rng_key: Optional[KeyArray] = None):
+    def __init__(self, seed: Optional[int] = None, rng_key: Optional[KeyArray] = None):
         """Initialize a random key sequence.
 
         **Note**: ``rng_key`` has higher priority than ``seed``.
