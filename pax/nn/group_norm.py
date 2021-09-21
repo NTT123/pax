@@ -3,7 +3,6 @@
 # which is under Apache License, Version 2.0.
 
 
-
 from typing import Optional
 
 import jax
@@ -113,13 +112,13 @@ class GroupNorm(Module):
         super().__init__(name=name)
 
         if isinstance(axis, slice):
-            self.axis = axis # type: ignore
+            self.axis = axis  # type: ignore
         elif isinstance(axis, int):
-            self.axis = (axis,) # type: ignore
+            self.axis = (axis,)  # type: ignore
         elif isinstance(axis, collections.abc.Iterable) and all(
             isinstance(ax, int) for ax in axis
         ):
-            self.axis = axis # type: ignore
+            self.axis = axis  # type: ignore
         else:
             raise ValueError("`axis` should be an int, slice or iterable of ints.")
 
@@ -132,8 +131,6 @@ class GroupNorm(Module):
             self.channel_index = -1
         else:
             raise ValueError(f"Data format `{data_format}` is not supported.")
-
-        self.rank = None
 
         self.create_scale = create_scale
         self.create_offset = create_offset
@@ -204,12 +201,12 @@ class GroupNorm(Module):
         if self.create_offset:
             offset = self.offset
 
-        first_input_shape, group_shape = self._compute_shape(x, channels)
+        first_input_shape, group_shape, axis = self._compute_shape_and_axis(x, channels)
 
         x = x.reshape(group_shape)
-        mean = jnp.mean(x, self.axis, keepdims=True)
+        mean = jnp.mean(x, axis, keepdims=True)
         # TODO(tycai): Consider faster but less precise variance formulation.
-        var = jnp.var(x, self.axis, keepdims=True)
+        var = jnp.var(x, axis, keepdims=True)
         x = (x - mean) * jax.lax.rsqrt(var + self.eps)
         x = x.reshape(first_input_shape)
 
@@ -223,14 +220,23 @@ class GroupNorm(Module):
 
         return x
 
-    def _compute_shape(self, x: jnp.ndarray, channels: int):
+    def _compute_shape_and_axis(self, x: jnp.ndarray, channels: int):
         rank = x.ndim
 
+        # Turns slice into list of axis
+        if isinstance(self.axis, slice):
+            axes = tuple(range(rank))
+            axis = axes[self.axis]
+        else:
+            axis = self.axis
+
         if self.channel_index == -1:
+            axis = tuple(a if a != rank - 1 else a + 1 for a in axis)
             group_shape = (-1,) + x.shape[1:-1] + (self.groups, channels // self.groups)
         else:
             assert self.channel_index == 1
+            axis = tuple(a if a == 0 else a + 1 for a in axis)
             group_shape = (-1, self.groups, channels // self.groups) + x.shape[2:]
 
         first_input_shape = (-1,) + x.shape[1:]
-        return first_input_shape, group_shape
+        return first_input_shape, group_shape, axis
