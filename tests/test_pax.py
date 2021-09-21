@@ -113,7 +113,7 @@ def test_type_dict_dict_optional():
 
 def test_type_dict_dict_optional1():
     class Counter(pax.Module):
-        count: Dict[str, Dict[int, Optional[int]]]
+        count: Dict[str, Dict[int, List[Union[int, str]]]]
 
         def __init__(self):
             super().__init__()

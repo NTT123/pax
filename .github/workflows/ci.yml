@@ -34,3 +34,8 @@ jobs:
       run: |
         pip install mypy
         mypy --ignore-missing-imports -p pax
+    - name: Test with pytype
+      run: |
+        pip install pytype
+        pytype
+        pytype tests

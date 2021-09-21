@@ -65,7 +65,7 @@ class Module:
     _training: bool
     _name: Optional[str]
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls: Type[T], *args, **kwargs) -> T:
         """Initialize _name_to_kind and _training in `__new__` method to avoid
         calling `super().__init__()` in the every subclass of Module."""
 
@@ -256,7 +256,7 @@ class Module:
         self._update_name_to_kind_dict(name, PaxFieldKind.MODULE_SUBTREE)
         setattr(self, name, value)
 
-    def tree_flatten(self):
+    def tree_flatten(self) -> Tuple[list, Tuple[List[str], Any]]:
         """Convert a module to ``(children, treedef)``."""
         fields = vars(self)
 
@@ -402,7 +402,7 @@ class Module:
         """Return a copy module in ``eval`` mode."""
         return self.train(False)
 
-    def parameters(self):
+    def parameters(self: T) -> T:
         """Return trainable parameters of the module."""
         params = self.filter(PaxFieldKind.PARAMETER)
         return params
@@ -446,7 +446,7 @@ class Module:
 
         return self.apply(_unfreeze_fn)
 
-    def sub_modules(self):
+    def sub_modules(self) -> List["Module"]:
         """Return a list of sub-modules."""
         module_subtrees = [
             getattr(self, name)
@@ -498,7 +498,7 @@ class Module:
         else:
             return "\n".join(output)
 
-    def deep_scan(self):
+    def deep_scan(self) -> None:
         """Scan a module recursively to find any *potential* bug."""
 
         self._scan_fields(self.__class__.__dict__)
@@ -655,7 +655,7 @@ class Module:
         new.__dict__.update(casted_self.__dict__)
         return new
 
-    def apply(self, apply_fn):
+    def apply(self: T, apply_fn) -> T:
         """Apply a function to all sub-modules.
 
         **Note**: this function returns a transformed copy of the current module.

@@ -1,5 +1,5 @@
+from collections import OrderedDict
 from types import MappingProxyType
-from typing import OrderedDict
 
 import jax.numpy as jnp
 import numpy as np
