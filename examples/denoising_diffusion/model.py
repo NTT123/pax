@@ -2,6 +2,7 @@
 # https://github.com/lucidrains/denoising-diffusion-pytorch/blob/master/denoising_diffusion_pytorch/denoising_diffusion_pytorch.py
 
 import math
+from inspect import isfunction
 from typing import List
 
 import jax
@@ -10,6 +11,16 @@ import numpy as np
 import pax
 from einops import rearrange
 from pax.nn import GroupNorm, LayerNorm
+
+
+def exists(x):
+    return x is not None
+
+
+def default(val, d):
+    if exists(val):
+        return val
+    return d() if isfunction(d) else d
 
 
 class Residual(pax.Module):
@@ -31,10 +42,7 @@ class SinusoidalPosEmbed(pax.Module):
         emb = math.log(10_000) / (half_dim - 1)
         emb = jnp.exp(jnp.arange(0, half_dim) * (-emb))
         emb = x[:, None] * emb[None, :]
-        emb = jnp.concatenate(
-            (jnp.sin(emb), jnp.cos(emb)),
-            axis=-1,
-        )
+        emb = jnp.concatenate((jnp.sin(emb), jnp.cos(emb)), axis=-1)
         return emb
 
 
@@ -90,20 +98,21 @@ class ResnetBlock(pax.Module):
         super().__init__()
         self.mlp = (
             pax.nn.Sequential(Mish(), pax.nn.Linear(time_emb_dim, dim_out))
-            if time_emb_dim is not None
+            if exists(time_emb_dim)
             else None
         )
-
         self.block1 = Block(dim, dim_out)
         self.block2 = Block(dim_out, dim_out)
-        self.res_conv = (
-            pax.nn.Conv2D(dim, dim_out, 1) if dim != dim_out else pax.nn.Identity()
-        )
+
+        if dim != dim_out:
+            self.res_conv = pax.nn.Conv2D(dim, dim_out, 1)
+        else:
+            self.res_conv = pax.nn.Identity()
 
     def __call__(self, x, time_emb):
         h = self.block1(x)
 
-        if self.mlp is not None:
+        if exists(self.mlp):
             h = h + self.mlp(time_emb)[:, None, None, :]
 
         h = self.block2(h)
@@ -134,17 +143,6 @@ class LinearAttention(pax.Module):
 
 
 ### model
-from inspect import isfunction
-
-
-def exists(x):
-    return x is not None
-
-
-def default(val, d):
-    if exists(val):
-        return val
-    return d() if isfunction(d) else d
 
 
 class UNet(pax.Module):
@@ -163,7 +161,7 @@ class UNet(pax.Module):
         super().__init__()
         self.channels = channels
 
-        dims = [channels, *map(lambda m: dim * m, dim_mults)]
+        dims = [channels] + [dim * m for m in dim_mults]
         in_out = list(zip(dims[:-1], dims[1:]))
 
         if with_time_emb:
@@ -370,19 +368,6 @@ class GaussianDiffusion(pax.Module):
         )
         return model_mean, posterior_variance, posterior_log_variance
 
-    def q_sample(self, x_start, t, noise=None):
-        noise = default(
-            noise,
-            lambda: jax.random.normal(
-                self.rng_seq.next_rng_key(), x_start.shape, x_start.dtype
-            ),
-        )
-
-        return (
-            extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
-            + extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
-        )
-
     @pax.jit
     def p_sample(self, x, t, rng_key, clip_denoised=True, repeat_noise=False):
         b = x.shape[0]
@@ -417,9 +402,20 @@ class GaussianDiffusion(pax.Module):
             jax.random.PRNGKey(random_seed),
         )
 
-    def p_losses(self, x_start, t, noise=None):
-        b, c, h, w = x_start.shape
+    def q_sample(self, x_start, t, noise=None):
+        noise = default(
+            noise,
+            lambda: jax.random.normal(
+                self.rng_seq.next_rng_key(), x_start.shape, x_start.dtype
+            ),
+        )
 
+        return (
+            extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
+            + extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
+        )
+
+    def p_losses(self, x_start, t, noise=None):
         noise = default(
             noise,
             lambda: jax.random.normal(

@@ -1,4 +1,4 @@
-# Denoising Diffusion Model
+## Denoising Diffusion Model
 
 We transcribe the PyTorch model at https://github.com/lucidrains/denoising-diffusion-pytorch.
 

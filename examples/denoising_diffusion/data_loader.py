@@ -77,7 +77,7 @@ def _split_generators(self, dl_manager):
 
 
 img_mean = 0.5
-img_scale = 0.51  # avoid -1, 1
+img_scale = 0.5
 image_size = 64  # size of input image: 64x64
 
 tfds.image.CelebA._split_generators = _split_generators
