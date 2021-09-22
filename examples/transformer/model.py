@@ -57,7 +57,7 @@ class Transformer(pax.Module):
         self._num_heads = num_heads
         self._dropout_rate = dropout_rate
 
-        self.rng_seq = pax.utils.RngSeq()
+        self.rng_seq = pax.nn.RngSeq()
 
         init_scale = 2.0 / self._num_layers
         layers = []
