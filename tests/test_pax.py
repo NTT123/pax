@@ -321,3 +321,12 @@ def test_hash_module():
     a = pax.nn.LSTM(3, 3)
     b = a.copy()
     assert hash(a) == hash(b)
+
+
+def test_deepcopy_pytreedef():
+    f = pax.nn.Linear(3, 3)
+    f.de = jax.tree_structure(f)
+    with pax.immutable():
+        g = f.copy()
+
+    assert jax.tree_structure(g) == jax.tree_structure(f)

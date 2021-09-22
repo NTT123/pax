@@ -16,6 +16,7 @@ import jax
 import jax.numpy as jnp
 import jax.tree_util
 import jmp
+from jaxlib.xla_extension import PyTreeDef
 
 import pax
 
@@ -279,7 +280,7 @@ class Module:
             leaves_clone = []
 
             for leaf in leaves:
-                if isinstance(leaf, MappingProxyType):
+                if isinstance(leaf, (MappingProxyType, PyTreeDef)):
                     leaves_clone.append(leaf)
                 else:
                     # TODO: fix this!

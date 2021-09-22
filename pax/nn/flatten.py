@@ -1,8 +1,9 @@
 """Flatten a module"""
-from typing import Any, Dict, List, Optional, Union
+from typing import List, Union
 
 import jax
 
+from .. import ctx
 from ..module import Module, PaxFieldKind, T
 
 
@@ -20,9 +21,9 @@ class FlattenModule(Module):
         self.module_treedef = jax.tree_structure(mod)
         self.register_parameter_subtree("params_leaves", params_leaves)
         self.register_state_subtree("states_leaves", states_leaves)
-        self.num_leaves = len(jax.tree_leaves(mod))
+        self.num_leaves = len(jax.leaves(mod))
 
-    def unflatten(self) -> Module:
+    def unflatten(self):
         params = jax.tree_unflatten(self.params_treedef, self.params_leaves)
         states = jax.tree_unflatten(self.states_treedef, self.states_leaves)
         module = jax.tree_unflatten(self.module_treedef, [0] * self.num_leaves)
@@ -34,23 +35,22 @@ class FlattenModule(Module):
         module = self.unflatten()
         out = module(*args, **kwargs)
 
-        params_leaves, _ = jax.tree_flatten(module.filter(PaxFieldKind.PARAMETER))
-        states_leaves, _ = jax.tree_flatten(module.filter(PaxFieldKind.STATE))
-        self.params_leaves = params_leaves
+        with ctx.mutable():
+            states_leaves, _ = jax.tree_flatten(module.filter(PaxFieldKind.STATE))
         self.states_leaves = states_leaves
         return out
 
     def freeze(self: T) -> T:
-        raise RuntimeError("Disabled in a FlattenModule")
+        raise RuntimeError("Disabled in FlattenModule")
 
     def unfreeze(self: T) -> T:
-        raise RuntimeError("Disabled in a FlattenModule")
+        raise RuntimeError("Disabled in FlattenModule")
 
     def train(self: T, mode: bool = True):
-        raise RuntimeError("Disabled in a FlattenModule")
+        raise RuntimeError("Disabled in FlattenModule")
 
     def eval(self: T) -> T:
-        raise RuntimeError("Disabled in a FlattenModule")
+        raise RuntimeError("Disabled in FlattenModule")
 
     def __repr__(self) -> str:
         return self.unflatten().__repr__()
