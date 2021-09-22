@@ -2,12 +2,21 @@
 from typing import List, Union
 
 import jax
+import jax.numpy as jnp
+from jaxlib.xla_extension import PyTreeDef
 
 from .. import ctx
 from ..module import Module, PaxFieldKind, T
 
 
 class FlattenModule(Module):
+
+    params_leaves: List[jnp.ndarray]
+    states_leaves: List[jnp.ndarray]
+    params_treedef: PyTreeDef
+    states_treedef: PyTreeDef
+    module_treedef: PyTreeDef
+
     def __init__(self, mod: Module):
         super().__init__()
 
@@ -22,6 +31,9 @@ class FlattenModule(Module):
         self.register_parameter_subtree("params_leaves", params_leaves)
         self.register_state_subtree("states_leaves", states_leaves)
         self.num_leaves = len(jax.tree_leaves(mod))
+
+        if not hasattr(mod, "__call__"):
+            raise ValueError("Expecting a callable module.")
 
     def unflatten(self):
         params = jax.tree_unflatten(self.params_treedef, self.params_leaves)

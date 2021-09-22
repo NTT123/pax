@@ -886,3 +886,14 @@ def test_none_state():
     p = m.parameters()
     assert p.s == []
     m.assertStructureEqual(p)
+
+
+def test_flatten_non_callable_module():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+
+    m = M()
+
+    with pytest.raises(ValueError):
+        m.flatten()
