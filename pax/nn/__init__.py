@@ -4,6 +4,7 @@ from .conv import Conv1D, Conv1DTranspose, Conv2D, Conv2DTranspose
 from .dropout import Dropout
 from .ema import EMA
 from .embed import Embed
+from .flatten import FlattenModule
 from .group_norm import GroupNorm
 from .identity import Identity
 from .lambda_module import Lambda
