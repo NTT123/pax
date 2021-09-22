@@ -178,6 +178,24 @@ class ResNet(Module):
             "channels_per_group": (256, 512, 1024, 2048),
             "use_projection": (True, True, True, True),
         },
+        101: {
+            "blocks_per_group": (3, 4, 23, 3),
+            "bottleneck": True,
+            "channels_per_group": (256, 512, 1024, 2048),
+            "use_projection": (True, True, True, True),
+        },
+        152: {
+            "blocks_per_group": (3, 8, 36, 3),
+            "bottleneck": True,
+            "channels_per_group": (256, 512, 1024, 2048),
+            "use_projection": (True, True, True, True),
+        },
+        200: {
+            "blocks_per_group": (3, 24, 36, 3),
+            "bottleneck": True,
+            "channels_per_group": (256, 512, 1024, 2048),
+            "use_projection": (True, True, True, True),
+        },
     }
 
     def __init__(
@@ -319,4 +337,61 @@ class ResNet50(ResNet):
             initial_conv_config=initial_conv_config,
             logits_config=logits_config,
             **ResNet.CONFIGS[50],
+        )
+
+
+class ResNet101(ResNet):
+    """ResNet101."""
+
+    def __init__(
+        self,
+        input_channels: int,
+        num_classes: int,
+        logits_config=None,
+        initial_conv_config=None,
+    ):
+        super().__init__(
+            input_channels=input_channels,
+            num_classes=num_classes,
+            initial_conv_config=initial_conv_config,
+            logits_config=logits_config,
+            **ResNet.CONFIGS[101],
+        )
+
+
+class ResNet152(ResNet):
+    """ResNet152."""
+
+    def __init__(
+        self,
+        input_channels: int,
+        num_classes: int,
+        logits_config=None,
+        initial_conv_config=None,
+    ):
+        super().__init__(
+            input_channels=input_channels,
+            num_classes=num_classes,
+            initial_conv_config=initial_conv_config,
+            logits_config=logits_config,
+            **ResNet.CONFIGS[152],
+        )
+
+
+class ResNet200(ResNet):
+    """ResNet200."""
+
+    def __init__(
+        self,
+        input_channels: int,
+        num_classes: int,
+        logits_config=None,
+        initial_conv_config=None,
+    ):
+        super().__init__(
+            input_channels=input_channels,
+            num_classes=num_classes,
+            initial_conv_config=initial_conv_config,
+            logits_config=logits_config,
+            **ResNet.CONFIGS[200],
         )

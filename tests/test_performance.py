@@ -4,7 +4,7 @@ import jax
 import pax
 
 
-def test_transformer_flatten_unflatten():
+def test_perf_transformer_flatten_unflatten():
     class MyTransformer(pax.Module):
         def __init__(self, num_layers: int):
             super().__init__()
@@ -22,4 +22,19 @@ def test_transformer_flatten_unflatten():
     end = time.perf_counter()
     iters_per_second = n_iters / (end - start)
     print(iters_per_second, "iters/second")
-    assert iters_per_second > 2000
+    assert iters_per_second > 5000
+
+
+def test_perf_resnet200_flatten_unflatten():
+    
+    f = pax.nets.ResNet200(3, 100)
+
+    start = time.perf_counter()
+    n_iters = 1000
+    for i in range(n_iters):
+        leaves, treedef = jax.tree_flatten(f)
+        f = jax.tree_unflatten(treedef, leaves)
+    end = time.perf_counter()
+    iters_per_second = n_iters / (end - start)
+    print(iters_per_second, "iters/second")
+    assert iters_per_second > 200

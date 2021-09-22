@@ -29,7 +29,8 @@ jobs:
     - name: Test with pytest
       run: |
         pip install pytest pytest-xdist
-        pytest -n auto tests
+        pytest -n auto -k "not perf" tests
+        pytest -n 1 -k "perf" tests
     - name: Test with pytype
       run: |
         pip install pytype
