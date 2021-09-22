@@ -17,6 +17,8 @@ import jax.numpy as jnp
 import jax.tree_util
 import jmp
 
+import pax
+
 from .ctx import state as ctx_state
 
 T = TypeVar("T", bound="Module")
@@ -706,3 +708,8 @@ class Module:
         leaves, treedef = jax.tree_flatten(self)
         leaves = jax.tree_map(lambda x: (x.shape, x.dtype), leaves)
         return hash((tuple(leaves), treedef))
+
+    def flatten(self):
+        if hasattr(self, "unflatten"):
+            raise RuntimeError("Cannot flatten a module twice!")
+        return pax.nn.FlattenModule(self)
