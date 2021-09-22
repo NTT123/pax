@@ -26,7 +26,7 @@ def test_perf_transformer_flatten_unflatten():
 
 
 def test_perf_resnet200_flatten_unflatten():
-    
+
     f = pax.nets.ResNet200(3, 100)
 
     start = time.perf_counter()

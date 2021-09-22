@@ -17,7 +17,7 @@ import jax.numpy as jnp
 import jax.tree_util
 import jmp
 
-from . import ctx
+from .ctx import state as ctx_state
 
 T = TypeVar("T", bound="Module")
 
@@ -69,7 +69,7 @@ class Module:
         """Initialize _name_to_kind and _training in `__new__` method to avoid
         calling `super().__init__()` in the every subclass of Module."""
 
-        if not ctx.state._enable_mutability:
+        if not ctx_state._enable_mutability:
             raise ValueError("Cannot create new module in immutable mode")
 
         obj = object.__new__(cls)
@@ -99,7 +99,7 @@ class Module:
         """Update the `_name_to_kind` dictionary.
 
         Create a new dictionary and wrap it with `MappingProxyType` to avoid side effects."""
-        if not ctx.state._enable_mutability:
+        if not ctx_state._enable_mutability:
             raise ValueError(
                 "Cannot update `_name_to_kind` dictionary in immutable mode."
             )
@@ -165,7 +165,7 @@ class Module:
                         f"Assigning a value which contains a non-Module object to an attribute of kind {kind}"
                     )
 
-        if ctx.state._enable_mutability:
+        if ctx_state._enable_mutability:
             super().__setattr__(name, value)
         else:
             if kind in [
@@ -207,7 +207,7 @@ class Module:
         self._scan_fields(fields=(name,))
 
     def __delattr__(self, name: str) -> None:
-        if ctx.state._enable_mutability:
+        if ctx_state._enable_mutability:
             super().__delattr__(name)
         else:
             raise ValueError(
@@ -272,7 +272,7 @@ class Module:
             else:
                 not_tree[name] = value
 
-        if not ctx.state._enable_mutability:
+        if not ctx_state._enable_mutability:
             leaves, treedef = jax.tree_flatten(not_tree)
             leaves_clone = []
 
@@ -294,9 +294,9 @@ class Module:
     def tree_unflatten(cls, aux_data: ModuleAuxiliaryData, children):
         """Recreate a module from its ``(children, treedef)``."""
         module = object.__new__(cls)
-        children_names, _not_tree = aux_data
+        children_names, not_tree = aux_data
         md = module.__dict__
-        md.update(_not_tree)
+        md.update(not_tree)
         # don't have to copy `_name_to_kind` anymore, speed thing up!
         # md["_name_to_kind"] = OrderedDict(module._name_to_kind)
         md.update(zip(children_names, children))
