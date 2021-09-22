@@ -62,7 +62,7 @@ def test_batchnorm_params_filter():
     bn = pax.nn.batch_norm.BatchNorm(
         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
     )
-    params = bn.filter("parameter")
+    params = bn.filter(pax.PaxFieldKind.PARAMETER)
     bn = bn.update(params)
 
 
@@ -115,6 +115,20 @@ def test_layer_norm_init():
     params = fwd.init(rng, x)
     chex.assert_equal_shape((layer_norm.scale, params["layer_norm"]["scale"]))
     chex.assert_equal_shape((layer_norm.offset, params["layer_norm"]["offset"]))
+
+
+def test_group_norm_1():
+    """Make sure our GroupNorm behaves the same as hk.GroupNorm."""
+    group_norm = pax.nn.GroupNorm(8, 32, -1)
+    x = np.random.randn(32, 4, 4, 32).astype(np.float32)
+    fwd = hk.transform(lambda x: hk.GroupNorm(8, -1, True, True)(x))
+    rng = jax.random.PRNGKey(42)
+    params = fwd.init(rng, x)
+    np.testing.assert_array_equal(group_norm.scale, params["group_norm"]["scale"])
+    np.testing.assert_array_equal(group_norm.offset, params["group_norm"]["offset"])
+    o1 = group_norm(x)
+    o2 = fwd.apply(params, rng, x)
+    np.testing.assert_array_equal(o1, o2)
 
 
 def test_linear_computation():
@@ -845,3 +859,10 @@ def test_new_method_no_side_effects():
     a = pax.nn.Linear(1, 1)
     b = pax.nn.Linear(2, 2)
     assert pax.nn.Linear.__init__ == init_fn
+
+
+def test_identity_module():
+    ident = pax.nn.Identity()
+    x = jnp.zeros((3, 3))
+    y = ident(x)
+    assert jnp.array_equal(x, y) == True

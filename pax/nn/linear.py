@@ -6,7 +6,7 @@ import numpy as np
 
 from .. import initializers
 from ..module import Module
-from ..rng import next_rng_key
+from ..rng import KeyArray, next_rng_key
 
 
 class Linear(Module):
@@ -29,7 +29,7 @@ class Linear(Module):
         b_init=None,
         *,
         name: Optional[str] = None,
-        rng_key: jnp.ndarray = None,
+        rng_key: KeyArray = None,
     ):
         """
         Arguments:

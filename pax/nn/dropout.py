@@ -1,8 +1,9 @@
+from typing import Optional
+
 import jax
-import jax.numpy as jnp
 
 from ..module import Module
-from ..rng import next_rng_key
+from ..rng import KeyArray, next_rng_key
 from ..utils import dropout
 
 
@@ -12,10 +13,10 @@ class Dropout(Module):
     Dropout module stores an internal state ``rng_key``. It refreshes ``rng_key`` whenever a forward pass is executed.
     """
 
-    rng_key: jnp.ndarray
+    rng_key: KeyArray
     dropout_rate: float
 
-    def __init__(self, dropout_rate: float, *, name: str = None):
+    def __init__(self, dropout_rate: float, *, name: Optional[str] = None):
         """Create a dropout module.
 
         Arguments:

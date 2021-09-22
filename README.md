@@ -96,7 +96,6 @@ Pax learns a lot from other libraries too:
 - Pax borrows the idea that _a module is also a pytree_ from [treex] and [equinox]. 
 - Pax uses the concept of _trainable parameters_ and _non-trainable states_ from [dm-haiku].
 - Pax uses [objax]'s approach to implement optimizers as modules. 
-- Pax uses [dm-haiku] and [optax] as backends for filling in current missing modules and optimizers. 
 - Pax uses [jmp] library for supporting mixed precision. 
 - And of course, Pax is heavily influenced by [jax] functional programming approach.
 
@@ -125,65 +124,9 @@ A good way to learn about ``Pax`` is to see examples in the [examples/](./exampl
 At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, BatchNorm1D, BatchNorm2D, Conv1D, Conv2D, Conv1DTranspose, Conv2DTranspose, LayerNorm, Sequential}``.
 We intent to add new modules in the near future.
 
-Pax also provides the ``pax.from_haiku`` function that can convert most of modules from ``dm-haiku`` library to ``pax.Module``. For example, to convert a dm-haiku LSTM Module:
-
-```python
-import haiku as hk
-mylstm = pax.from_haiku(hk.LSTM)(hidden_dim=hidden_dim)
-```
-
-Similar to dm-haiku modules that needs a dummy input to infer parameters' shape in the initialization process. We also need to pass ``mylstm`` a dummy input to initialize parameters.
-
-```python
-dummy_x = np.empty((1, hidden_dim), dtype=np.float32)
-dummy_hx = hk.LSTMState(dummy_x, dummy_x)
-mylstm = mylstm.hk_init(dummy_x, dummy_hx)
-```
-
-**Note:** If your model uses these converted haiku modules, you have to call the `hk_init` method right after your model is created to make sure everything is initialized correctly.
-
 ## Optimizers<a id="optimizers"></a>
 
-Pax implements optimizers in a stateful fashion. Bellow is a simple sgd optimizer with momentum.
-
-```python
-class SGD(pax.Module):
-    velocity: pax.Module
-    learning_rate: float
-    momentum: float 
-    
-    def __init__(self, params, learning_rate: float = 1e-2, momentum: float = 0.9):
-        super().__init__()
-        self.momentum = momentum
-        self.learning_rate = learning_rate
-        self.register_state_subtree(
-            "velocity",
-            jax.tree_map(lambda x: jnp.zeros_like(x), params),
-        )
-        
-    def step(self, grads: pax.Module, params: pax.Module):
-        self.velocity = jax.tree_map(
-            lambda v, g: v * self.momentum + g * self.learning_rate,
-            self.velocity,
-            grads
-        )
-        new_params = jax.tree_map(lambda p, v: p - v, params, self.velocity)
-        return new_params
-```
-
-Because Pax's Module is stateful, ``SGD`` can store its internal pytree state ``velocity`` naturally. 
-Note that: ``self.register_state_subtree`` registers ``velocity`` as non-trainable states.
-
 Pax has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's github repository for more information. 
-
-Moreover, Pax provides the ``pax.optim.from_optax`` function that convert any [optax](https://optax.readthedocs.io/en/latest/) optimizer to a pax's Module.
-
-```python
-import optax
-SGD = pax.optim.from_optax(
-    optax.sgd(learning_rate=learning_rate, momentum=momentum)
-)
-```
 
 
 ## Fine-tunning models<a id="finetune"></a>

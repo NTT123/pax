@@ -1,8 +1,10 @@
+from typing import Optional
+
 import jax.numpy as jnp
 
 from .. import initializers
 from ..module import Module
-from ..rng import next_rng_key
+from ..rng import KeyArray, next_rng_key
 
 
 class Embed(Module):
@@ -18,10 +20,10 @@ class Embed(Module):
         self,
         vocab_size: int,
         embed_dim: int,
-        w_init: initializers.Initializer = None,
+        w_init: Optional[initializers.Initializer] = None,
         *,
-        rng_key: jnp.ndarray = None,
-        name: str = None
+        rng_key: Optional[KeyArray] = None,
+        name: Optional[str] = None
     ):
         """
         An embed module.

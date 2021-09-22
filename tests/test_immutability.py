@@ -18,8 +18,7 @@ def test_new_empty_attribute():
     class M(pax.Module):
         a = []
 
-    with pytest.raises(ValueError):
-        m = M()
+    m = M()
 
 
 def test_new_unregistered_array():

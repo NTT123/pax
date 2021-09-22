@@ -134,3 +134,11 @@ def test_mixed_precision_unwrap_clone():
     f = ff.unwrap_mixed_precision()
     f.new_fc = pax.nn.Linear(1, 1)
     assert "new_fc" not in ff._name_to_kind
+
+
+def test_mixed_precision_no_method():
+    f = pax.nn.Linear(3, 3)
+    my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
+
+    with pytest.raises(AssertionError):
+        ff = f.mixed_precision(my_policy, method_name="aaa")

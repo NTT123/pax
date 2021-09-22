@@ -1,0 +1,8 @@
+einops
+fire
+jax
+opax
+pax
+pillow
+tensorflow
+tqdm

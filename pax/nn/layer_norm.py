@@ -14,11 +14,10 @@ from typing import Optional, Sequence, Union
 import jax
 import jax.numpy as jnp
 import numpy as np
-from haiku import initializers
 
 from .. import initializers
 from ..module import Module
-from ..rng import next_rng_key
+from ..rng import KeyArray, next_rng_key
 
 
 class LayerNorm(Module):
@@ -39,7 +38,9 @@ class LayerNorm(Module):
         scale_init: Optional[initializers.Initializer] = None,
         offset_init: Optional[initializers.Initializer] = None,
         use_fast_variance: bool = False,
-        rng_key: Optional[jnp.ndarray] = None,
+        *,
+        rng_key: Optional[KeyArray] = None,
+        name: Optional[str] = None,
     ):
         """Constructs a LayerNorm module.
 
@@ -53,8 +54,9 @@ class LayerNorm(Module):
             offset_init: Optional initializer for bias (aka offset). By default, zero.
             use_fast_variance: If true, use a faster but less numerically stable formulation for computing variance.
             rng_key: RNG key.
+            name: module name.
         """
-        super().__init__()
+        super().__init__(name=name)
         if not create_scale and scale_init is not None:
             raise ValueError("Cannot set `scale_init` if `create_scale=False`.")
         if not create_offset and offset_init is not None:
@@ -97,7 +99,7 @@ class LayerNorm(Module):
         scale: Optional[jnp.ndarray] = None,
         offset: Optional[jnp.ndarray] = None,
     ) -> jnp.ndarray:
-        """Connects the layer norm.
+        """Returns normalized inputs.
 
         Arguments:
             inputs: An array, where the data format is ``[N, ..., C]``.
@@ -150,7 +152,7 @@ class LayerNorm(Module):
         inv = scale * jax.lax.rsqrt(variance + eps)
         return inv * (inputs - mean) + offset
 
-    def __repr__(self) -> str:
+    def __repr__(self, info=None) -> str:
         info = {
             "num_channels": self.num_channels,
             "axis": self.axis,

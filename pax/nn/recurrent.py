@@ -1,13 +1,13 @@
 """Recurrent Modules."""
 
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Optional, Tuple
 
 import jax
 import jax.numpy as jnp
 
 from ..initializers import Initializer
 from ..module import Module
-from ..rng import next_rng_key
+from ..rng import KeyArray, next_rng_key
 from .linear import Linear
 
 
@@ -23,7 +23,7 @@ class GRUState(NamedTuple):
 class RNN(Module):
     """Base class for all recurrent modules."""
 
-    def __init__(self, name: str = None):
+    def __init__(self, name: Optional[str] = None):
         super().__init__(name=name)
 
     def initial_state(self, batch_size):
@@ -43,11 +43,11 @@ class LSTM(RNN):
         self,
         input_dim: int,
         hidden_dim: int,
-        w_init: Initializer = None,
+        w_init: Optional[Initializer] = None,
         forget_gate_bias: float = 0.0,
         *,
-        rng_key: jnp.ndarray = None,
-        name: str = None
+        rng_key: KeyArray = None,
+        name: Optional[str] = None
     ):
         """Create a LSTM module.
 
@@ -118,8 +118,8 @@ class GRU(RNN):
         input_dim: int,
         hidden_dim: int,
         *,
-        rng_key: jnp.ndarray = None,
-        name: str = None
+        rng_key: Optional[KeyArray] = None,
+        name: Optional[str] = None
     ):
         """Create a GRU module.
 

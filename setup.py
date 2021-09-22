@@ -1,22 +1,23 @@
 from setuptools import find_packages, setup
 
-__version__ = "0.2.8"
+__version__ = "0.2.9"
 url = "https://github.com/ntt123/pax"
 
 install_requires = [
-    "dm-haiku",
     "jax",
-    "optax",
     "jmp",
 ]
 setup_requires = []
 tests_require = [
-    "tensorflow",
-    "tensorflow_datasets",
-    "tqdm",
     "chex",
-    "pytest",
+    "dm-haiku",
+    "fire",
+    "mypy",
     "opax >= 0.1.6",
+    "pytest",
+    "tensorflow_datasets",
+    "tensorflow",
+    "tqdm",
 ]
 
 setup(

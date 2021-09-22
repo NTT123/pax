@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 from ..module import Module
 from ..utils import Lambda
@@ -20,10 +20,9 @@ class Sequential(Module):
 
     # Note: we cannot mix pax.Module and jax functions (e.g., jax.nn.relu) in the same list.
     # therefore, we have to convert a jax function to ``Lambda`` module first.
-    modules: List[Optional[Module]]
-    functions: List[Optional[Callable]]
+    modules: List[Module]
 
-    def __init__(self, *layers, name: str = None):
+    def __init__(self, *layers, name: Optional[str] = None):
         """Create a Sequential module."""
         super().__init__(name=name)
         self.modules = [(f if isinstance(f, Module) else Lambda(f)) for f in layers]
@@ -40,4 +39,5 @@ class Sequential(Module):
 
     def __setitem__(self, index: int, value: Module):
         """Set an item to the `modules` list."""
+        assert isinstance(value, Module), "expecting a module."
         self.modules[index] = value

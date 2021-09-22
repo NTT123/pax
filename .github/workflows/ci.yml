@@ -30,3 +30,8 @@ jobs:
       run: |
         pip install pytest pytest-xdist
         pytest -n auto tests
+    - name: Test with pytype
+      run: |
+        pip install pytype
+        pytype
+        pytype tests

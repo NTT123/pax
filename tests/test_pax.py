@@ -1,11 +1,12 @@
 """Test important pax stuffs."""
 
 from typing import Dict, List, Optional, Sequence, Tuple, Union
-import pytest
+
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pax
+import pytest
 
 
 def test_pax_next_rng_key():
@@ -112,7 +113,7 @@ def test_type_dict_dict_optional():
 
 def test_type_dict_dict_optional1():
     class Counter(pax.Module):
-        count: Dict[str, Dict[int, Optional[int]]]
+        count: Dict[str, Dict[int, List[Union[int, str]]]]
 
         def __init__(self):
             super().__init__()
@@ -177,8 +178,11 @@ def test_state_of_param():
             self.register_state_subtree("m2", {"m1": m11})
 
     m2 = M2(m1)
-    assert len(jax.tree_leaves(m1.filter("state"))) == 0
-    assert len(jax.tree_leaves(m2.filter("parameter"))) == 0
+    assert len(jax.tree_leaves(m1.filter(pax.PaxFieldKind.STATE))) == 0
+    assert len(jax.tree_leaves(m2.filter(pax.PaxFieldKind.PARAMETER))) == 0
+
+    assert len(jax.tree_leaves(m1.filter(pax.PaxFieldKind.PARAMETER))) == 1
+    assert len(jax.tree_leaves(m2.filter(pax.PaxFieldKind.STATE))) == 1
 
 
 def test_module_properties_modify():
@@ -238,3 +242,82 @@ def test_not_tree_clone():
     )
     with pax.ctx.immutable():
         net = net.copy()
+
+
+def test_class_attribute_copy():
+    class M(pax.Module):
+        a_list = [1, 2]
+
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(3, 3)
+
+    m = M()
+    print(m.__class__.__dict__)
+    m1 = m.copy()
+    m.a_list.append(3)
+    assert m.a_list == m1.a_list
+
+
+def test_assign_empty_list_dict():
+    fc = pax.nn.Linear(3, 3)
+    fc.a = []
+    fc.a.append(1)
+    assert fc.a == [1]
+    fc.b = {}
+    fc.b[1] = 2
+
+
+def test_assign_empty_list_1():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            # self.register_module_subtree("fc", [])
+            self.fc = []
+            for i in range(5):
+                self.fc.append(pax.nn.Linear(3, 3))
+
+    with pytest.raises(ValueError):
+        m = M()
+        m.deep_scan()
+
+
+def test_assign_empty_list_2():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.register_module_subtree("fc", [])
+            for i in range(5):
+                self.fc.append(pax.nn.Linear(3, 3))
+
+    m = M()
+    m.deep_scan()
+
+
+def test_compare_modules():
+    a = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(4, 4))
+    b = a.copy()
+    assert a == b
+    assert a.eval() != b
+    assert a.freeze() != b
+    assert a.freeze().unfreeze() == b
+
+
+def test_apply_inside_state_subtree():
+    class M2(pax.Module):
+        def __init__(self, m11):
+            super().__init__()
+            self.register_state_subtree("m2", {"m1": m11})
+
+    m2 = M2(pax.nn.Linear(2, 2))
+    assert m2.training == True
+    assert m2.m2["m1"].training == True
+    m2 = m2.eval()
+    assert m2.training == False
+    assert m2.m2["m1"].training == True
+
+
+def test_hash_module():
+    a = pax.nn.LSTM(3, 3)
+    b = a.copy()
+    assert hash(a) == hash(b)

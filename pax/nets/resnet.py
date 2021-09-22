@@ -57,11 +57,11 @@ class ResnetBlock(Module):
         )
 
         bn_0 = BatchNorm2D(
-            out_channels, True, True, 0.9, data_format="NCHW", name="bn1"
+            out_channels // channel_div, True, True, 0.9, data_format="NCHW", name="bn1"
         )
 
         conv_1 = Conv2D(
-            in_features=out_channels,
+            in_features=out_channels // channel_div,
             out_features=out_channels,
             kernel_shape=3,
             stride=stride if bottleneck else 1,
@@ -93,11 +93,10 @@ class ResnetBlock(Module):
                 True,
                 True,
                 0.9,
-                scale_init=jnp.zeros,
                 data_format="NCHW",
                 name="bn3",
             )
-            layers = layers + ((conv_2, bn_2))
+            layers = layers + ((conv_2, bn_2),)
 
         self.layers = layers
 
