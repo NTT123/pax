@@ -1,9 +1,9 @@
-import jax
 import jax.numpy as jnp
 import numpy as np
 import opax
 import pax
-from pax.utils import EMA, LossFnOutput, RngSeq
+from pax import LossFnOutput
+from pax.nn import EMA, RngSeq
 
 
 def test_util_update_fn():

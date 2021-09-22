@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 
 from ..module import Module
-from ..utils import EMA
+from .ema import EMA
 
 
 class BatchNorm(Module):

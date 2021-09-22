@@ -206,7 +206,7 @@ def test_clone_no_side_effect():
 
 
 def test_lambda_module():
-    f = pax.utils.Lambda(jax.nn.relu)
+    f = pax.nn.Lambda(jax.nn.relu)
     x = jnp.array(5.0)
     y = f(x)
     assert x.item() == y.item()

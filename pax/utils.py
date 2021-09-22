@@ -1,12 +1,11 @@
 """Useful functions."""
 
 import inspect
-from typing import Any, Callable, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Callable, Tuple, TypeVar
 
 import jax
 import jax.numpy as jnp
 
-from . import rng
 from .module import Module
 from .pax_transforms import grad
 from .rng import KeyArray
@@ -133,124 +132,3 @@ def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):
         state, output = jax.lax.scan(fn, init, xs, length=length, unroll=unroll)
         output = jnp.swapaxes(output, 0, 1)  # restore to NT...
         return state, output
-
-
-class Lambda(Module):
-    """A pure functional module.
-
-    Note: We put ``Lambda`` module definition here so both ``haiku`` and ``nn`` modules can use it.
-    """
-
-    def __init__(self, f: Callable, name: Optional[str] = None):
-        super().__init__(name=name)
-        self.f = f
-
-    def __call__(self, x):
-        return self.f(x)
-
-    def __repr__(self, info=None) -> str:
-        if self.name is not None:
-            return super().__repr__()
-        else:
-            return f"{self.__class__.__name__}[{self.f}]"
-
-    def summary(self, return_list: bool = False) -> Union[str, List[str]]:
-        if self.name is not None:
-            name = self.name
-        elif self.f == jax.nn.relu:
-            name = "relu"
-        else:
-            name = f"{self.f}"
-        output = f"x => {name}(x)"
-        return [output] if return_list else output
-
-
-class RngSeq(Module):
-    """A module which generates an infinite sequence of rng keys."""
-
-    _rng_key: KeyArray
-
-    def __init__(self, seed: Optional[int] = None, rng_key: Optional[KeyArray] = None):
-        """Initialize a random key sequence.
-
-        **Note**: ``rng_key`` has higher priority than ``seed``.
-
-        Arguments:
-            seed: an integer seed.
-            rng_key: a jax random key.
-        """
-        super().__init__()
-        if rng_key is not None:
-            _rng_key = rng_key
-        elif seed is not None:
-            _rng_key = jax.random.PRNGKey(seed)
-        else:
-            _rng_key = rng.next_rng_key()
-
-        if isinstance(_rng_key, jnp.ndarray):
-            self.register_state("_rng_key", _rng_key)
-        else:
-            raise ValueError("Impossible")
-
-    def next_rng_key(
-        self, num_keys: int = 1
-    ) -> Union[rng.KeyArray, Sequence[rng.KeyArray]]:
-        """Return the next random key of the sequence.
-
-        **Note**:
-
-            * Return a key if ``num_keys`` is ``1``,
-            * Return a list of keys if ``num_keys`` is greater than ``1``.
-            * This is not a deterministic sequence if values of ``num_keys`` is mixed randomly.
-
-        Arguments:
-            num_keys: return more than one key.
-        """
-        _rng_key, *rng_keys = jax.random.split(self._rng_key, num_keys + 1)
-
-        # only update internal state in `train` mode.
-        if self.training:
-            self._rng_key = _rng_key
-        if num_keys == 1:
-            return rng_keys[0]
-        else:
-            return rng_keys
-
-
-class EMA(Module):
-    """Exponential Moving Average (EMA) Module"""
-
-    averages: Any
-    decay_rate: float
-    debias: Optional[jnp.ndarray] = None
-
-    def __init__(self, initial_value, decay_rate: float, debias: bool = False):
-        """Create a new EMA module.
-
-        Arguments:
-            initial_value: the initial value.
-            decay_rate: the decay rate.
-            debias: ignore the initial value to avoid biased estimates.
-        """
-
-        super().__init__()
-        self.register_state_subtree("averages", initial_value)
-        self.decay_rate = decay_rate
-        if debias:
-            self.register_state("debias", jnp.array(False))
-
-    def __call__(self, xs):
-        if self.debias is not None:
-            self.averages = jax.tree_map(
-                lambda a, x: jnp.where(self.debias, a, x), self.averages, xs
-            )
-
-            self.debias = jnp.logical_or(self.debias, True)
-
-        self.averages = jax.tree_map(
-            lambda a, x: a * self.decay_rate + x * (1 - self.decay_rate),
-            self.averages,
-            xs,
-        )
-
-        return self.averages
