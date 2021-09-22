@@ -21,29 +21,29 @@ class FlattenModule(Module):
         self.register_parameter_subtree("params_leaves", params_leaves)
         self.register_state_subtree("states_leaves", states_leaves)
 
-    @property
     def origin(self):
         params = jax.tree_unflatten(self.params_treedef, self.params_leaves)
         states = jax.tree_unflatten(self.states_treedef, self.states_leaves)
-        module = jax.tree_unflatten(self.module_treedef, params.update(states))
+        module = jax.tree_unflatten(
+            self.module_treedef,
+            [0] * (len(self.params_leaves) + len(self.states_leaves)),
+        )
+        module = module.update(params)
+        module = module.update(states)
         return module
 
-    
     def __call__(self, *args, **kwargs):
-        module = self.origin
+        module = self.origin()
         out = module(*args, **kwargs)
 
         params_leaves, _ = jax.tree_flatten(module.filter(PaxFieldKind.PARAMETER))
-        states_leaves, _ = jax.tree_flatten(module.filter(PaxFieldKind.PARAMETER))
-        self.params_leaves =  params_leaves
-        self.states_leaves =  states_leaves
+        states_leaves, _ = jax.tree_flatten(module.filter(PaxFieldKind.STATE))
+        self.params_leaves = params_leaves
+        self.states_leaves = states_leaves
         return out
 
     def __getattr__(self, name):
-        return getattr(self.origin, name)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        raise RuntimeError("Disabled in a FlattenModule")
+        return getattr(self.origin(), name)
 
     def freeze(self: T) -> T:
         raise RuntimeError("Disabled in a FlattenModule")
