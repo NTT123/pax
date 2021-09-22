@@ -866,3 +866,15 @@ def test_identity_module():
     x = jnp.zeros((3, 3))
     y = ident(x)
     assert jnp.array_equal(x, y) == True
+
+
+def test_none_state():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.register_state_subtree("s", [])
+
+    m = M()
+    p = m.parameters()
+    assert p.s == []
+    m.assertStructureEqual(p)
