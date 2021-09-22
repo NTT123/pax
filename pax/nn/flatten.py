@@ -21,7 +21,7 @@ class FlattenModule(Module):
         self.module_treedef = jax.tree_structure(mod)
         self.register_parameter_subtree("params_leaves", params_leaves)
         self.register_state_subtree("states_leaves", states_leaves)
-        self.num_leaves = len(jax.leaves(mod))
+        self.num_leaves = len(jax.tree_leaves(mod))
 
     def unflatten(self):
         params = jax.tree_unflatten(self.params_treedef, self.params_leaves)
