@@ -127,7 +127,8 @@ At the moment, Pax includes:
 * ``pax.nn.{BatchNorm1D, BatchNorm2D, LayerNorm, GroupNorm}``, 
 * ``pax.nn.{Conv1D, Conv2D, Conv1DTranspose, Conv2DTranspose}``, 
 * ``pax.nn.{GRU, LSTM}``,
-* ``pax.nn.{Sequential, Identity, Lambda, RngSeq, EMA}``
+* ``pax.nn.{Dropout, Embed}``,
+* ``pax.nn.{Sequential, Identity, Lambda, RngSeq, EMA}``.
 
 We intent to add new modules in the near future.
 

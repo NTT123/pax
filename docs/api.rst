@@ -197,22 +197,40 @@ MultiHeadAttention
    :members:
 
 
-Identity
---------
-
-.. autoclass:: Identity
-   :members:
-
+Utilities
+---------
 
 Sequential
-----------
-
+~~~~~~~~~~
 
 .. autoclass:: Sequential
    :members:
 
 
+RngSeq
+~~~~~~
 
+.. autoclass:: RngSeq
+   :members:
+
+
+Lambda
+~~~~~~
+
+.. autoclass:: Lambda
+
+
+Identity
+~~~~~~~~
+
+.. autoclass:: Identity
+   :members:
+
+EMA
+~~~
+
+.. autoclass:: EMA
+   :members:
 
 
 
@@ -340,8 +358,6 @@ Utilities
     scan
     build_update_fn
     dropout
-    Lambda
-    RngSeq
 
 
 scan
@@ -361,14 +377,3 @@ dropout
 
 .. autofunction:: dropout
 
-
-Lambda
-------
-
-.. autoclass:: Lambda
-
-RngSeq
-------
-
-.. autoclass:: RngSeq
-   :members:

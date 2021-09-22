@@ -6,7 +6,7 @@ from ..module import Module
 
 
 class Lambda(Module):
-    """A pure functional module."""
+    """Convert a function to a module."""
 
     def __init__(self, f: Callable, name: Optional[str] = None):
         super().__init__(name=name)
