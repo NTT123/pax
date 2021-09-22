@@ -121,7 +121,15 @@ A good way to learn about ``Pax`` is to see examples in the [examples/](./exampl
 
 ## Modules<a id="modules"></a>
 
-At the moment, Pax includes few simple modules: ``pax.nn.{Linear, BatchNorm, BatchNorm1D, BatchNorm2D, Conv1D, Conv2D, Conv1DTranspose, Conv2DTranspose, LayerNorm, Sequential}``.
+At the moment, Pax includes: 
+
+* ``pax.nn.Linear``, 
+* ``pax.nn.{BatchNorm1D, BatchNorm2D, LayerNorm, GroupNorm}``, 
+* ``pax.nn.{GRU, LSTM}``,
+* ``pax.nn.{Conv1D, Conv2D, Conv1DTranspose, Conv2DTranspose}``, 
+* ``pax.nn.Sequential``, ``pax.nn.Identity``,
+* ``pax.utils.Lambda``, ``pax.utils.RngSeq``.
+
 We intent to add new modules in the near future.
 
 ## Optimizers<a id="optimizers"></a>

@@ -68,15 +68,7 @@ To install the latest version::
 
 Pax is licensed under the MIT License.
 
-Indices and tables
-==================
+Indices
+=======
 
 * :ref:`genindex`
-* :ref:`modindex`
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
