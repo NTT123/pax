@@ -866,3 +866,11 @@ def test_identity_module():
     x = jnp.zeros((3, 3))
     y = ident(x)
     assert jnp.array_equal(x, y) == True
+
+
+def test_flatten_module():
+    f = pax.nn.Linear(4, 4)
+    g = f.flatten()
+    k = g.parameters()
+    assert jax.tree_structure(g) == jax.tree_structure(k)
+    h = g.update(k)

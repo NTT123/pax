@@ -367,7 +367,8 @@ class Module:
         def _filter_fn(mod: T) -> T:
             for k, v in mod._name_to_kind.items():
                 if v in none_list:
-                    none_v = jax.tree_map(lambda _: None, v)
+                    value = getattr(mod, k)
+                    none_v = jax.tree_map(lambda _: None, value)
                     setattr(mod, k, none_v)
             return mod
 

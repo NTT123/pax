@@ -20,14 +20,12 @@ class FlattenModule(Module):
         self.module_treedef = jax.tree_structure(mod)
         self.register_parameter_subtree("params_leaves", params_leaves)
         self.register_state_subtree("states_leaves", states_leaves)
+        self.num_leaves = len(jax.tree_leaves(mod))
 
-    def unflatten(self):
+    def unflatten(self) -> Module:
         params = jax.tree_unflatten(self.params_treedef, self.params_leaves)
         states = jax.tree_unflatten(self.states_treedef, self.states_leaves)
-        module = jax.tree_unflatten(
-            self.module_treedef,
-            [0] * (len(self.params_leaves) + len(self.states_leaves)),
-        )
+        module = jax.tree_unflatten(self.module_treedef, [0] * self.num_leaves)
         module = module.update(params)
         module = module.update(states)
         return module
@@ -42,9 +40,6 @@ class FlattenModule(Module):
         self.states_leaves = states_leaves
         return out
 
-    def __getattr__(self, name):
-        return getattr(self.unflatten(), name)
-
     def freeze(self: T) -> T:
         raise RuntimeError("Disabled in a FlattenModule")
 
@@ -57,8 +52,8 @@ class FlattenModule(Module):
     def eval(self: T) -> T:
         raise RuntimeError("Disabled in a FlattenModule")
 
-    def __repr__(self, info: Optional[Dict[str, Any]] = None) -> str:
-        return super().__repr__(info=info)
+    def __repr__(self) -> str:
+        return self.unflatten().__repr__()
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
-        return super().summary(return_list=return_list)
+        return self.unflatten().summary(return_list=return_list)
