@@ -120,7 +120,7 @@ def test_layer_norm_init():
 def test_group_norm_1():
     """Make sure our GroupNorm behaves the same as hk.GroupNorm."""
     group_norm = pax.nn.GroupNorm(8, 32, -1)
-    x = np.random.randn(32, 4, 4, 32)
+    x = np.random.randn(32, 4, 4, 32).astype(np.float32)
     fwd = hk.transform(lambda x: hk.GroupNorm(8, -1, True, True)(x))
     rng = jax.random.PRNGKey(42)
     params = fwd.init(rng, x)
