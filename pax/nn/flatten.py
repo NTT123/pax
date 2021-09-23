@@ -11,7 +11,7 @@ from ..module import Module, PaxFieldKind, T
 
 
 class FlattenModule(Module):
-    """Flatten a module to a make all its parameters and states as single lists."""
+    """Flatten a module to a make all its parameters and states as lists of `ndarray`'s."""
 
     params_leaves: List[jnp.ndarray]
     states_leaves: List[jnp.ndarray]
@@ -20,6 +20,7 @@ class FlattenModule(Module):
     module_treedef: PyTreeDef
 
     def __init__(self, mod: Module):
+        """Create a flatten version of the input module."""
         super().__init__()
 
         params_leaves, params_treedef = jax.tree_flatten(
@@ -41,6 +42,7 @@ class FlattenModule(Module):
             raise ValueError("Expecting a callable module.")
 
     def unflatten(self):
+        """Recreate the original module."""
         params = jax.tree_unflatten(self.params_treedef, self.params_leaves)
         states = jax.tree_unflatten(self.states_treedef, self.states_leaves)
         module = jax.tree_unflatten(self.module_treedef, [0] * self.num_leaves)
@@ -49,6 +51,7 @@ class FlattenModule(Module):
         return module
 
     def __call__(self, *args, **kwargs):
+        """Recreate the original module, then call it."""
         module = self.unflatten()
         out = module(*args, **kwargs)
 
@@ -58,20 +61,25 @@ class FlattenModule(Module):
         return out
 
     def freeze(self: T) -> T:
+        """Disabled in FlattenModule"""
         raise RuntimeError("Disabled in FlattenModule")
 
     def unfreeze(self: T) -> T:
+        """Disabled in FlattenModule"""
         raise RuntimeError("Disabled in FlattenModule")
 
     def train(self: T, mode: bool = True):
+        """Disabled in FlattenModule"""
         raise RuntimeError("Disabled in FlattenModule")
 
     def eval(self: T) -> T:
+        """Disabled in FlattenModule"""
         raise RuntimeError("Disabled in FlattenModule")
 
     def mixed_precision(
         self: T, mp_policy: jmp.Policy, method_name: str = "__call__"
     ) -> T:
+        """Disabled in FlattenModule"""
         raise RuntimeError("Disabled in FlattenModule")
 
     def __repr__(self) -> str:

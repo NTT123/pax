@@ -66,6 +66,7 @@ Common Modules
     Identity
     avg_pool
     max_pool
+    FlattenModule
 
 
 
@@ -232,6 +233,12 @@ EMA
 .. autoclass:: EMA
    :members:
 
+
+FlattenModule
+~~~~~~~~~~~~~
+
+.. autoclass:: FlattenModule
+   :members:
 
 
 Initializers

@@ -29,6 +29,7 @@ class EMA(Module):
             self.register_state("debias", jnp.array(False))
 
     def __call__(self, xs):
+        """Return the ema of `xs`. Also, update internal states."""
         if self.debias is not None:
             self.averages = jax.tree_map(
                 lambda a, x: jnp.where(self.debias, a, x), self.averages, xs
