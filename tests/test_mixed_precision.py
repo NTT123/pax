@@ -3,7 +3,6 @@ import jax.numpy as jnp
 import jmp
 import pax
 import pytest
-from pax.nn.mixed_precision_module import MixedPrecisionModule
 
 half = jnp.float16  # On TPU this should be jnp.bfloat16.
 full = jnp.float32
@@ -13,7 +12,7 @@ def test_wrap_unwrap_mixed_precision():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
-    ff = MixedPrecisionModule(f, my_policy)
+    ff = pax.nn.MixedPrecisionModule(f, my_policy)
     fff = ff.unwrap_mixed_precision()
     assert "MixedPrecision" in ff.__class__.__name__
     assert "MixedPrecision" not in fff.__class__.__name__
