@@ -8,6 +8,7 @@ import jmp
 import opax
 import pax
 import tensorflow_datasets as tfds
+from opax.transform import GradientTransformation
 from tqdm.auto import tqdm
 
 Batch = Mapping[str, jnp.ndarray]
@@ -64,14 +65,13 @@ def test_loss_fn(model: ConvNet, batch: Batch):
 
 
 @pax.jit
-def update_fn(model_and_optimizer, batch: Batch):
-    model, optimizer = model_and_optimizer
+def update_fn(model: ConvNet, optimizer: GradientTransformation, batch: Batch):
     params = model.parameters()
     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
     model = model.update(
         optimizer.step(grads, model.parameters()),
     )
-    return (model, optimizer), loss
+    return model, optimizer, loss
 
 
 net = ConvNet()
@@ -117,7 +117,7 @@ for epoch in range(0, 10):
     losses = 0.0
     for batch in tqdm(train_data, desc="train", leave=False):
         batch = jax.tree_map(lambda x: x.numpy(), batch)
-        (net, optimizer), loss = update_fn((net, optimizer), batch)
+        net, optimizer, loss = update_fn(net, optimizer, batch)
         losses = losses + loss
     loss = losses / len(train_data)
 
