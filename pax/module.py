@@ -68,7 +68,7 @@ class Module:
 
     def __new__(cls: Type[T], *args, **kwargs) -> T:
         """Initialize _name_to_kind and _training in `__new__` method to avoid
-        calling `super().__init__()` in the every subclass of Module."""
+        calling `super().__init__()` in every subclass of Module."""
 
         if not ctx_state._enable_mutability:
             raise ValueError("Cannot create new module in immutable mode")
