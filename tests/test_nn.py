@@ -866,34 +866,3 @@ def test_identity_module():
     x = jnp.zeros((3, 3))
     y = ident(x)
     assert jnp.array_equal(x, y) == True
-
-
-def test_flatten_module():
-    f = pax.nn.Linear(4, 4)
-    g = f.flatten()
-    k = g.parameters()
-    assert jax.tree_structure(g) == jax.tree_structure(k)
-    h = g.update(k)
-
-
-def test_none_state():
-    class M(pax.Module):
-        def __init__(self):
-            super().__init__()
-            self.register_state_subtree("s", [])
-
-    m = M()
-    p = m.parameters()
-    assert p.s == []
-    m.assertStructureEqual(p)
-
-
-def test_flatten_non_callable_module():
-    class M(pax.Module):
-        def __init__(self):
-            super().__init__()
-
-    m = M()
-
-    with pytest.raises(ValueError):
-        m.flatten()

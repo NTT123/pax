@@ -1,8 +1,9 @@
 """Flatten a module"""
-from typing import List, Union
+from typing import List
 
 import jax
 import jax.numpy as jnp
+import jmp
 from jaxlib.xla_extension import PyTreeDef
 
 from .. import ctx
@@ -10,6 +11,7 @@ from ..module import Module, PaxFieldKind, T
 
 
 class FlattenModule(Module):
+    """Flatten a module to a make all its parameters and states as single lists."""
 
     params_leaves: List[jnp.ndarray]
     states_leaves: List[jnp.ndarray]
@@ -31,6 +33,9 @@ class FlattenModule(Module):
         self.register_parameter_subtree("params_leaves", params_leaves)
         self.register_state_subtree("states_leaves", states_leaves)
         self.num_leaves = len(jax.tree_leaves(mod))
+
+        if hasattr(mod, "unflatten"):
+            raise RuntimeError("Cannot flatten a module twice!")
 
         if not hasattr(mod, "__call__"):
             raise ValueError("Expecting a callable module.")
@@ -64,8 +69,11 @@ class FlattenModule(Module):
     def eval(self: T) -> T:
         raise RuntimeError("Disabled in FlattenModule")
 
-    def __repr__(self) -> str:
-        return self.unflatten().__repr__()
+    def mixed_precision(
+        self: T, mp_policy: jmp.Policy, method_name: str = "__call__"
+    ) -> T:
+        raise RuntimeError("Disabled in FlattenModule")
 
-    def summary(self, return_list: bool = False) -> Union[str, List[str]]:
-        return self.unflatten().summary(return_list=return_list)
+    def __repr__(self) -> str:
+        s = self.unflatten().__repr__()
+        return f"Flatten({s})"
