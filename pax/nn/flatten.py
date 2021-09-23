@@ -11,7 +11,7 @@ from ..module import Module, PaxFieldKind, T
 
 class FlattenModule(Module):
     """Flatten a module.
-    
+
     Flatten all parameters and states to lists of `ndarray`'s."""
 
     params_leaves: List[jnp.ndarray]
