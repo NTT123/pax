@@ -135,7 +135,7 @@ def update_fn(model_and_optimizer, multi_batch: jnp.ndarray):
     model_and_optimizer, losses = pax.utils.scan(
         update_step, model_and_optimizer, multi_batch
     )
-    return jnp.sum(losses), model_and_optimizer
+    return model_and_optimizer, jnp.sum(losses)
 
 
 net = LM(vocab_size=vocab_size, hidden_dim=hidden_dim)

@@ -14,7 +14,13 @@ T = TypeVar("T", bound="Module")
 
 LossFnOutput = Tuple[jnp.ndarray, Tuple[Any, T]]
 LossFn = Callable[[T, T, Any], LossFnOutput]
-UpdateFn = Callable[[T, Module, Any], Tuple[Any, T, Module]]
+
+
+GradientTransformation = "GradientTransformation"
+UpdateFn = Callable[
+    [Tuple[T, GradientTransformation], Any],
+    Tuple[Tuple[T, GradientTransformation], Any],
+]
 
 
 def build_update_fn(loss_fn: LossFn) -> UpdateFn:
@@ -60,9 +66,9 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         """
         )
 
-    from opax import GradientTransformation
-
-    def _update_fn(model_and_optimizer: Tuple[T, GradientTransformation], inputs: Any):
+    def _update_fn(
+        model_and_optimizer: Tuple[Module, GradientTransformation], inputs: Any
+    ) -> Tuple[Tuple[Module, GradientTransformation], Any]:
         """An update function.
 
         Note that: ``model`` and ``optimizer`` have internal states.

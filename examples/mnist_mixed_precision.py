@@ -117,7 +117,7 @@ for epoch in range(0, 10):
     losses = 0.0
     for batch in tqdm(train_data, desc="train", leave=False):
         batch = jax.tree_map(lambda x: x.numpy(), batch)
-        loss, net, optimizer = update_fn(net, optimizer, batch)
+        (net, optimizer), loss = update_fn((net, optimizer), batch)
         losses = losses + loss
     loss = losses / len(train_data)
 
