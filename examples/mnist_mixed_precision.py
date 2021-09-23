@@ -85,9 +85,9 @@ batchnorm_policy = jmp.Policy(compute_dtype=full, param_dtype=full, output_dtype
 
 def mp_policy_fn(mod):
     if isinstance(mod, pax.nn.Conv2D):
-        return mod.mixed_precision(linear_policy)
+        return pax.nn.MixedPrecisionModule(mod, linear_policy)
     elif mod.__class__.__name__.startswith("BatchNorm"):
-        return mod.mixed_precision(batchnorm_policy)
+        return pax.nn.MixedPrecisionModule(mod, batchnorm_policy)
     else:
         # unchanged
         return mod

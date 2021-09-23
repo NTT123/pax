@@ -240,6 +240,12 @@ FlattenModule
 .. autoclass:: FlattenModule
    :members:
 
+MixedPrecisionModule
+~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: MixedPrecisionModule
+   :members:
+
 
 Initializers
 ============

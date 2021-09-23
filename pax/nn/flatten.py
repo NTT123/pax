@@ -76,12 +76,6 @@ class FlattenModule(Module):
         """Disabled in FlattenModule"""
         raise RuntimeError("Disabled in FlattenModule")
 
-    def mixed_precision(
-        self: T, mp_policy: jmp.Policy, method_name: str = "__call__"
-    ) -> T:
-        """Disabled in FlattenModule"""
-        raise RuntimeError("Disabled in FlattenModule")
-
     def __repr__(self) -> str:
         s = self.unflatten().__repr__()
         return f"Flatten({s})"
