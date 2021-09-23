@@ -3,7 +3,6 @@ from typing import List
 
 import jax
 import jax.numpy as jnp
-import jmp
 from jaxlib.xla_extension import PyTreeDef
 
 from .. import ctx

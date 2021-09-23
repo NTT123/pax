@@ -9,8 +9,7 @@ import copy
 from collections import OrderedDict
 from enum import Enum
 from types import MappingProxyType
-from typing import (Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar,
-                    Union)
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 from unittest import TestCase
 
 import jax
@@ -276,19 +275,9 @@ class Module:
 
         if not ctx_state._enable_mutability:
             leaves, treedef = jax.tree_flatten(not_tree)
-            leaves_clone = []
-
-            for leaf in leaves:
-                if isinstance(leaf, (MappingProxyType, PyTreeDef)):
-                    leaves_clone.append(leaf)
-                else:
-                    # TODO: fix this!
-                    x = copy.deepcopy(leaf)
-                    if x != leaf:
-                        x = leaf
-                    leaves_clone.append(x)
-
-            not_tree = jax.tree_unflatten(treedef, leaves_clone)
+            # TODO: it is possible that `leaves` can change its internal states,
+            # `jax.jit` will not detect the change. Fix this!
+            not_tree = jax.tree_unflatten(treedef, leaves)
 
         return children, (children_names, not_tree)
 

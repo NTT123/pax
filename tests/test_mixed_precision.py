@@ -70,9 +70,9 @@ def test_change_internal_state():
         lambda x: (pax.nn.MixedPrecisionModule(x, mp) if isinstance(x, M) else x)
     )
     x = jnp.array(0.0)
-    assert mm.module.counter.item() == 0
+    assert mm._module.counter.item() == 0
     y = mm(x)
-    assert mm.module.counter.item() == 1
+    assert mm._module.counter.item() == 1
     assert m.counter.item() == 0
 
 
@@ -99,10 +99,10 @@ def test_change_tree_def():
         lambda x: (pax.nn.MixedPrecisionModule(x, mp) if isinstance(x, M) else x)
     )
     x = jnp.array(0.0)
-    assert mm.module.counter.item() == 0
+    assert mm._module.counter.item() == 0
     with pytest.raises(RuntimeError):
         y = mm(x)
-    assert mm.module.counter.item() == 1
+    assert mm._module.counter.item() == 1
     assert m.counter.item() == 0
 
 
