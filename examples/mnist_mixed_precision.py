@@ -64,13 +64,14 @@ def test_loss_fn(model: ConvNet, batch: Batch):
 
 
 @pax.jit
-def update_fn(model: ConvNet, optimizer: pax.Module, batch: Batch):
+def update_fn(model_and_optimizer, batch: Batch):
+    model, optimizer = model_and_optimizer
     params = model.parameters()
     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
     model = model.update(
         optimizer.step(grads, model.parameters()),
     )
-    return loss, model, optimizer
+    return (model, optimizer), loss
 
 
 net = ConvNet()

@@ -44,17 +44,18 @@ def test_finetune():
     optimizer = opax.adam(1e-2)(net.parameters())
 
     @pax.jit
-    def update_fn(model: MLP, optimizer: pax.Module, x):
+    def update_fn(model_and_optimizer, x):
+        model, optimizer = model_and_optimizer
         params = model.parameters()
         grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, x)
         model = model.update(
             optimizer.step(grads, model.parameters()),
         )
-        return loss, model, optimizer
+        return (model, optimizer), loss
 
     old_layers = net.layers
     for i in range(100):
-        loss, net, optimizer = update_fn(net, optimizer, x)
+        (net, optimizer), loss = update_fn((net, optimizer), x)
         if i % 10 == 0:
             print(f"[step {i:03d}] loss {loss:.3f}")
     new_layers = net.layers

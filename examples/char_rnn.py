@@ -118,8 +118,8 @@ def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
     return loss, (loss, model)
 
 
-def update_step(prev, batch: jnp.ndarray):
-    model, optimizer = prev
+def update_step(model_and_optimizer, batch: jnp.ndarray):
+    model, optimizer = model_and_optimizer
     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
         model.parameters(), model, batch
     )
@@ -131,13 +131,11 @@ def update_step(prev, batch: jnp.ndarray):
 
 
 @partial(pax.pmap, axis_name="i")
-def update_fn(
-    model: LM, optimizer: opax.GradientTransformation, multi_batch: jnp.ndarray
-):
-    (model, optimizer), losses = pax.utils.scan(
-        update_step, (model, optimizer), multi_batch
+def update_fn(model_and_optimizer, multi_batch: jnp.ndarray):
+    model_and_optimizer, losses = pax.utils.scan(
+        update_step, model_and_optimizer, multi_batch
     )
-    return jnp.sum(losses), model, optimizer
+    return jnp.sum(losses), model_and_optimizer
 
 
 net = LM(vocab_size=vocab_size, hidden_dim=hidden_dim)
@@ -181,7 +179,7 @@ for step in tr:
     batch = next(tfdata)
     # (num_devices,) is for pax.pmap, (steps_per_update,) is for pax.utils.scan
     batch = jnp.reshape(batch, (num_devices, steps_per_update, -1) + batch.shape[1:])
-    loss, net, optimizer = update_fn(net, optimizer, batch)
+    (net, optimizer), loss = update_fn((net, optimizer), batch)
     losses = losses + loss
     if step % 1000 == 0:
         loss = jnp.mean(losses) / (1000 if step > 0 else steps_per_update)

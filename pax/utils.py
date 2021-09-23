@@ -37,14 +37,15 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
     The returned ``update_fn`` function is:
 
-    >>> def _update_fn(model: T, optimizer: Module, inputs: Any):
+    >>> def _update_fn(model_and_optimizer: Tuple[Module, GradientTransformation], inputs: Any):
+    ...     model, optimizer = model_and_optimizer
     ...     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
     ...         model.parameters(), model, inputs
     ...     )
     ...     model = model.update(
     ...         optimizer.step(grads, model.parameters()),
     ...     )
-    ...     return loss, model, optimizer
+    ...     return (model, optimizer), loss
     """
 
     sig = inspect.signature(loss_fn)
@@ -61,7 +62,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
     from opax import GradientTransformation
 
-    def _update_fn(model: T, optimizer: GradientTransformation, inputs: Any):
+    def _update_fn(model_and_optimizer: Tuple[T, GradientTransformation], inputs: Any):
         """An update function.
 
         Note that: ``model`` and ``optimizer`` have internal states.
@@ -69,15 +70,14 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
 
         Arguments:
-            model: a callable pax.Module
-            optimizer: an optimizer
+            model_and_optimizer: (a callable pax.Module, an optimizer).
             inputs: input batch.
 
         Returns:
+            model_and_optimizer: updated (model, optimizer)
             loss: the loss value
-            model: updated model
-            optimizer: updated optimizer
         """
+        model, optimizer = model_and_optimizer
         grads, (loss, model) = grad(loss_fn, has_aux=True)(
             model.parameters(), model, inputs
         )
@@ -85,7 +85,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         model = model.update(
             optimizer.step(grads, model.parameters()),
         )
-        return loss, model, optimizer
+        return (model, optimizer), loss
 
     return _update_fn
 

@@ -20,7 +20,7 @@ def test_util_update_fn():
     x = np.random.normal(size=(32, 2))
     y = np.random.normal(size=(32, 1))
     for step in range(3):
-        loss, net, opt = update_fn(net, opt, (x, y))
+        (net, opt), loss = update_fn((net, opt), (x, y))
     print(step, loss)
 
 
