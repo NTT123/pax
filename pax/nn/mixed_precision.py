@@ -13,6 +13,7 @@ class MixedPrecisionModule(Module):
         """Create a wrapper module to enforce the mixed-precision policy.
 
         Arguments:
+            mod: the module.
             mp_policy: a ``jmp`` mixed precision policy.
         """
         super().__init__()

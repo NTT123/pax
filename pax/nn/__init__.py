@@ -10,7 +10,7 @@ from .identity import Identity
 from .lambda_module import Lambda
 from .layer_norm import LayerNorm
 from .linear import Linear
-from .mixed_precision_module import MixedPrecisionModule
+from .mixed_precision import MixedPrecisionModule
 from .pool import avg_pool, max_pool
 from .recurrent import GRU, LSTM, GRUState, LSTMState
 from .rng_seq import RngSeq
