@@ -96,9 +96,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         params = select_parameters(model)
         grads, (aux, model) = grads_with_aux(model, fn=loss_fn, inputs=inputs)
         assertStructureEqual(grads, select_parameters(model))
-        updates, optimizer = transform_gradients(
-            grads, params=params, optimizer=optimizer
-        )
+        updates, optimizer = transform_gradients(grads, optimizer, params=params)
         params = apply_updates(params, updates=updates)
         model = update_params(model, params=params)
         return (model, optimizer), aux

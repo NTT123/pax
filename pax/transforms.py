@@ -115,13 +115,13 @@ def scan_bugs(mod: T) -> T:
     return mod.apply(_scan_apply_fn)
 
 
-def transform_gradients(grads: T, *, params: T, optimizer: Module) -> Tuple[T, Module]:
+def transform_gradients(grads: T, optimizer: Module, *, params: T) -> Tuple[T, Module]:
     """Transform gradients to updates using an optimizer.
 
     Arguments:
         grads: The gradients.
-        params: The trainable parameters.
         optimizer: The gradient transformation.
+        params: The trainable parameters.
 
     Returns: (updates, optimizer)
         - **updates** : The transformed gradients.
@@ -314,7 +314,7 @@ def update_states(mod: T, *, states: T) -> T:
 def apply_grads(model: T, optimizer: Module, *, grads: T) -> Tuple[T, Module]:
     """Update model and optimizer with gradients `grads`."""
     params = select_parameters(model)
-    updates, optimizer = transform_gradients(grads, params=params, optimizer=optimizer)
+    updates, optimizer = transform_gradients(grads, optimizer, params=params)
     params = apply_updates(params, updates=updates)
     model = update_params(model, params=params)
     return model, optimizer
