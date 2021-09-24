@@ -14,7 +14,7 @@ seaborn==0.11.1
 Jinja2==2.11.3
 
 # pax requirements
-jax==0.2.17
-jaxlib==0.1.69
-jmp>=0.0.2
-numpy>=1.18.0
+jax
+jaxlib
+jmp
+numpy
