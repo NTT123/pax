@@ -61,16 +61,13 @@ def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
 @pax.jit
 def test_loss_fn(model: ConvNet, batch: Batch):
     model = model.eval()
-    return loss_fn(model.parameters(), model, batch)[0]
+    return loss_fn(pax.select_parameters(model), model, batch)[0]
 
 
 @pax.jit
 def update_fn(model: ConvNet, optimizer: GradientTransformation, batch: Batch):
-    params = model.parameters()
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
-    model = model.update(
-        optimizer.step(grads, model.parameters()),
-    )
+    grads, (loss, model) = pax.grads_with_aux(model, fn=loss_fn, inputs=batch)
+    model, optimizer = pax.apply_grads(model, optimizer, grads=grads)
     return model, optimizer, loss
 
 
@@ -100,7 +97,7 @@ print(net.summary())
 optimizer = opax.chain(
     opax.clip_by_global_norm(1.0),
     opax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
-)(net.parameters())
+)(pax.select_parameters(net))
 
 
 def load_dataset(split: str):
