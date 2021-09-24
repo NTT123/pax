@@ -163,7 +163,7 @@ def grads_with_aux(model: T, *, fn: Callable, inputs: Any) -> Tuple[T, Any]:
     return grads, aux
 
 
-class flatten_module(Generic[T], Module):
+class flatten_module(Module, Generic[T]):
     """Flatten a module.
 
     Flatten all parameters and states to lists of `ndarray`'s."""
@@ -218,7 +218,7 @@ class flatten_module(Generic[T], Module):
         return f"Flatten({s})"
 
 
-class apply_mp_policy(Generic[T], Module):
+class apply_mp_policy(Module, Generic[T]):
     """Convert the module to a mixed-precision module."""
 
     _module: T
