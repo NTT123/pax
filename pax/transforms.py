@@ -1,7 +1,7 @@
 """Transform a module to a new one."""
 from collections import OrderedDict
 from types import MappingProxyType
-from typing import Any, Callable, Generic, List, Tuple
+from typing import Any, Callable, Generic, List, Tuple, TypeVar
 
 import jax
 import jax.numpy as jnp
@@ -12,12 +12,17 @@ from . import ctx
 from .pax_transforms import grad
 
 TreeDef = Any
-from .module import Module, PaxFieldKind, T
+from .module import Module, PaxFieldKind
+
+T = TypeVar("T", bound="Module")
+
 
 GradientTransformation = Module
 
 
 def enable_train_mode(mod: T) -> T:
+    """Return a module in training mode."""
+
     def _train_apply_fn(mod: T) -> T:
         mod.__dict__["_training"] = True
         return mod
@@ -26,6 +31,8 @@ def enable_train_mode(mod: T) -> T:
 
 
 def enable_eval_mode(mod: T) -> T:
+    """Return a module in evaluation model."""
+
     def _eval_apply_fn(mod: T) -> T:
         mod.__dict__["_training"] = False
         return mod
@@ -63,6 +70,12 @@ def unfreeze_parameter(mod: T, *, origin: T) -> T:
 
 
 def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
+    """Select leaves of kind `kind` while setting all other leaves to ``None``.
+
+    Arguments:
+        mod: The module.
+        kind: The kind of leaves that will be kept intact.
+    """
     assert kind in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]
     if kind == PaxFieldKind.STATE:
         none_list = [PaxFieldKind.PARAMETER, PaxFieldKind.PARAMETER_SUBTREE]
@@ -81,14 +94,18 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
 
 
 def select_parameter(mod: T) -> T:
+    """Select `PARAMETER` leaves only."""
     return select_kind(mod, kind=PaxFieldKind.PARAMETER)
 
 
 def select_state(mod: T) -> T:
+    """Select `STATE` leaves only."""
     return select_kind(mod, kind=PaxFieldKind.STATE)
 
 
 def scan_bug(mod: T) -> T:
+    """Scan the module for potential bugs."""
+
     def _scan_apply_fn(mod: T) -> T:
         assert isinstance(mod, Module)
         mod._scan_fields(mod.__class__.__dict__)
@@ -99,12 +116,29 @@ def scan_bug(mod: T) -> T:
 
 
 def transform_gradient(grads: T, *, params: T, optimizer: Module) -> Tuple[T, Module]:
+    """Transform gradients to updates using an optimizer.
+
+    Arguments:
+        grads: The gradients.
+        params: The trainable parameters.
+        optimizer: The gradient transformation.
+
+    Returns: (updates, optimizer)
+        - **updates** : The transformed gradients.
+        - **optimizer** : The *updated* optimizer.
+    """
     optimizer = optimizer.copy()
     updates = optimizer(grads, params=params)
     return updates, optimizer
 
 
 def apply_updates(params: T, *, updates: T) -> T:
+    """Update the parameters with updates.
+
+    Arguments:
+        params: The trainable parameters.
+        updates: The transformed gradients.
+    """
     from .utils import assertStructureEqual
 
     assertStructureEqual(updates, params)
@@ -112,6 +146,17 @@ def apply_updates(params: T, *, updates: T) -> T:
 
 
 def grad_with_aux(model: T, *, fn: Callable, inputs: Any) -> Tuple[T, Any]:
+    """Return the gradients of function ``fn`` with respect to ``model``'s trainable parameters.
+
+    Arguments:
+        model: The module which contains trainable parameters and forward-pass computation.
+        fn: A loss function, whose inputs are `(params, model, inputs)`.
+        inputs: The inputs to `fn`.
+
+    Returns: (grads, aux)
+        - **grads** : The gradients w.r.t. model's trainable parameters.
+        - **aux** : The auxiliary information (usually `loss` and the updated `model`).
+    """
     model = model.copy()  # prevent side effects
     grads, aux = grad(fn, has_aux=True)(select_parameter(model), model, inputs)
 
@@ -173,8 +218,8 @@ class flatten_module(Generic[T], Module):
         return f"Flatten({s})"
 
 
-class apply_mixed_precision_policy(Generic[T], Module):
-    """Convert the module to a MixedPrecision module."""
+class apply_mp_policy(Generic[T], Module):
+    """Convert the module to a mixed-precision module."""
 
     _module: T
 

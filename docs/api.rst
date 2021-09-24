@@ -66,7 +66,6 @@ Common Modules
     Identity
     avg_pool
     max_pool
-    FlattenModule
 
 
 
@@ -234,17 +233,107 @@ EMA
    :members:
 
 
-FlattenModule
-~~~~~~~~~~~~~
+Module Transformations
+======================
 
-.. autoclass:: FlattenModule
-   :members:
+.. currentmodule:: pax.transforms
 
-MixedPrecisionModule
-~~~~~~~~~~~~~~~~~~~~
+.. autosummary::
 
-.. autoclass:: MixedPrecisionModule
-   :members:
+   enable_train_mode
+   enable_eval_mode
+   select_kind
+   select_parameter
+   select_state
+   freeze_parameter
+   unfreeze_parameter
+   apply_mp_policy
+   apply_updates
+   transform_gradient
+   grad_with_aux
+   scan_bug
+   flatten_module
+
+
+enable_train_mode
+-----------------
+
+.. autofunction:: enable_train_mode
+
+
+enable_eval_mode
+----------------
+
+.. autofunction:: enable_eval_mode
+
+
+select_kind
+-----------
+
+.. autofunction:: select_kind
+
+select_parameter
+----------------
+
+.. autofunction:: select_parameter
+
+
+select_state
+------------
+
+.. autofunction:: select_state
+
+
+freeze_parameter
+----------------
+
+.. autofunction:: freeze_parameter
+
+
+unfreeze_parameter
+------------------
+
+.. autofunction:: unfreeze_parameter
+
+
+apply_mp_policy
+---------------
+
+.. autoclass:: apply_mp_policy
+   :members: __init__
+
+
+
+apply_updates
+-------------
+
+.. autofunction:: apply_updates
+
+
+transform_gradient
+------------------
+
+.. autofunction:: transform_gradient
+
+
+grad_with_aux
+-------------
+
+.. autofunction:: grad_with_aux
+
+
+scan_bug
+--------
+
+.. autofunction:: scan_bug
+
+
+flatten_module
+--------------
+
+.. autoclass:: flatten_module
+
+
 
 
 Initializers
