@@ -1,7 +1,7 @@
 """Transform a module to a new one."""
 from collections import OrderedDict
 from types import MappingProxyType
-from typing import Any, Literal
+from typing import Any
 
 import jax
 
@@ -54,9 +54,7 @@ def unfreeze_parameter(mod: T, *, origin: T) -> T:
     return jax.tree_unflatten(tree_def, leaves)
 
 
-def select_kind(
-    mod: T, *, kind: Literal[PaxFieldKind.STATE, PaxFieldKind.PARAMETER]
-) -> T:
+def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
     assert kind in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]
     if kind == PaxFieldKind.STATE:
         none_list = [PaxFieldKind.PARAMETER, PaxFieldKind.PARAMETER_SUBTREE]
