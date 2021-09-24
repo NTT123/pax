@@ -2,7 +2,6 @@ from types import MappingProxyType
 
 import jax
 import pax
-import pytest
 
 
 def test_freeze_really_working():

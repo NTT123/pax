@@ -7,10 +7,10 @@ from unittest import TestCase
 import jax
 import jax.numpy as jnp
 
+from pax.transforms import apply_updates, grad_with_aux, transform_gradient
+
 from .module import Module, PaxFieldKind
-from .pax_transforms import grad
 from .rng import KeyArray
-from .transforms import select_parameter
 
 T = TypeVar("T", bound="Module")
 
@@ -48,10 +48,10 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
     >>> def _update_fn(model_and_optimizer: Tuple[Module, GradientTransformation], inputs: Any):
     ...     model, optimizer = model_and_optimizer
     ...     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
-    ...         model.parameters(), model, inputs
+    ...         pax.select_parameter(model), model, inputs
     ...     )
     ...     model = model.update(
-    ...         optimizer.step(grads, model.parameters()),
+    ...         optimizer.step(grads, pax.select_parameter(model)),
     ...     )
     ...     return (model, optimizer), loss
     """
@@ -78,20 +78,25 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
 
         Arguments:
-            model_and_optimizer: (a callable pax.Module, an optimizer).
+            model_and_optimizer: (a callable pax.Module, an optimizer),
             inputs: input batch.
 
         Returns:
-            model_and_optimizer: updated (model, optimizer)
-            loss: the loss value
+            model_and_optimizer: updated (model, optimizer),
+            aux: the aux info.
         """
         model, optimizer = model_and_optimizer
-        grads, (loss, model) = grad(loss_fn, has_aux=True)(
-            select_parameter(model), model, inputs
-        )
+        from .transforms import select_parameter
+
+        params = select_parameter(model)
+        grads, (aux, model) = grad_with_aux(model, fn=loss_fn, inputs=inputs)
         assertStructureEqual(grads, select_parameter(model))
-        model = model.update(optimizer.step(grads, select_parameter(model)))
-        return (model, optimizer), loss
+        updates, optimizer = transform_gradient(
+            grads, params=params, optimizer=optimizer
+        )
+        params = apply_updates(params, updates=updates)
+        model = model.update(params)
+        return (model, optimizer), aux
 
     return _update_fn
 
@@ -150,7 +155,7 @@ def assertStructureEqual(self: T, other: T):
 
     def check(a, b):
         if isinstance(a, Module) and isinstance(b, Module):
-            a.assertStructureEqual(b)
+            assertStructureEqual(a, b)
 
     tc = TestCase()
     tc.maxDiff = None

@@ -1,6 +1,7 @@
 """train a handwritten digit classifier."""
 
 import pickle
+from functools import partial
 from pathlib import Path
 from typing import List, Mapping, Tuple
 
@@ -59,26 +60,27 @@ def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
 
 @pax.jit
 def test_loss_fn(model: ConvNet, batch: Batch):
-    model = model.eval()
-    return loss_fn(model.parameters(), model, batch)[0]
+    model = pax.enable_eval_mode(model)
+    return loss_fn(pax.select_parameter(model), model, batch)[0]
 
 
 @pax.jit
 def update_fn(model: ConvNet, optimizer: GradientTransformation, batch: Batch):
-    params = model.parameters()
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
-    model = model.update(
-        optimizer.step(grads, model.parameters()),
-    )
+    params = pax.select_parameter(model)
+    grads, (loss, model) = pax.grad_with_aux(model, fn=loss_fn, inputs=batch)
+    updates = optimizer(grads, params=params)
+    params = pax.apply_updates(params, updates=updates)
+    model = model.update(params)
     return model, optimizer, loss
 
 
 net = ConvNet()
 print(net.summary())
+params = pax.select_parameter(net)
 optimizer = opax.chain(
     opax.clip_by_global_norm(1.0),
     opax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
-)(net.parameters())
+)(params)
 
 
 def load_dataset(split: str):

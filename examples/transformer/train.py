@@ -3,6 +3,7 @@
 import inspect
 import os
 from functools import partial
+from math import gamma
 from typing import Tuple
 
 import jax
@@ -66,13 +67,12 @@ def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
 
 def update_step(prev, batch: jnp.ndarray):
     model, optimizer = prev
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
-        model.parameters(), model, batch
-    )
+    grads, (loss, model) = pax.grad_with_aux(model, fn=loss_fn, inputs=batch)
     grads = jax.lax.pmean(grads, axis_name="i")
-    model = model.update(
-        optimizer.step(grads, model.parameters()),
-    )
+    params = pax.select_parameter(model)
+    updates = optimizer(grads, params=params)
+    params = pax.apply_updates(params, updates=updates)
+    model = model.update(params)
     return (model, optimizer), loss
 
 
@@ -143,7 +143,7 @@ def train():
     optimizer = opax.chain(
         opax.clip_by_global_norm(1.0),
         opax.adam(learning_rate),
-    )(net.parameters())
+    )(pax.select_parameter(net))
 
     # replicate on multiple devices
     net = jax.device_put_replicated(net, jax.devices())
@@ -178,7 +178,7 @@ def train():
             loss = jnp.mean(total_losses) / (1000 if step > 0 else steps_per_update)
             total_losses = jnp.zeros_like(total_losses)
             # eval on a single device
-            eval_net = jax.tree_map(lambda x: x[0], net.eval())
+            eval_net = jax.tree_map(lambda x: x[0], pax.enable_eval_mode(net))
             out = eval_net.inference(
                 prompt=tokenize(test_prompt),
                 length=(128 if step < num_steps else 1024),

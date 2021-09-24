@@ -120,13 +120,14 @@ def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
 
 def update_step(model_and_optimizer, batch: jnp.ndarray):
     model, optimizer = model_and_optimizer
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
-        model.parameters(), model, batch
-    )
+    params = pax.select_parameter(model)
+    grads, (loss, model) = pax.grad_with_aux(model, fn=loss_fn, inputs=batch)
     grads = jax.lax.pmean(grads, axis_name="i")
-    model = model.update(
-        optimizer.step(grads, model.parameters()),
+    updates, optimizer = pax.transform_gradient(
+        grads, params=params, optimizer=optimizer
     )
+    params = pax.apply_updates(params, updates=updates)
+    model = model.update(params)
     return (model, optimizer), loss
 
 
@@ -139,7 +140,10 @@ def update_fn(model, optimizer, multi_batch: jnp.ndarray):
 
 
 net = LM(vocab_size=vocab_size, hidden_dim=hidden_dim)
-optimizer = opax.chain(opax.clip_by_global_norm(1.0), opax.adam(1e-4))(net.parameters())
+optimizer = opax.chain(
+    opax.clip_by_global_norm(1.0),
+    opax.adam(1e-4),
+)(pax.select_parameter(net))
 
 # replicate on multiple devices
 net = jax.device_put_replicated(net, jax.devices())
@@ -185,7 +189,7 @@ for step in tr:
         loss = jnp.mean(losses) / (1000 if step > 0 else steps_per_update)
         losses = 0.0
         # eval on a single device
-        eval_net = jax.tree_map(lambda x: x[0], net.eval())
+        eval_net = jax.tree_map(lambda x: x[0], pax.enable_eval_mode(net))
         out = eval_net.inference(
             prompt=tokenize(test_prompt), length=(100 if step < num_steps else 1000)
         )
