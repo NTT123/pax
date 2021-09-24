@@ -13,7 +13,7 @@ tests_require = [
     "dm-haiku",
     "fire",
     "mypy",
-    "opax >= 0.1.6",
+    "opax >= 0.1.7",
     "pytest",
     "tensorflow_datasets",
     "tensorflow",
