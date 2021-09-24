@@ -11,7 +11,6 @@ from .transforms import (
     enable_train_mode,
     flatten_module,
     freeze_parameters,
-    grads_with_aux,
     scan_bugs,
     select_kind,
     select_parameters,

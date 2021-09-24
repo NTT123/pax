@@ -145,24 +145,6 @@ def apply_updates(params: T, *, updates: T) -> T:
     return jax.tree_map(lambda u, p: p - u, updates, params)
 
 
-def grads_with_aux(model: T, *, fn: Callable, inputs: Any) -> Tuple[T, Any]:
-    """Return the gradients of function ``fn`` with respect to ``model``'s trainable parameters.
-
-    Arguments:
-        model: The module which contains trainable parameters and forward-pass computation.
-        fn: A loss function, whose inputs are `(params, model, inputs)`.
-        inputs: The inputs to `fn`.
-
-    Returns: (grads, aux)
-        - **grads** : The gradients w.r.t. model's trainable parameters.
-        - **aux** : The auxiliary information (usually `loss` and the updated `model`).
-    """
-    model = model.copy()  # prevent side effects
-    grads, aux = grad(fn, has_aux=True)(select_parameters(model), model, inputs)
-
-    return grads, aux
-
-
 class flatten_module(Module, Generic[T]):
     """Flatten a module.
 

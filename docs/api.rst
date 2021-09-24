@@ -253,7 +253,6 @@ Module Transformations
    apply_mp_policy
    apply_updates
    transform_gradients
-   grads_with_aux
    scan_bugs
    flatten_module
 
@@ -335,11 +334,6 @@ transform_gradients
 
 .. autofunction:: transform_gradients
 
-
-grads_with_aux
---------------
-
-.. autofunction:: grads_with_aux
 
 
 scan_bugs
