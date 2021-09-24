@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Un
 import jax
 import jax.numpy as jnp
 import jax.tree_util
+import numpy as np
 from jax.dtypes import issubdtype as isdt
 
 from .ctx import state as ctx_state
@@ -134,7 +135,7 @@ class Module:
         any_modules = any(isinstance(mod, Module) for mod in module_leaves)
 
         def is_ndarray(x):
-            return isinstance(x, jnp.ndarray)
+            return isinstance(x, (np.ndarray, jnp.ndarray))
 
         all_ndarray = all(is_ndarray(x) for x in ndarray_leaves)
         any_ndarray = any(is_ndarray(x) for x in ndarray_leaves)
