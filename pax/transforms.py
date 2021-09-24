@@ -1,7 +1,7 @@
 """Transform a module to a new one."""
 from collections import OrderedDict
 from types import MappingProxyType
-from typing import Any, Callable, Generic, List, Tuple, TypeVar
+from typing import Any, Generic, List, Optional, Tuple, TypeVar
 
 import jax
 import jax.numpy as jnp
@@ -293,10 +293,27 @@ def update_states(mod: T, *, states: T) -> T:
     return mod.update(select_states(states))
 
 
-def apply_grads(model: T, optimizer: Module, *, grads: T) -> Tuple[T, Module]:
+def apply_grads(
+    model: T, optimizer: Module, *, grads: T, all_finite: Optional[jnp.ndarray] = None
+) -> Tuple[T, Module]:
     """Update model and optimizer with gradients `grads`."""
     params = select_parameters(model)
-    updates, optimizer = transform_gradients(grads, optimizer, params=params)
-    params = apply_updates(params, updates=updates)
-    model = update_parameters(model, params=params)
-    return model, optimizer
+    updates, new_optimizer = transform_gradients(grads, optimizer, params=params)
+    new_params = apply_updates(params, updates=updates)
+
+    # Source: https://github.com/deepmind/jmp/blob/fdfcb830de8331f90de289edb18355964ec1f9f9/jmp/_src/loss_scale.py#L187
+    # This function is under the Apache License 2.0
+    import functools
+
+    def select_tree(pred: jnp.ndarray, a: T, b: T) -> T:
+        """Selects a pytree based on the given predicate."""
+        assert pred.ndim == 0 and pred.dtype == jnp.bool_, "expected boolean scalar"
+        return jax.tree_multimap(functools.partial(jax.lax.select, pred), a, b)
+
+    if all_finite is not None:
+        new_params, new_optimizer = select_tree(
+            all_finite, (new_params, new_optimizer), (params, optimizer)
+        )
+
+    new_model = update_parameters(model, params=new_params)
+    return new_model, new_optimizer

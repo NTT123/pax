@@ -46,7 +46,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
     >>> def _update_fn(model_and_optimizer: Tuple[Module, GradientTransformation], inputs: Any):
     ...     model, optimizer = model_and_optimizer
     ...     params = select_parameters(model)
-    ...     grads, (aux, model) = pax.grad(loss_fn, has_aux=True)(model.parameters(), model, inputs)
+    ...     grads, (aux, model) = pax.grad(loss_fn, has_aux=True)(params, model, inputs)
     ...     assertStructureEqual(grads, select_parameters(model))
     ...     updates, optimizer = transform_gradients(grads, optimizer, params=params)
     ...     params = apply_updates(params, updates=updates)
@@ -95,9 +95,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
         model, optimizer = model_and_optimizer
         params = select_parameters(model)
-        grads, (aux, model) = grad(loss_fn, has_aux=True)(
-            model.parameters(), model, inputs
-        )
+        grads, (aux, model) = grad(loss_fn, has_aux=True)(params, model, inputs)
         assertStructureEqual(grads, select_parameters(model))
         updates, optimizer = transform_gradients(grads, optimizer, params=params)
         params = apply_updates(params, updates=updates)

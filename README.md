@@ -65,7 +65,8 @@ grad_fn = pax.grad(loss_fn, has_aux=True)
 
 net = Counter(3)
 x = jnp.array(10.)
-grads, (loss, net) = grad_fn(net.parameters(), net, x)
+params = pax.select_parameters(net)
+grads, (loss, net) = grad_fn(params, net, x)
 print(grads.counter) # None
 print(grads.bias) # 60.0
 ```
@@ -77,7 +78,7 @@ There are a few important things in the above example:
 * ``pax.update_parameters(model, params=params)`` return a new ``model`` which uses ``params`` in the forward computation.
 * ``loss_fn`` returns the updated `model` in its output.
 * ``pax.grad`` is a wrapper of `jax.grad` with immutable mode turned on and additional checks to prevent potential bugs.
-* ``net.parameters()`` returns a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. 
+* ``pax.select_parameters(net)`` returns a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. 
 This is needed to make sure that we only compute gradients w.r.t trainable parameters.
 
 
@@ -155,7 +156,7 @@ net = pax.freeze_parameters(net)
 net.modules[-1] = pax.nn.Linear(64, 2)
 ```
 
-After this, ``net.parameters()`` will only return trainable parameters of the last layer.
+After this, ``pax.select_parameters(net)`` will only return trainable parameters of the last layer.
 
 
 [jax]: https://github.com/google/jax
