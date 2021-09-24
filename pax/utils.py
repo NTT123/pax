@@ -37,7 +37,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
     Example:
 
     >>> def mse_loss(params, model, inputs) -> pax.utils.LossFnOutput:
-    ...     model = model.update(params)
+    ...     model = pax.update_params(model, params=params)
     ...     x, y = inputs
     ...     y_hat = model(x)
     ...     loss = jnp.mean(jnp.square(y - y_hat))
@@ -95,7 +95,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
             grads, params=params, optimizer=optimizer
         )
         params = apply_updates(params, updates=updates)
-        model = model.update(params)
+        model = pax.update_params(model, params=params)
         return (model, optimizer), aux
 
     return _update_fn

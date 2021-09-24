@@ -29,7 +29,7 @@ def test_finetune():
     net = MLP([10, 2, 2, 2, 10])
 
     def loss_fn(params: MLP, model: MLP, x):
-        model = model.update(params)
+        model = pax.update_params(model, params=params)
         y = model(x)
         loss = jnp.mean(jnp.square(x - y))
         return loss, (loss, model)

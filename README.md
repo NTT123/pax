@@ -56,7 +56,7 @@ class Counter(pax.Module):
         return self.counter * x + self.bias
 
 def loss_fn(params: Counter, model: Counter, x:  jnp.ndarray):
-    model = model.update(params)
+    model = pax.update_params(model, params=params)
     y = model(x)
     loss = jnp.mean(jnp.square(x - y))
     return loss, (loss, model)
@@ -74,7 +74,7 @@ There are a few important things in the above example:
 
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
-* ``model = model.update(params)`` causes ``model`` to use ``params`` in the forward computation.
+* ``pax.update_params(model, params=params)`` return a new ``model`` which uses ``params`` in the forward computation.
 * ``loss_fn`` returns the updated `model` in its output.
 * ``pax.grad`` is a wrapper of `jax.grad` with immutable mode turned on and additional checks to prevent potential bugs.
 * ``pax.select_parameters(net)`` returns a copy of `net` as such keeping all trainable leaves intact while setting all other leaves to ``None``. 

@@ -121,5 +121,5 @@ def load_pretrained_resnet18():
 
     resnet18.logits = pax_resnet[-1]
     # make sure we are in `eval` mode when doing evaluation.
-    resnet18 = resnet18.eval()
+    resnet18 = pax.enable_eval_mode(resnet18)
     return resnet18

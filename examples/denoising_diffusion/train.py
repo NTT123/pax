@@ -66,7 +66,7 @@ def train(
     )
 
     def loss_fn(params, model, inputs) -> pax.LossFnOutput:
-        model = model.update(params)
+        model = pax.update_params(model, params=params)
         loss = model(inputs)
         return loss, (loss, model)
 

@@ -9,7 +9,7 @@ from pax.nn import EMA, RngSeq
 def test_util_update_fn():
     def loss_fn(params: pax.nn.Linear, model: pax.nn.Linear, inputs) -> LossFnOutput:
         x, target = inputs
-        model = model.update(params)
+        model = pax.update_params(model, params=params)
         y = model(x)
         loss = jnp.mean(jnp.square(y - target))
         return loss, (loss, model)

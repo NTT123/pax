@@ -13,7 +13,7 @@ from model import WaveGRU
 
 
 def loss_fn(params: WaveGRU, model: WaveGRU, inputs) -> pax.utils.LossFnOutput:
-    model = model.update(params)
+    model = pax.update_params(model, params=params)
     logmel, wav = inputs
     input_wav = wav[:, :-1]
     target_wav = wav[:, 1:]
@@ -26,7 +26,9 @@ def loss_fn(params: WaveGRU, model: WaveGRU, inputs) -> pax.utils.LossFnOutput:
 
 
 def generate_test_sample(step, test_logmel, wave_gru, length, sample_rate, mu):
-    generated_mu = wave_gru.eval().inference(test_logmel[None, :length, :])
+    generated_mu = pax.enable_eval_mode(wave_gru).inference(
+        test_logmel[None, :length, :]
+    )
     generated_mu = jax.device_get(generated_mu)
     synthesized_clip = librosa.mu_expand(generated_mu[0] - 128, mu=mu, quantize=True)
     file_name = f"/tmp/wave_gru_sample_{step:05d}.wav"
