@@ -7,7 +7,7 @@ from unittest import TestCase
 import jax
 import jax.numpy as jnp
 
-from pax.transforms import apply_updates, grads_with_aux, transform_gradients
+from pax.transforms import apply_updates, grads_with_aux, transform_gradients, update_params
 
 from .module import Module, PaxFieldKind
 from .rng import KeyArray
@@ -95,7 +95,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
             grads, params=params, optimizer=optimizer
         )
         params = apply_updates(params, updates=updates)
-        model = pax.update_params(model, params=params)
+        model = update_params(model, params=params)
         return (model, optimizer), aux
 
     return _update_fn
