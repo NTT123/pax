@@ -2,13 +2,15 @@
 
 import inspect
 from typing import Any, Callable, Tuple, TypeVar
+from unittest import TestCase
 
 import jax
 import jax.numpy as jnp
 
-from .module import Module
+from .module import Module, PaxFieldKind
 from .pax_transforms import grad
 from .rng import KeyArray
+from .transforms import select_parameter
 
 T = TypeVar("T", bound="Module")
 
@@ -85,12 +87,10 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         """
         model, optimizer = model_and_optimizer
         grads, (loss, model) = grad(loss_fn, has_aux=True)(
-            model.parameters(), model, inputs
+            select_parameter(model), model, inputs
         )
-        grads.assertStructureEqual(model.parameters())
-        model = model.update(
-            optimizer.step(grads, model.parameters()),
-        )
+        assertStructureEqual(grads, select_parameter(model))
+        model = model.update(optimizer.step(grads, select_parameter(model)))
         return (model, optimizer), loss
 
     return _update_fn
@@ -138,3 +138,39 @@ def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):
         state, output = jax.lax.scan(fn, init, xs, length=length, unroll=unroll)
         output = jnp.swapaxes(output, 0, 1)  # restore to NT...
         return state, output
+
+
+def assertStructureEqual(self: T, other: T):
+    """Assert that the two modules are structurally the same.
+
+    Print out the difference.
+    """
+    if jax.tree_structure(self) == jax.tree_structure(other):
+        return True
+
+    def check(a, b):
+        if isinstance(a, Module) and isinstance(b, Module):
+            a.assertStructureEqual(b)
+
+    tc = TestCase()
+    tc.maxDiff = None
+
+    def filter_out_module(d):
+        return {
+            k: ((v.shape, v.dtype) if isinstance(v, jnp.ndarray) else v)
+            for (k, v) in d.items()
+            if (k not in self._name_to_kind)
+            or (
+                self._name_to_kind[k]
+                not in [PaxFieldKind.MODULE, PaxFieldKind.MODULE_SUBTREE]
+            )
+        }
+
+    tc.assertDictEqual(filter_out_module(vars(self)), filter_out_module(vars(other)))
+
+    jax.tree_map(
+        check,
+        self,
+        other,
+        is_leaf=lambda x: isinstance(x, Module) and x is not self and x is not other,
+    )

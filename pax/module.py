@@ -5,18 +5,15 @@ https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda807690385362
 which is under MIT License.
 """
 
-import copy
 from collections import OrderedDict
 from enum import Enum
 from types import MappingProxyType
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
-from unittest import TestCase
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
-import jmp
-from jaxlib.xla_extension import PyTreeDef
+from jax.dtypes import issubdtype as isdt
 
 from .ctx import state as ctx_state
 
@@ -62,7 +59,6 @@ class Module:
 
     # Field Name To Kind
     _name_to_kind: Dict[str, PaxFieldKind]
-    _name_to_kind_to_unfreeze: Optional[Dict[str, PaxFieldKind]]
     _training: bool
     _name: Optional[str]
 
@@ -75,12 +71,11 @@ class Module:
 
         obj = object.__new__(cls)
         obj.__dict__["_name_to_kind"] = MappingProxyType(OrderedDict())
-        obj.__dict__["_name_to_kind_to_unfreeze"] = None
         obj.__dict__["_training"] = True
         obj.__dict__["_name"] = None
 
-        # scan for unregistered submodules and ndarray's.
-        obj.deep_scan()
+        # scan class attributes for unregistered modules and ndarray's.
+        obj._scan_fields(obj.__class__.__dict__)
 
         return obj
 
@@ -302,67 +297,6 @@ class Module:
         """Return a copy of current module."""
         return jax.tree_map(lambda x: x, self)
 
-    def assertStructureEqual(self: T, other: T):
-        """Assert that the two modules are structurally the same.
-
-        Print out the difference.
-        """
-        if jax.tree_structure(self) == jax.tree_structure(other):
-            return True
-
-        def check(a, b):
-            if isinstance(a, Module) and isinstance(b, Module):
-                a.assertStructureEqual(b)
-
-        tc = TestCase()
-        tc.maxDiff = None
-
-        def filter_out_module(d):
-            return {
-                k: ((v.shape, v.dtype) if isinstance(v, jnp.ndarray) else v)
-                for (k, v) in d.items()
-                if (k not in self._name_to_kind)
-                or (
-                    self._name_to_kind[k]
-                    not in [PaxFieldKind.MODULE, PaxFieldKind.MODULE_SUBTREE]
-                )
-            }
-
-        tc.assertDictEqual(
-            filter_out_module(vars(self)), filter_out_module(vars(other))
-        )
-
-        jax.tree_map(
-            check,
-            self,
-            other,
-            is_leaf=lambda x: isinstance(x, Module)
-            and x is not self
-            and x is not other,
-        )
-
-    def filter(self: T, keep: PaxFieldKind) -> T:
-        """Filtering a module by trainable parameters and non-trainable states.
-
-        Arguments:
-            keep: kind of leaves that will be kept.
-        """
-        assert keep in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]
-        if keep == PaxFieldKind.STATE:
-            none_list = [PaxFieldKind.PARAMETER, PaxFieldKind.PARAMETER_SUBTREE]
-        else:
-            none_list = [PaxFieldKind.STATE, PaxFieldKind.STATE_SUBTREE]
-
-        def _filter_fn(mod: T) -> T:
-            for k, v in mod._name_to_kind.items():
-                if v in none_list:
-                    value = getattr(mod, k)
-                    none_v = jax.tree_map(lambda _: None, value)
-                    setattr(mod, k, none_v)
-            return mod
-
-        return self.apply(_filter_fn)
-
     def update(self: T, other: T, in_place: bool = False) -> T:
         """Use parameters/state from ``other``.
 
@@ -376,67 +310,6 @@ class Module:
             return self
         else:
             return new_self
-
-    def train(self: T, mode: bool = True):
-        """Rebuild a new module recursively and set ``self._training = mode``.
-
-        Arguments:
-            mode: return a copy module in ``train`` mode module if ``True``.
-        """
-
-        def _train_apply_fn(mod: T) -> T:
-            mod.__dict__["_training"] = mode
-            return mod
-
-        return self.apply(_train_apply_fn)
-
-    def eval(self: T) -> T:
-        """Return a copy module in ``eval`` mode."""
-        return self.train(False)
-
-    def parameters(self: T) -> T:
-        """Return trainable parameters of the module."""
-        params = self.filter(PaxFieldKind.PARAMETER)
-        return params
-
-    def freeze(self: T) -> T:
-        """Return a copy module with all trainable parameters are converted to non-trainable states."""
-
-        def _freeze_fn(mod: T) -> T:
-            if mod._name_to_kind_to_unfreeze is not None:
-                raise ValueError("Freezing a frozen module is NOT allowed")
-
-            new_name_to_kind = OrderedDict()
-            for k, v in mod._name_to_kind.items():
-                if v == PaxFieldKind.PARAMETER:
-                    new_name_to_kind[k] = PaxFieldKind.STATE
-                elif v == PaxFieldKind.PARAMETER_SUBTREE:
-                    new_name_to_kind[k] = PaxFieldKind.STATE_SUBTREE
-                else:
-                    new_name_to_kind[k] = v
-
-            # save a backup for later unfreeze calls
-            mod.__dict__["_name_to_kind_to_unfreeze"] = mod.__dict__["_name_to_kind"]
-            # use proxy to avoid any side effects
-            mod.__dict__["_name_to_kind"] = MappingProxyType(new_name_to_kind)
-            return mod
-
-        return self.apply(_freeze_fn)
-
-    def unfreeze(self: T) -> T:
-        """Return the original module before frozen."""
-
-        def _unfreeze_fn(mod: T) -> T:
-            if mod._name_to_kind_to_unfreeze is None:
-                return mod
-            else:
-                mod.__dict__["_name_to_kind"] = mod.__dict__[
-                    "_name_to_kind_to_unfreeze"
-                ]
-                mod.__dict__["_name_to_kind_to_unfreeze"] = None
-                return mod
-
-        return self.apply(_unfreeze_fn)
 
     def sub_modules(self) -> List["Module"]:
         """Return a list of sub-modules."""
@@ -490,19 +363,8 @@ class Module:
         else:
             return "\n".join(output)
 
-    def deep_scan(self) -> None:
-        """Scan a module recursively to find any *potential* bug."""
-
-        self._scan_fields(self.__class__.__dict__)
-        self._scan_fields(self.__dict__)
-
-        for mod in self.sub_modules():
-            mod.deep_scan()
-
     def _scan_fields(self, fields: Sequence[str]):
         """Scan fields for *potential* bugs."""
-
-        from jax.dtypes import issubdtype as isdt
 
         for name in fields:
             value = getattr(self, name)

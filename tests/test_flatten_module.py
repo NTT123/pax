@@ -6,7 +6,7 @@ import pytest
 def test_flatten_module():
     f = pax.nn.Linear(4, 4)
     g = pax.nn.FlattenModule(f)
-    k = g.parameters()
+    k = pax.select_parameter(g)
     assert jax.tree_structure(g) == jax.tree_structure(k)
     h = g.update(k)
 
@@ -18,9 +18,9 @@ def test_none_state():
             self.register_state_subtree("s", [])
 
     m = M()
-    p = m.parameters()
+    p = pax.select_parameter(m)
     assert p.s == []
-    m.assertStructureEqual(p)
+    pax.utils.assertStructureEqual(m, p)
 
 
 def test_flatten_non_callable_module():
@@ -54,5 +54,5 @@ def test_flatten_module_eval():
     a = pax.nn.Linear(1, 1)
     b = pax.nn.FlattenModule(a)
 
-    with pytest.raises(RuntimeError):
-        c = b.eval()
+    # with pytest.raises(RuntimeError):
+    c = pax.enable_eval_mode(b)

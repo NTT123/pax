@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import pax
+from pax.transforms import select_parameter
 
 
 def test_counter():
@@ -27,6 +28,6 @@ def test_counter():
 
     net = Counter(3)
     x = jnp.array(10.0)
-    grads, (loss, net) = grad_fn(net.parameters(), net, x)
+    grads, (loss, net) = grad_fn(select_parameter(net), net, x)
     assert grads.counter is None
     assert grads.bias.item() == 60.0

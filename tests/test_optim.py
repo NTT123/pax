@@ -32,7 +32,7 @@ def test_optim_model_update_state():
         return loss, (loss, model)
 
     update_fn = pax.utils.build_update_fn(loss_fn=loss_fn)
-    optimizer = opax.adamw()(net.parameters())
+    optimizer = opax.adamw()(pax.select_parameter(net))
     x = jnp.zeros((2, 2), dtype=jnp.float32)
 
     with pytest.raises(ValueError):

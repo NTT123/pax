@@ -6,7 +6,8 @@ import jax.numpy as jnp
 from jaxlib.xla_extension import PyTreeDef
 
 from .. import ctx
-from ..module import Module, PaxFieldKind, T
+from ..module import Module, T
+from ..transforms import select_parameter, select_state
 
 
 class FlattenModule(Module):
@@ -24,10 +25,8 @@ class FlattenModule(Module):
         """Create a flatten version of the input module."""
         super().__init__()
 
-        params_leaves, params_treedef = jax.tree_flatten(
-            mod.filter(PaxFieldKind.PARAMETER)
-        )
-        states_leaves, states_treedef = jax.tree_flatten(mod.filter(PaxFieldKind.STATE))
+        params_leaves, params_treedef = jax.tree_flatten(select_parameter(mod))
+        states_leaves, states_treedef = jax.tree_flatten(select_state(mod))
 
         self.params_treedef = params_treedef
         self.states_treedef = states_treedef
@@ -57,7 +56,7 @@ class FlattenModule(Module):
         out = module(*args, **kwargs)
 
         with ctx.mutable():
-            states_leaves, _ = jax.tree_flatten(module.filter(PaxFieldKind.STATE))
+            states_leaves, _ = jax.tree_flatten(select_state(module))
         self.states_leaves = states_leaves
         return out
 

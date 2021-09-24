@@ -11,7 +11,7 @@ def test_batchnorm_train():
     bn = pax.nn.batch_norm.BatchNorm(
         (None, None, 3), True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
     )
-    bn = bn.train()
+    bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 3))
     old_state = bn.ema_var.averages
     y = bn(x)
@@ -23,7 +23,7 @@ def test_batchnorm_train():
 
 def test_batchnorm1D_train():
     bn = pax.nn.BatchNorm1D(3, True, True, 0.9)
-    bn = bn.train()
+    bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 3))
     old_state = bn.ema_mean.averages
     y = bn(x)
@@ -35,7 +35,7 @@ def test_batchnorm1D_train():
 
 def test_batchnorm2D_train():
     bn = pax.nn.BatchNorm2D(3, True, True, 0.9)
-    bn = bn.train()
+    bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 8, 3))
     old_state = bn.scale
     y = bn(x)
@@ -49,7 +49,7 @@ def test_batchnorm_eval():
     bn = pax.nn.batch_norm.BatchNorm(
         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
     )
-    bn = bn.eval()
+    bn = pax.enable_eval_mode(bn)
     x = jnp.ones((1, 10, 3))
     old_state = bn.ema_mean
     y = bn(x)
@@ -62,7 +62,7 @@ def test_batchnorm_params_filter():
     bn = pax.nn.batch_norm.BatchNorm(
         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
     )
-    params = bn.filter(pax.PaxFieldKind.PARAMETER)
+    params = pax.select_parameter(bn)
     bn = bn.update(params)
 
 
@@ -174,7 +174,7 @@ def test_linear_input_shape_error():
 
 def test_sequential_mix():
     net = pax.nn.Sequential(pax.nn.Linear(1, 2), jax.nn.relu, pax.nn.Linear(2, 3))
-    params = net.parameters()
+    params = pax.select_parameter(net)
     x = jnp.zeros((2, 1))
     y = net(x)
     assert y.shape == (2, 3)
@@ -188,7 +188,7 @@ def test_sequential_non_mix():
         ),
         pax.nn.Linear(2, 3),
     )
-    params = net.parameters()
+    params = pax.select_parameter(net)
     x = jnp.zeros((2, 1))
     y = net(x)
     assert y.shape == (2, 3)
@@ -196,7 +196,7 @@ def test_sequential_non_mix():
 
 def test_sequential_all_jax():
     net = pax.nn.Sequential(jax.nn.relu, jax.nn.relu, jax.nn.relu)
-    params = net.parameters()
+    params = pax.select_parameter(net)
     x = jnp.zeros((2, 1))
     y = net(x)
     assert y.shape == (2, 1)
@@ -752,10 +752,10 @@ def test_dropout():
     drop = pax.nn.Dropout(0.9)
     rng_key = jax.random.PRNGKey(42)
     x = jax.random.normal(rng_key, (1, 2, 50), dtype=jnp.float32)
-    drop = drop.eval()
+    drop = pax.enable_eval_mode(drop)
     y = drop(x)
     assert y is x
-    drop = drop.train()
+    drop = pax.enable_train_mode(drop)
     y = drop(x)
     assert jnp.sum(y == 0).item() > 80
 

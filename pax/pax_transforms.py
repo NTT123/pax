@@ -2,11 +2,12 @@ import jax
 
 from . import ctx
 from .module import Module
+from .transforms import scan_bug
 
 
 def _deep_scan(mod):
     if isinstance(mod, Module):
-        mod.deep_scan()
+        scan_bug(mod)
 
 
 def enable_strict_mode(f):

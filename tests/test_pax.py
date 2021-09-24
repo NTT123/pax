@@ -154,11 +154,11 @@ def test_train_eval():
     net = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(3, 3))
 
     assert net._training == True
-    net = net.eval()
+    net = pax.enable_eval_mode(net)
     assert net._training == False
     assert net.modules[0]._training == False
     assert net.modules[1]._training == False
-    net = net.train()
+    net = pax.enable_train_mode(net)
     assert net._training == True
     assert net.modules[0]._training == True
     assert net.modules[1]._training == True
@@ -178,11 +178,15 @@ def test_state_of_param():
             self.register_state_subtree("m2", {"m1": m11})
 
     m2 = M2(m1)
-    assert len(jax.tree_leaves(m1.filter(pax.PaxFieldKind.STATE))) == 0
-    assert len(jax.tree_leaves(m2.filter(pax.PaxFieldKind.PARAMETER))) == 0
+    assert len(jax.tree_leaves(pax.select_kind(m1, kind=pax.PaxFieldKind.STATE))) == 0
+    assert (
+        len(jax.tree_leaves(pax.select_kind(m2, kind=pax.PaxFieldKind.PARAMETER))) == 0
+    )
 
-    assert len(jax.tree_leaves(m1.filter(pax.PaxFieldKind.PARAMETER))) == 1
-    assert len(jax.tree_leaves(m2.filter(pax.PaxFieldKind.STATE))) == 1
+    assert (
+        len(jax.tree_leaves(pax.select_kind(m1, kind=pax.PaxFieldKind.PARAMETER))) == 1
+    )
+    assert len(jax.tree_leaves(pax.select_kind(m2, kind=pax.PaxFieldKind.STATE))) == 1
 
 
 def test_module_properties_modify():
@@ -190,7 +194,7 @@ def test_module_properties_modify():
     assert fc._training == True
     fc1 = fc.copy()
     assert fc1._training == True
-    fc = fc.eval()
+    fc = pax.enable_eval_mode(fc)
     assert fc._training == False
     assert fc1._training == True
 
@@ -279,7 +283,7 @@ def test_assign_empty_list_1():
 
     with pytest.raises(ValueError):
         m = M()
-        m.deep_scan()
+        m = pax.scan_bug(m)
 
 
 def test_assign_empty_list_2():
@@ -291,16 +295,16 @@ def test_assign_empty_list_2():
                 self.fc.append(pax.nn.Linear(3, 3))
 
     m = M()
-    m.deep_scan()
+    m = pax.scan_bug(m)
 
 
 def test_compare_modules():
     a = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(4, 4))
     b = a.copy()
     assert a == b
-    assert a.eval() != b
-    assert a.freeze() != b
-    assert a.freeze().unfreeze() == b
+    assert pax.enable_eval_mode(a) != b
+    assert pax.freeze_parameter(a) != b
+    assert pax.unfreeze_parameter(pax.freeze_parameter(a), origin=a) == b
 
 
 def test_apply_inside_state_subtree():
@@ -312,7 +316,7 @@ def test_apply_inside_state_subtree():
     m2 = M2(pax.nn.Linear(2, 2))
     assert m2.training == True
     assert m2.m2["m1"].training == True
-    m2 = m2.eval()
+    m2 = pax.enable_eval_mode(m2)
     assert m2.training == False
     assert m2.m2["m1"].training == True
 

@@ -15,7 +15,7 @@ def test_util_update_fn():
         return loss, (loss, model)
 
     net = pax.nn.Linear(2, 1)
-    opt = opax.adamw(learning_rate=1e-1)(net.parameters())
+    opt = opax.adamw(learning_rate=1e-1)(pax.select_parameter(net))
     update_fn = pax.jit(pax.utils.build_update_fn(loss_fn))
     x = np.random.normal(size=(32, 2))
     y = np.random.normal(size=(32, 1))
@@ -37,7 +37,7 @@ def test_Rng_Seq():
     assert r1.tolist() != rs[0].tolist()
     assert h1.tolist() != h2.tolist(), "update internal state in `train` mode"
 
-    rng_seq = rng_seq.eval()
+    rng_seq = pax.enable_eval_mode(rng_seq)
     r3 = rng_seq.next_rng_key()
     r4 = rng_seq.next_rng_key()
     assert r3.tolist() == r4.tolist()
