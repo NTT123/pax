@@ -67,12 +67,9 @@ def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
 
 def update_step(prev, batch: jnp.ndarray):
     model, optimizer = prev
-    grads, (loss, model) = pax.grad_with_aux(model, fn=loss_fn, inputs=batch)
+    grads, (loss, model) = pax.grads_with_aux(model, fn=loss_fn, inputs=batch)
     grads = jax.lax.pmean(grads, axis_name="i")
-    params = pax.select_parameter(model)
-    updates = optimizer(grads, params=params)
-    params = pax.apply_updates(params, updates=updates)
-    model = model.update(params)
+    model, optimizer = pax.apply_grads(model, optimizer, grads=grads)
     return (model, optimizer), loss
 
 
@@ -143,7 +140,7 @@ def train():
     optimizer = opax.chain(
         opax.clip_by_global_norm(1.0),
         opax.adam(learning_rate),
-    )(pax.select_parameter(net))
+    )(pax.select_parameters(net))
 
     # replicate on multiple devices
     net = jax.device_put_replicated(net, jax.devices())

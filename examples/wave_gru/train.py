@@ -65,7 +65,7 @@ def train(
     optimizer = opax.chain(
         opax.clip_by_global_norm(max_global_norm),
         opax.adam(learning_rate),
-    )(pax.select_parameter(wave_gru))
+    )(pax.select_parameters(wave_gru))
 
     split_loader = partial(
         data_loader,

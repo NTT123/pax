@@ -10,8 +10,8 @@ def test_immutability():
         with pytest.raises(ValueError):
             f.c = 123
 
-        g = pax.freeze_parameter(f)
-        k = pax.unfreeze_parameter(g, origin=f)
+        g = pax.freeze_parameters(f)
+        k = pax.unfreeze_parameters(g, origin=f)
 
 
 def test_new_empty_attribute():

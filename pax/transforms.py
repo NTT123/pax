@@ -40,7 +40,7 @@ def enable_eval_mode(mod: T) -> T:
     return mod.apply(_eval_apply_fn)
 
 
-def freeze_parameter(mod: T) -> T:
+def freeze_parameters(mod: T) -> T:
     """Return a copy module with all trainable parameters are converted to non-trainable states."""
 
     def _freeze_apply_fn(mod: T) -> T:
@@ -60,10 +60,10 @@ def freeze_parameter(mod: T) -> T:
     return mod.apply(_freeze_apply_fn)
 
 
-def unfreeze_parameter(mod: T, *, origin: T) -> T:
+def unfreeze_parameters(mod: T, *, origin: T) -> T:
     """Return a copy module with all trainable parameters are converted to non-trainable states."""
 
-    assert freeze_parameter(origin) == mod
+    assert freeze_parameters(origin) == mod
     tree_def = jax.tree_structure(origin)
     leaves = jax.tree_leaves(mod)
     return jax.tree_unflatten(tree_def, leaves)
@@ -93,17 +93,17 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
     return mod.apply(_select_apply_fn)
 
 
-def select_parameter(mod: T) -> T:
+def select_parameters(mod: T) -> T:
     """Select `PARAMETER` leaves only."""
     return select_kind(mod, kind=PaxFieldKind.PARAMETER)
 
 
-def select_state(mod: T) -> T:
+def select_states(mod: T) -> T:
     """Select `STATE` leaves only."""
     return select_kind(mod, kind=PaxFieldKind.STATE)
 
 
-def scan_bug(mod: T) -> T:
+def scan_bugs(mod: T) -> T:
     """Scan the module for potential bugs."""
 
     def _scan_apply_fn(mod: T) -> T:
@@ -115,7 +115,7 @@ def scan_bug(mod: T) -> T:
     return mod.apply(_scan_apply_fn)
 
 
-def transform_gradient(grads: T, *, params: T, optimizer: Module) -> Tuple[T, Module]:
+def transform_gradients(grads: T, *, params: T, optimizer: Module) -> Tuple[T, Module]:
     """Transform gradients to updates using an optimizer.
 
     Arguments:
@@ -145,7 +145,7 @@ def apply_updates(params: T, *, updates: T) -> T:
     return jax.tree_map(lambda u, p: p - u, updates, params)
 
 
-def grad_with_aux(model: T, *, fn: Callable, inputs: Any) -> Tuple[T, Any]:
+def grads_with_aux(model: T, *, fn: Callable, inputs: Any) -> Tuple[T, Any]:
     """Return the gradients of function ``fn`` with respect to ``model``'s trainable parameters.
 
     Arguments:
@@ -158,7 +158,7 @@ def grad_with_aux(model: T, *, fn: Callable, inputs: Any) -> Tuple[T, Any]:
         - **aux** : The auxiliary information (usually `loss` and the updated `model`).
     """
     model = model.copy()  # prevent side effects
-    grads, aux = grad(fn, has_aux=True)(select_parameter(model), model, inputs)
+    grads, aux = grad(fn, has_aux=True)(select_parameters(model), model, inputs)
 
     return grads, aux
 
@@ -178,8 +178,8 @@ class flatten_module(Generic[T], Module):
         """Create a flatten version of the input module."""
         super().__init__()
 
-        params_leaves, params_treedef = jax.tree_flatten(select_parameter(mod))
-        states_leaves, states_treedef = jax.tree_flatten(select_state(mod))
+        params_leaves, params_treedef = jax.tree_flatten(select_parameters(mod))
+        states_leaves, states_treedef = jax.tree_flatten(select_states(mod))
 
         self.params_treedef = params_treedef
         self.states_treedef = states_treedef
@@ -209,7 +209,7 @@ class flatten_module(Generic[T], Module):
         out = module(*args, **kwargs)
 
         with ctx.mutable():
-            states_leaves, _ = jax.tree_flatten(select_state(module))
+            states_leaves, _ = jax.tree_flatten(select_states(module))
         self.states_leaves = states_leaves
         return out
 
@@ -299,3 +299,11 @@ class apply_mp_policy(Generic[T], Module):
         # task 4
         output = self.mp_policy.cast_to_output(output)
         return output
+
+
+def apply_grads(model: T, optimizer: Module, *, grads: T):
+    """Update model and optimizer with gradients `grads`."""
+    params = select_parameters(model)
+    updates, optimizer = transform_gradients(grads, params=params, optimizer=optimizer)
+    model = model.update(updates)
+    return model, optimizer

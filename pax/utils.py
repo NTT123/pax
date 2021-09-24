@@ -7,7 +7,7 @@ from unittest import TestCase
 import jax
 import jax.numpy as jnp
 
-from pax.transforms import apply_updates, grad_with_aux, transform_gradient
+from pax.transforms import apply_updates, grads_with_aux, transform_gradients
 
 from .module import Module, PaxFieldKind
 from .rng import KeyArray
@@ -48,10 +48,10 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
     >>> def _update_fn(model_and_optimizer: Tuple[Module, GradientTransformation], inputs: Any):
     ...     model, optimizer = model_and_optimizer
     ...     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
-    ...         pax.select_parameter(model), model, inputs
+    ...         pax.select_parameters(model), model, inputs
     ...     )
     ...     model = model.update(
-    ...         optimizer.step(grads, pax.select_parameter(model)),
+    ...         optimizer.step(grads, pax.select_parameters(model)),
     ...     )
     ...     return (model, optimizer), loss
     """
@@ -86,12 +86,12 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
             aux: the aux info.
         """
         model, optimizer = model_and_optimizer
-        from .transforms import select_parameter
+        from .transforms import select_parameters
 
-        params = select_parameter(model)
-        grads, (aux, model) = grad_with_aux(model, fn=loss_fn, inputs=inputs)
-        assertStructureEqual(grads, select_parameter(model))
-        updates, optimizer = transform_gradient(
+        params = select_parameters(model)
+        grads, (aux, model) = grads_with_aux(model, fn=loss_fn, inputs=inputs)
+        assertStructureEqual(grads, select_parameters(model))
+        updates, optimizer = transform_gradients(
             grads, params=params, optimizer=optimizer
         )
         params = apply_updates(params, updates=updates)

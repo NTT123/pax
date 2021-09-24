@@ -7,7 +7,7 @@ import pax
 def test_flatten_module():
     f = pax.nn.Linear(4, 4)
     g = pax.flatten_module(f)
-    k = pax.select_parameter(g)
+    k = pax.select_parameters(g)
     assert jax.tree_structure(g) == jax.tree_structure(k)
     h = g.update(k)
 
@@ -21,7 +21,7 @@ def test_none_state():
             self.register_state_subtree("s", [])
 
     m = M()
-    p = pax.select_parameter(m)
+    p = pax.select_parameters(m)
     assert p.s == []
     pax.utils.assertStructureEqual(m, p)
 
@@ -44,7 +44,7 @@ def test_flatten_module_freeze():
     b = pax.flatten_module(a)
 
     # with pytest.raises(RuntimeError):
-    c = pax.freeze_parameter(b)
+    c = pax.freeze_parameters(b)
 
 
 def test_flatten_module_unfreeze():

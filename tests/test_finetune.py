@@ -38,18 +38,18 @@ def test_finetune():
 
     # make all layers non-trainable except the last layer.
     for i in range(len(net.layers) - 1):
-        net.layers[i] = pax.freeze_parameter(net.layers[i])
+        net.layers[i] = pax.freeze_parameters(net.layers[i])
 
     # net.layers[-1] = pax.nn.Linear(2, 10)
-    optimizer = opax.adam(1e-2)(pax.select_parameter(net))
+    optimizer = opax.adam(1e-2)(pax.select_parameters(net))
 
     @pax.jit
     def update_fn(model_and_optimizer, x):
         model, optimizer = model_and_optimizer
-        params = pax.select_parameter(model)
+        params = pax.select_parameters(model)
         grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, x)
         model = model.update(
-            optimizer.step(grads, pax.select_parameter(model)),
+            optimizer.step(grads, pax.select_parameters(model)),
         )
         return (model, optimizer), loss
 

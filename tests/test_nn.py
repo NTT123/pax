@@ -62,7 +62,7 @@ def test_batchnorm_params_filter():
     bn = pax.nn.batch_norm.BatchNorm(
         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
     )
-    params = pax.select_parameter(bn)
+    params = pax.select_parameters(bn)
     bn = bn.update(params)
 
 
@@ -174,7 +174,7 @@ def test_linear_input_shape_error():
 
 def test_sequential_mix():
     net = pax.nn.Sequential(pax.nn.Linear(1, 2), jax.nn.relu, pax.nn.Linear(2, 3))
-    params = pax.select_parameter(net)
+    params = pax.select_parameters(net)
     x = jnp.zeros((2, 1))
     y = net(x)
     assert y.shape == (2, 3)
@@ -188,7 +188,7 @@ def test_sequential_non_mix():
         ),
         pax.nn.Linear(2, 3),
     )
-    params = pax.select_parameter(net)
+    params = pax.select_parameters(net)
     x = jnp.zeros((2, 1))
     y = net(x)
     assert y.shape == (2, 3)
@@ -196,7 +196,7 @@ def test_sequential_non_mix():
 
 def test_sequential_all_jax():
     net = pax.nn.Sequential(jax.nn.relu, jax.nn.relu, jax.nn.relu)
-    params = pax.select_parameter(net)
+    params = pax.select_parameters(net)
     x = jnp.zeros((2, 1))
     y = net(x)
     assert y.shape == (2, 1)

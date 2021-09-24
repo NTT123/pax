@@ -284,7 +284,7 @@ def test_assign_empty_list_1():
 
     with pytest.raises(ValueError):
         m = M()
-        m = pax.scan_bug(m)
+        m = pax.scan_bugs(m)
 
 
 def test_assign_empty_list_2():
@@ -298,7 +298,7 @@ def test_assign_empty_list_2():
                 self.fc.append(pax.nn.Linear(3, 3))
 
     m = M()
-    m = pax.scan_bug(m)
+    m = pax.scan_bugs(m)
 
 
 def test_compare_modules():
@@ -306,8 +306,8 @@ def test_compare_modules():
     b = a.copy()
     assert a == b
     assert pax.enable_eval_mode(a) != b
-    assert pax.freeze_parameter(a) != b
-    assert pax.unfreeze_parameter(pax.freeze_parameter(a), origin=a) == b
+    assert pax.freeze_parameters(a) != b
+    assert pax.unfreeze_parameters(pax.freeze_parameters(a), origin=a) == b
 
 
 def test_apply_inside_state_subtree():

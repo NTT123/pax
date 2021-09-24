@@ -5,10 +5,10 @@ from .module import Module
 
 
 def _deep_scan(mod):
-    from .transforms import scan_bug
+    from .transforms import scan_bugs
 
     if isinstance(mod, Module):
-        scan_bug(mod)
+        scan_bugs(mod)
 
 
 def enable_strict_mode(f):

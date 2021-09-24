@@ -243,15 +243,15 @@ Module Transformations
    enable_train_mode
    enable_eval_mode
    select_kind
-   select_parameter
-   select_state
-   freeze_parameter
-   unfreeze_parameter
+   select_parameters
+   select_states
+   freeze_parameters
+   unfreeze_parameters
    apply_mp_policy
    apply_updates
-   transform_gradient
-   grad_with_aux
-   scan_bug
+   transform_gradients
+   grads_with_aux
+   scan_bugs
    flatten_module
 
 
@@ -272,28 +272,28 @@ select_kind
 
 .. autofunction:: select_kind
 
-select_parameter
+select_parameters
 ----------------
 
-.. autofunction:: select_parameter
+.. autofunction:: select_parameters
 
 
-select_state
+select_states
 ------------
 
-.. autofunction:: select_state
+.. autofunction:: select_states
 
 
-freeze_parameter
+freeze_parameters
 ----------------
 
-.. autofunction:: freeze_parameter
+.. autofunction:: freeze_parameters
 
 
-unfreeze_parameter
+unfreeze_parameters
 ------------------
 
-.. autofunction:: unfreeze_parameter
+.. autofunction:: unfreeze_parameters
 
 
 apply_mp_policy
@@ -310,22 +310,22 @@ apply_updates
 .. autofunction:: apply_updates
 
 
-transform_gradient
+transform_gradients
 ------------------
 
-.. autofunction:: transform_gradient
+.. autofunction:: transform_gradients
 
 
-grad_with_aux
+grads_with_aux
 -------------
 
-.. autofunction:: grad_with_aux
+.. autofunction:: grads_with_aux
 
 
-scan_bug
+scan_bugs
 --------
 
-.. autofunction:: scan_bug
+.. autofunction:: scan_bugs
 
 
 flatten_module

@@ -32,7 +32,7 @@ def test_assigned_field_an_array():
             super().__init__()
 
     n = N()
-    n = pax.scan_bug(n)
+    n = pax.scan_bugs(n)
     # no error because we will automatically assign `a` to kind PARAMETER
     n.register_parameter("b", jnp.array([1, 2, 3], dtype=jnp.float32))
     assert n._name_to_kind["b"] == pax.module.PaxFieldKind.PARAMETER
@@ -56,8 +56,8 @@ def test_assign_int_to_param_deepscan():
 
     with pytest.raises(ValueError):
         m = M()
-        m = pax.freeze_parameter(m)
+        m = pax.freeze_parameters(m)
         d = OrderedDict(m._name_to_kind)
         d["a"] = pax.module.PaxFieldKind.PARAMETER
         m.__dict__["_name_to_kind"] = MappingProxyType(d)
-        m = pax.scan_bug(m)
+        m = pax.scan_bugs(m)
