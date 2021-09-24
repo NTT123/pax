@@ -7,7 +7,12 @@ from unittest import TestCase
 import jax
 import jax.numpy as jnp
 
-from pax.transforms import apply_updates, grads_with_aux, transform_gradients, update_params
+from pax.transforms import (
+    apply_updates,
+    grads_with_aux,
+    transform_gradients,
+    update_params,
+)
 
 from .module import Module, PaxFieldKind
 from .rng import KeyArray
