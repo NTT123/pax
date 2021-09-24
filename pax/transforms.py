@@ -305,7 +305,9 @@ def apply_grads(
     # This function is under the Apache License 2.0
     import functools
 
-    def select_tree(pred: jnp.ndarray, a: T, b: T) -> T:
+    P = TypeVar("P")
+
+    def select_tree(pred: jnp.ndarray, a: P, b: P) -> P:
         """Selects a pytree based on the given predicate."""
         assert pred.ndim == 0 and pred.dtype == jnp.bool_, "expected boolean scalar"
         return jax.tree_multimap(functools.partial(jax.lax.select, pred), a, b)
