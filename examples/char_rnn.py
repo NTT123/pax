@@ -186,7 +186,7 @@ for step in tr:
         loss = jnp.mean(losses) / (1000 if step > 0 else steps_per_update)
         losses = 0.0
         # eval on a single device
-        eval_net = jax.tree_map(lambda x: x[0], pax.enable_eval_mode(net))
+        eval_net = jax.tree_map(lambda x: x[0], net.eval())
         out = eval_net.inference(
             prompt=tokenize(test_prompt), length=(100 if step < num_steps else 1000)
         )

@@ -60,7 +60,7 @@ def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
 
 @pax.jit
 def test_loss_fn(model: ConvNet, batch: Batch):
-    model = pax.enable_eval_mode(model)
+    model = model.eval()
     return loss_fn(model.parameters(), model, batch)[0]
 
 

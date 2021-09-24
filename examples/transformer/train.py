@@ -54,7 +54,7 @@ else:
 
 
 def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
-    model = model.update_parameters(params)
+    model = pax.update_parameters(model, params=params)
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
@@ -177,7 +177,7 @@ def train():
             loss = jnp.mean(total_losses) / (1000 if step > 0 else steps_per_update)
             total_losses = jnp.zeros_like(total_losses)
             # eval on a single device
-            eval_net = jax.tree_map(lambda x: x[0], pax.enable_eval_mode(net))
+            eval_net = jax.tree_map(lambda x: x[0], net.eval())
             out = eval_net.inference(
                 prompt=tokenize(test_prompt),
                 length=(128 if step < num_steps else 1024),
