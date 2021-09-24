@@ -17,7 +17,7 @@ def test_train_linear_regression():
         model: pax.nn.Linear,
         inputs: Tuple[jnp.ndarray, jnp.ndarray],
     ) -> LossFnOutput:
-        model = pax.update_params(model, params=params)
+        model = pax.update_parameters(model, params=params)
         x, y = inputs
         y_hat = model(x)
         loss = jnp.mean(jnp.square(y - y_hat))
@@ -53,7 +53,7 @@ def test_train_linear_regression():
         model: M,
         inputs: Tuple[jnp.ndarray, jnp.ndarray],
     ) -> LossFnOutput:
-        model = pax.update_params(model, params=params)
+        model = pax.update_parameters(model, params=params)
         x, y = inputs
         y_hat = model(x)
         loss = jnp.mean(jnp.square(y - y_hat))

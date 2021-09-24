@@ -18,7 +18,7 @@ from .transforms import (
     select_states,
     transform_gradients,
     unfreeze_parameters,
-    update_params,
+    update_parameters,
     update_states,
 )
 from .utils import LossFnOutput, dropout, scan

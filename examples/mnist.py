@@ -48,7 +48,7 @@ class ConvNet(pax.Module):
 
 
 def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
-    model = pax.update_params(model, params=params)
+    model = model.update_parameters(params)
     x = batch["image"].astype(jnp.float32) / 255
     target = batch["label"]
     logits = model(x)

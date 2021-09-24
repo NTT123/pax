@@ -495,6 +495,18 @@ class Module:
 
         return select_parameters(self)
 
+    def update_parameters(self: T, params: T) -> T:
+        """Return a module which uses trainable parameters in `params`"""
+        from .transforms import update_parameters
+
+        return update_parameters(self, params=params)
+
+    def update_states(self: T, states: T) -> T:
+        """Return a module which uses non-trainable states in `states`."""
+        from .transforms import update_states
+
+        return update_states(self, states=states)
+
     def freeze_parameters(self: T) -> T:
         """Convert trainable parameters to non-trainable states."""
         from .transforms import freeze_parameters

@@ -301,7 +301,7 @@ class apply_mp_policy(Module, Generic[T]):
         return output
 
 
-def update_params(mod: T, *, params: T) -> T:
+def update_parameters(mod: T, *, params: T) -> T:
     """Return a module which uses trainable parameters in `params`."""
     return mod.update(select_parameters(params))
 
@@ -316,5 +316,5 @@ def apply_grads(model: T, optimizer: Module, *, grads: T) -> Tuple[T, Module]:
     params = select_parameters(model)
     updates, optimizer = transform_gradients(grads, optimizer, params=params)
     params = apply_updates(params, updates=updates)
-    model = update_params(model, params=params)
+    model = update_parameters(model, params=params)
     return model, optimizer

@@ -240,7 +240,7 @@ Module Transformations
 
 .. autosummary::
 
-   update_params
+   update_parameters
    update_states
    enable_train_mode
    enable_eval_mode
@@ -258,10 +258,10 @@ Module Transformations
    flatten_module
 
 
-update_params
+update_parameters
 -------------
 
-.. autofunction:: update_params
+.. autofunction:: update_parameters
 
 
 update_states

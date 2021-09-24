@@ -7,19 +7,12 @@ from unittest import TestCase
 import jax
 import jax.numpy as jnp
 
-from pax.transforms import (
-    apply_updates,
-    grads_with_aux,
-    transform_gradients,
-    update_params,
-)
-
 from .module import Module, PaxFieldKind
 from .rng import KeyArray
 
 T = TypeVar("T", bound="Module")
 
-LossFnOutput = Tuple[jnp.ndarray, Tuple[Any, T]]
+LossFnOutput = Tuple[jnp.ndarray, Any]
 LossFn = Callable[[T, T, Any], LossFnOutput]
 
 
@@ -42,7 +35,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
     Example:
 
     >>> def mse_loss(params, model, inputs) -> pax.utils.LossFnOutput:
-    ...     model = pax.update_params(model, params=params)
+    ...     model = pax.update_parameters(model, params=params)
     ...     x, y = inputs
     ...     y_hat = model(x)
     ...     loss = jnp.mean(jnp.square(y - y_hat))
@@ -52,13 +45,13 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
     >>> def _update_fn(model_and_optimizer: Tuple[Module, GradientTransformation], inputs: Any):
     ...     model, optimizer = model_and_optimizer
-    ...     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
-    ...         model.parameters(), model, inputs
-    ...     )
-    ...     model = model.update(
-    ...         optimizer.step(grads, model.parameters()),
-    ...     )
-    ...     return (model, optimizer), loss
+    ...     params = select_parameters(model)
+    ...     grads, (aux, model) = grads_with_aux(model, fn=loss_fn, inputs=inputs)
+    ...     assertStructureEqual(grads, select_parameters(model))
+    ...     updates, optimizer = transform_gradients(grads, optimizer, params=params)
+    ...     params = apply_updates(params, updates=updates)
+    ...     model = update_parameters(model, params=params)
+    ...     return (model, optimizer), aux
     """
 
     sig = inspect.signature(loss_fn)
@@ -90,15 +83,22 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
             model_and_optimizer: updated (model, optimizer),
             aux: the aux info.
         """
-        model, optimizer = model_and_optimizer
-        from .transforms import select_parameters
 
+        from .transforms import (
+            apply_updates,
+            grads_with_aux,
+            select_parameters,
+            transform_gradients,
+            update_parameters,
+        )
+
+        model, optimizer = model_and_optimizer
         params = select_parameters(model)
         grads, (aux, model) = grads_with_aux(model, fn=loss_fn, inputs=inputs)
         assertStructureEqual(grads, select_parameters(model))
         updates, optimizer = transform_gradients(grads, optimizer, params=params)
         params = apply_updates(params, updates=updates)
-        model = update_params(model, params=params)
+        model = update_parameters(model, params=params)
         return (model, optimizer), aux
 
     return _update_fn

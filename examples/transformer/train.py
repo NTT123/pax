@@ -54,7 +54,7 @@ else:
 
 
 def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
-    model = pax.update_params(model, params=params)
+    model = model.update_parameters(params)
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
