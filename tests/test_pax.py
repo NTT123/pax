@@ -1,12 +1,13 @@
 """Test important pax stuffs."""
 
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pax
 import pytest
+from pax.module import Module
 
 
 def test_pax_next_rng_key():
@@ -288,6 +289,8 @@ def test_assign_empty_list_1():
 
 def test_assign_empty_list_2():
     class M(pax.Module):
+        fc: List[Module]
+
         def __init__(self):
             super().__init__()
             self.register_module_subtree("fc", [])
@@ -309,6 +312,8 @@ def test_compare_modules():
 
 def test_apply_inside_state_subtree():
     class M2(pax.Module):
+        m2: Dict[str, Any]
+
         def __init__(self, m11):
             super().__init__()
             self.register_state_subtree("m2", {"m1": m11})

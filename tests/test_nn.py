@@ -9,7 +9,7 @@ import pytest
 
 def test_batchnorm_train():
     bn = pax.nn.batch_norm.BatchNorm(
-        (None, None, 3), True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
+        3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
     )
     bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 3))
@@ -184,7 +184,7 @@ def test_sequential_non_mix():
     net = pax.nn.Sequential(
         pax.nn.Linear(1, 2),
         pax.nn.batch_norm.BatchNorm(
-            [None, 2], True, True, 0.99, reduced_axes=[0], param_shape=[1, 2]
+            2, True, True, 0.99, reduced_axes=[0], param_shape=[1, 2]
         ),
         pax.nn.Linear(2, 3),
     )

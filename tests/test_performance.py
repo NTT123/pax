@@ -46,7 +46,7 @@ def test_perf_flattenmodule_resnet200_flatten_unflatten():
     x = jax.random.normal(jax.random.PRNGKey(42), (1, 3, 64, 64))
     f = pax.nets.ResNet200(3, 100)
     y = f(x)
-    f = pax.nn.FlattenModule(f)
+    f = pax.flatten_module(f)
     y1 = f(x)
 
     np.testing.assert_array_equal(y, y1)

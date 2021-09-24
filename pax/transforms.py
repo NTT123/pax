@@ -1,16 +1,21 @@
 """Transform a module to a new one."""
 from collections import OrderedDict
 from types import MappingProxyType
-from typing import Any, Callable, Tuple
+from typing import Any, Callable, Generic, List, Tuple
 
 import jax
+import jax.numpy as jnp
+import jmp
+from jaxlib.xla_extension import PyTreeDef
 
+from . import ctx
 from .pax_transforms import grad
 
 TreeDef = Any
 from .module import Module, PaxFieldKind, T
 
 GradientTransformation = Module
+
 
 def enable_train_mode(mod: T) -> T:
     def _train_apply_fn(mod: T) -> T:
@@ -111,3 +116,141 @@ def grad_with_aux(model: T, *, fn: Callable, inputs: Any) -> Tuple[T, Any]:
     grads, aux = grad(fn, has_aux=True)(select_parameter(model), model, inputs)
 
     return grads, aux
+
+
+class flatten_module(Generic[T], Module):
+    """Flatten a module.
+
+    Flatten all parameters and states to lists of `ndarray`'s."""
+
+    params_leaves: List[jnp.ndarray]
+    states_leaves: List[jnp.ndarray]
+    params_treedef: PyTreeDef
+    states_treedef: PyTreeDef
+    module_treedef: PyTreeDef
+
+    def __init__(self, mod: T):
+        """Create a flatten version of the input module."""
+        super().__init__()
+
+        params_leaves, params_treedef = jax.tree_flatten(select_parameter(mod))
+        states_leaves, states_treedef = jax.tree_flatten(select_state(mod))
+
+        self.params_treedef = params_treedef
+        self.states_treedef = states_treedef
+        self.module_treedef = jax.tree_structure(mod)
+        self.register_parameter_subtree("params_leaves", params_leaves)
+        self.register_state_subtree("states_leaves", states_leaves)
+        self.num_leaves = len(jax.tree_leaves(mod))
+
+        if hasattr(mod, "unflatten"):
+            raise RuntimeError("Cannot flatten a module twice!")
+
+        if not hasattr(mod, "__call__"):
+            raise ValueError("Expecting a callable module.")
+
+    def unflatten(self) -> T:
+        """Recreate the original module."""
+        params = jax.tree_unflatten(self.params_treedef, self.params_leaves)
+        states = jax.tree_unflatten(self.states_treedef, self.states_leaves)
+        module = jax.tree_unflatten(self.module_treedef, [0] * self.num_leaves)
+        module = module.update(params)
+        module = module.update(states)
+        return module
+
+    def __call__(self, *args, **kwargs):
+        """Recreate the original module, then call it."""
+        module = self.unflatten()
+        out = module(*args, **kwargs)
+
+        with ctx.mutable():
+            states_leaves, _ = jax.tree_flatten(select_state(module))
+        self.states_leaves = states_leaves
+        return out
+
+    def __repr__(self) -> str:
+        s = self.unflatten().__repr__()
+        return f"Flatten({s})"
+
+
+class apply_mixed_precision_policy(Generic[T], Module):
+    """Convert the module to a MixedPrecision module."""
+
+    _module: T
+
+    def __init__(self, mod: T, *, mp_policy: jmp.Policy):
+        """Create a wrapper module to enforce the mixed-precision policy.
+
+        Arguments:
+            mod: the module.
+            mp_policy: a ``jmp`` mixed precision policy.
+        """
+        super().__init__()
+
+        if hasattr(mod, "unwrap_mixed_precision"):
+            raise ValueError(
+                "Enforcing mixed-precision policy on an object twice is not allowed. "
+                "Unwrap it with the `unwrap_mixed_precision` method first!"
+            )
+
+        self._module = mp_policy.cast_to_param(mod)
+        self.mp_policy = mp_policy
+
+        if not hasattr(mod, "__call__"):
+            raise ValueError("Expecting a callable module.")
+
+    def unwrap_mixed_precision(self) -> T:
+        """Recreate the original module.
+
+        **Note**: No guarantee that the parameter/state's dtype will be the same as the original module.
+        """
+        return self._module.copy()
+
+    def __call__(self, *args, **kwargs):
+        """This method does four tasks:
+
+        * Task 1: It casts all parameters and arguments to the "compute" data type.
+        * Task 2: It calls the original module.
+        * Task 3: It casts all the parameters back to the "param" data type.
+          However, if a parameter is NOT modified during the forward pass,
+          the original parameter will be reused to avoid a `cast` operation.
+        * Task 4: It casts the output to the "output" data type.
+
+        """
+        old_mod_clone = self._module.copy()
+
+        # task 1
+        casted_mod, casted_args, casted_kwargs = self.mp_policy.cast_to_compute(
+            (self._module, args, kwargs)
+        )
+
+        self._module.update(casted_mod, in_place=True)
+
+        casted_mod_clone = self._module.copy()
+        # task 2
+        output = self._module(*casted_args, **casted_kwargs)
+
+        # task 3
+        if jax.tree_structure(self._module) != jax.tree_structure(old_mod_clone):
+            raise RuntimeError(
+                f"The module `{self._module.__class__.__name__}` has its treedef modified during the forward pass. "
+                f"This is currently not supported for a mixed-precision module!"
+            )
+
+        def reuse_params_fn(updated_new, new, old):
+            # reuse the original parameter if it is
+            # NOT modified during the forward pass.
+            if updated_new is new:
+                return old  # nothing change
+            else:
+                return self.mp_policy.cast_to_param(updated_new)
+
+        casted_to_param_mod = jax.tree_map(
+            reuse_params_fn, self._module, casted_mod_clone, old_mod_clone
+        )
+
+        self._module.update(casted_to_param_mod, in_place=True)
+
+        # task 4
+        output = self.mp_policy.cast_to_output(output)
+        return output
