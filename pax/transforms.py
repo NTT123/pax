@@ -1,17 +1,16 @@
 """Transform a module to a new one."""
 from collections import OrderedDict
 from types import MappingProxyType
-from typing import Any, Callable
+from typing import Any, Callable, Tuple
 
 import jax
-
-GradientTransformation = Callable
 
 from .pax_transforms import grad
 
 TreeDef = Any
 from .module import Module, PaxFieldKind, T
 
+GradientTransformation = Module
 
 def enable_train_mode(mod: T) -> T:
     def _train_apply_fn(mod: T) -> T:
@@ -94,7 +93,7 @@ def scan_bug(mod: T) -> T:
     return mod.apply(_scan_apply_fn)
 
 
-def transform_gradient(grads: T, *, params: T, optimizer: GradientTransformation) -> T:
+def transform_gradient(grads: T, *, params: T, optimizer: Module) -> Tuple[T, Module]:
     optimizer = optimizer.copy()
     updates = optimizer(grads, params=params)
     return updates, optimizer
@@ -107,7 +106,7 @@ def apply_updates(params: T, *, updates: T) -> T:
     return jax.tree_map(lambda u, p: p - u, updates, params)
 
 
-def grad_with_aux(model: T, *, fn: Callable, inputs: Any) -> T:
+def grad_with_aux(model: T, *, fn: Callable, inputs: Any) -> Tuple[T, Any]:
     model = model.copy()  # prevent side effects
     grads, aux = grad(fn, has_aux=True)(select_parameter(model), model, inputs)
 

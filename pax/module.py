@@ -472,3 +472,7 @@ class Module:
         leaves, treedef = jax.tree_flatten(self)
         leaves = jax.tree_map(lambda x: (x.shape, x.dtype), leaves)
         return hash((tuple(leaves), treedef))
+
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError
+ 
