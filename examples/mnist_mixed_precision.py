@@ -61,7 +61,7 @@ def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
 @pax.jit
 def test_loss_fn(model: ConvNet, batch: Batch):
     model = pax.enable_eval_mode(model)
-    return loss_fn(pax.select_parameters(model), model, batch)[0]
+    return loss_fn(model.parameters(), model, batch)[0]
 
 
 @pax.jit
@@ -97,7 +97,7 @@ print(net.summary())
 optimizer = opax.chain(
     opax.clip_by_global_norm(1.0),
     opax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
-)(pax.select_parameters(net))
+)(net.parameters())
 
 
 def load_dataset(split: str):

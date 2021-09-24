@@ -476,3 +476,27 @@ class Module:
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError
+
+    def train(self: T) -> T:
+        """Return a module in training mode."""
+        from .transforms import enable_train_mode
+
+        return enable_train_mode(self)
+
+    def eval(self: T) -> T:
+        """Return a module in evaluation mode."""
+        from .transforms import enable_eval_mode
+
+        return enable_eval_mode(self)
+
+    def parameters(self: T) -> T:
+        """Return trainable parameters."""
+        from .transforms import select_parameters
+
+        return select_parameters(self)
+
+    def freeze_parameters(self: T) -> T:
+        """Convert trainable parameters to non-trainable states."""
+        from .transforms import freeze_parameters
+
+        return freeze_parameters(self)

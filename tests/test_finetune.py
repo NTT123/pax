@@ -41,15 +41,15 @@ def test_finetune():
         net.layers[i] = pax.freeze_parameters(net.layers[i])
 
     # net.layers[-1] = pax.nn.Linear(2, 10)
-    optimizer = opax.adam(1e-2)(pax.select_parameters(net))
+    optimizer = opax.adam(1e-2)(net.parameters())
 
     @pax.jit
     def update_fn(model_and_optimizer, x):
         model, optimizer = model_and_optimizer
-        params = pax.select_parameters(model)
+        params = model.parameters()
         grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, x)
         model = model.update(
-            optimizer.step(grads, pax.select_parameters(model)),
+            optimizer.step(grads, model.parameters()),
         )
         return (model, optimizer), loss
 

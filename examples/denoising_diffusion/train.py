@@ -73,7 +73,7 @@ def train(
     update_fn = pax.utils.build_update_fn(loss_fn)
     fast_update_fn = pax.jit(update_fn)
 
-    optimizer = opax.adam(learning_rate)(pax.select_parameters(diffusion))
+    optimizer = opax.adam(learning_rate)(diffusion.parameters())
 
     from tqdm.auto import tqdm
 

@@ -53,10 +53,10 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
     >>> def _update_fn(model_and_optimizer: Tuple[Module, GradientTransformation], inputs: Any):
     ...     model, optimizer = model_and_optimizer
     ...     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
-    ...         pax.select_parameters(model), model, inputs
+    ...         model.parameters(), model, inputs
     ...     )
     ...     model = model.update(
-    ...         optimizer.step(grads, pax.select_parameters(model)),
+    ...         optimizer.step(grads, model.parameters()),
     ...     )
     ...     return (model, optimizer), loss
     """

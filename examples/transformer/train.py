@@ -140,7 +140,7 @@ def train():
     optimizer = opax.chain(
         opax.clip_by_global_norm(1.0),
         opax.adam(learning_rate),
-    )(pax.select_parameters(net))
+    )(net.parameters())
 
     # replicate on multiple devices
     net = jax.device_put_replicated(net, jax.devices())
