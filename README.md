@@ -149,7 +149,7 @@ net = pax.nn.Sequential(
 )
 
 # freeze all parameters.
-net = net.freeze_parameters() 
+net = pax.freeze_parameters(net) 
 
 # replace the last layer by a new module.
 net.modules[-1] = pax.nn.Linear(64, 2)
