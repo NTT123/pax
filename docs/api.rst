@@ -258,7 +258,7 @@ Module Transformations
 
 
 update_parameters
--------------
+-----------------
 
 .. autofunction:: update_parameters
 
