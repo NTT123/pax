@@ -339,7 +339,7 @@ def update_states(mod: T, *, states: T) -> T:
 
 
 def mutate(mod: T, *, with_fn: Callable[[T], K]) -> K:
-    """Mutable a module without side effects and bugs."""
+    """Mutate a module without side effects and bugs."""
     with ctx.immutable():
         mod = mod.copy()  # prevent side effects
     mod = scan_bugs(mod)

@@ -157,7 +157,7 @@ Pax provides several module transformations:
 
 ## Fine-tunning models<a id="finetune"></a>
 
-Pax's Module provides the ``freeze_parameters`` transformation to convert all trainable parameters to non-trainable states.
+Pax's Module provides the ``pax.freeze_parameters`` transformation to convert all trainable parameters to non-trainable states.
 
 ```python
 net = pax.nn.Sequential(
