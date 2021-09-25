@@ -62,7 +62,7 @@ def train(
     wave_gru = WaveGRU(n_mels, hidden_dim)
     print(wave_gru.summary())
 
-    params = pax.select_parameters(wave_gru)
+    params = wave_gru.parameters()
     optimizer = opax.chain(
         opax.clip_by_global_norm(max_global_norm),
         opax.adam(learning_rate),

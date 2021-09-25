@@ -46,7 +46,7 @@ def test_finetune():
     @pax.jit
     def update_fn(model_and_optimizer, x):
         model, optimizer = model_and_optimizer
-        params = pax.select_parameters(model)
+        params = model.parameters()
         grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, x)
         model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
         return (model, optimizer), loss

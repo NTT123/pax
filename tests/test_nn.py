@@ -174,7 +174,7 @@ def test_linear_input_shape_error():
 
 def test_sequential_mix():
     net = pax.nn.Sequential(pax.nn.Linear(1, 2), jax.nn.relu, pax.nn.Linear(2, 3))
-    params = pax.select_parameters(net)
+    params = net.parameters()
     x = jnp.zeros((2, 1))
     y = net(x)
     assert y.shape == (2, 3)
@@ -188,7 +188,7 @@ def test_sequential_non_mix():
         ),
         pax.nn.Linear(2, 3),
     )
-    params = pax.select_parameters(net)
+    params = net.parameters()
     x = jnp.zeros((2, 1))
     y = net(x)
     assert y.shape == (2, 3)
@@ -196,7 +196,7 @@ def test_sequential_non_mix():
 
 def test_sequential_all_jax():
     net = pax.nn.Sequential(jax.nn.relu, jax.nn.relu, jax.nn.relu)
-    params = pax.select_parameters(net)
+    params = net.parameters()
     x = jnp.zeros((2, 1))
     y = net(x)
     assert y.shape == (2, 1)
