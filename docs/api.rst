@@ -252,12 +252,12 @@ A module transformation is a pure function that inputs Pax's modules and outputs
    select_states
    freeze_parameters
    unfreeze_parameters
-   apply_gradients
-   apply_mp_policy
-   apply_updates
    transform_gradients
+   apply_updates
+   apply_gradients
    scan_bugs
    flatten_module
+   apply_mp_policy
 
 
 mutate
@@ -295,6 +295,7 @@ select_kind
 
 .. autofunction:: select_kind
 
+
 select_parameters
 -----------------
 
@@ -319,17 +320,10 @@ unfreeze_parameters
 .. autofunction:: unfreeze_parameters
 
 
-apply_gradients
----------------
+transform_gradients
+-------------------
 
-.. autofunction:: apply_gradients
-
-
-apply_mp_policy
----------------
-
-.. autoclass:: apply_mp_policy
-   :members: __init__
+.. autofunction:: transform_gradients
 
 
 apply_updates
@@ -338,11 +332,10 @@ apply_updates
 .. autofunction:: apply_updates
 
 
-transform_gradients
--------------------
+apply_gradients
+---------------
 
-.. autofunction:: transform_gradients
-
+.. autofunction:: apply_gradients
 
 
 scan_bugs
@@ -355,6 +348,13 @@ flatten_module
 --------------
 
 .. autoclass:: flatten_module
+
+
+apply_mp_policy
+---------------
+
+.. autoclass:: apply_mp_policy
+   :members: __init__
 
 
 
