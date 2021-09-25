@@ -36,7 +36,7 @@ def test_optim_model_update_state():
     x = jnp.zeros((2, 2), dtype=jnp.float32)
 
     with pytest.raises(ValueError):
-        (net, optimizer), loss = update_fn((net, optimizer), x)
+        net, optimizer, loss = update_fn(net, optimizer, x)
 
 
 def test_sgd():

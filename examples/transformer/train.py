@@ -75,14 +75,11 @@ def update_step(prev, batch: jnp.ndarray):
 
 
 @partial(pax.pmap, axis_name="i")
-def update_fn(
-    model_and_optimizer: Tuple[LM, GradientTransformation], multi_batch: jnp.ndarray
-):
-    model, optimizer = model_and_optimizer
+def update_fn(model: LM, optimizer: GradientTransformation, multi_batch: jnp.ndarray):
     (model, optimizer), losses = pax.utils.scan(
         update_step, (model, optimizer), multi_batch
     )
-    return (model, optimizer), jnp.sum(losses)
+    return model, optimizer, jnp.sum(losses)
 
 
 def tokenize(text):
@@ -170,7 +167,7 @@ def train():
     for step in tr:
         batch = next(tfdata)
         # (num_devices,) is for pax.pmap, (steps_per_update,) is for pax.utils.scan
-        (net, optimizer), loss = update_fn((net, optimizer), batch)
+        net, optimizer, loss = update_fn(net, optimizer, batch)
         total_losses = total_losses + loss
         if step % 1000 == 0:
             loss = jnp.mean(total_losses) / (1000 if step > 0 else steps_per_update)

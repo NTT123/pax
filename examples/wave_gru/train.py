@@ -90,7 +90,7 @@ def train(
     tr = tqdm(range(1, 1 + num_training_steps))
     for step in tr:
         batch = next(data_iter)
-        (wave_gru, optimizer), loss = update_fn((wave_gru, optimizer), batch)
+        wave_gru, optimizer, loss = update_fn(wave_gru, optimizer, batch)
         total_loss = total_loss + loss
 
         if step % log_freq == 0:

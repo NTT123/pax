@@ -27,7 +27,7 @@ def test_train_linear_regression():
     net = pax.nn.Linear(1, 1)
     optimizer = opax.adamw(1e-1)(net.parameters())
     for step in range(100):
-        (net, optimizer), loss = update_fn((net, optimizer), (x, y))
+        net, optimizer, loss = update_fn(net, optimizer, (x, y))
     print(f"[step {step}]  loss {loss:.3f}")
 
 
@@ -63,5 +63,5 @@ def test_train_linear_regression():
     net = M()
     optimizer = opax.adamw(1e-1)(net.parameters())
     for step in range(100):
-        (net, optimizer), loss = update_fn((net, optimizer), (x, y))
+        net, optimizer, loss = update_fn(net, optimizer, (x, y))
     print(f"[step {step}]  loss {loss:.3f}")
