@@ -238,8 +238,11 @@ Module Transformations
 
 .. currentmodule:: pax.transforms
 
+A module transformation is a pure function that inputs Pax's modules and outputs Pax's modules.
+
 .. autosummary::
 
+   mutable
    update_parameters
    update_states
    enable_train_mode
@@ -255,6 +258,12 @@ Module Transformations
    transform_gradients
    scan_bugs
    flatten_module
+
+
+mutable
+-------
+
+.. autofunction:: mutable
 
 
 update_parameters
@@ -424,10 +433,10 @@ immutable
 .. autoclass:: immutable
 
 
-Pax Transformations
-===================
+Function Transformations
+========================
 
-Pax transformations are thin wrappers of Jax transformations. 
+Pax's function transformations are thin wrappers of Jax transformations. 
 
 These wrappers enable immutable mode and additional checking to prevent potential bugs.
 

@@ -8,15 +8,16 @@ import jax.numpy as jnp
 import jmp
 
 from . import ctx
-
-TreeDef = Any
 from .module import Module, PaxFieldKind
 
-T = TypeVar("T", bound="Module")
-K = TypeVar("K", bound="Module")
+TreeDef = Any
+
+T = TypeVar("T", bound=Module)
+K = TypeVar("K", bound=Module)
 
 
 GradientTransformation = Module
+O = TypeVar("O", bound=GradientTransformation)
 
 
 def enable_train_mode(mod: T) -> T:
@@ -114,7 +115,7 @@ def scan_bugs(mod: T) -> T:
     return mod.apply(_scan_apply_fn)
 
 
-def transform_gradients(grads: T, optimizer: Module, *, params: T) -> Tuple[T, Module]:
+def transform_gradients(grads: T, optimizer: O, *, params: T) -> Tuple[T, O]:
     """Transform gradients to updates using an optimizer.
 
     Arguments:
