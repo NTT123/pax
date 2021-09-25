@@ -145,9 +145,20 @@ def apply_updates(params: T, *, updates: T) -> T:
 
 
 def apply_gradients(
-    model: T, optimizer: Module, *, grads: T, all_finite: Optional[jnp.ndarray] = None
-) -> Tuple[T, Module]:
-    """Update model and optimizer with gradients `grads`."""
+    model: T, optimizer: K, *, grads: T, all_finite: Optional[jnp.ndarray] = None
+) -> Tuple[T, K]:
+    """Update model and optimizer with gradients `grads`.
+
+    Arguments:
+        model: the model which contains trainable parameters.
+        optimizer: the gradient transformation.
+        grads: the gradients w.r.t to trainable parameters of `model`.
+        all_finite: True if gradients are finite. Default: `None`.
+
+    Returns: (new_model, new_optimizer)
+        - **new_model**: the updated model.
+        - **new_optimizer**: the updated optimizer.
+    """
     params = select_parameters(model)
     updates, new_optimizer = transform_gradients(grads, optimizer, params=params)
     new_params = apply_updates(params, updates=updates)
