@@ -163,19 +163,8 @@ def apply_gradients(
     updates, new_optimizer = transform_gradients(grads, optimizer, params=params)
     new_params = apply_updates(params, updates=updates)
 
-    # Source: https://github.com/deepmind/jmp/blob/fdfcb830de8331f90de289edb18355964ec1f9f9/jmp/_src/loss_scale.py#L187
-    # This function is under the Apache License 2.0
-    import functools
-
-    P = TypeVar("P")
-
-    def select_tree(pred: jnp.ndarray, a: P, b: P) -> P:
-        """Selects a pytree based on the given predicate."""
-        assert pred.ndim == 0 and pred.dtype == jnp.bool_, "expected boolean scalar"
-        return jax.tree_multimap(functools.partial(jax.lax.select, pred), a, b)
-
     if all_finite is not None:
-        new_params, new_optimizer = select_tree(
+        new_params, new_optimizer = jmp.select_tree(
             all_finite, (new_params, new_optimizer), (params, optimizer)
         )
 
@@ -321,6 +310,21 @@ class apply_mp_policy(Module, Generic[T]):
         # task 4
         output = self.mp_policy.cast_to_output(output)
         return output
+
+    def __repr__(self):
+        dtype_to_name = {
+            jnp.bfloat16: "bfloat16",
+            jnp.float16: "float16",
+            jnp.float32: "float32",
+            jnp.float64: "float64",
+        }
+
+        info = {
+            "param_dtype": dtype_to_name[self.mp_policy.param_dtype],
+            "compute_dtype": dtype_to_name[self.mp_policy.compute_dtype],
+            "output_dtype": dtype_to_name[self.mp_policy.output_dtype],
+        }
+        return super().__repr__(info=info)
 
 
 def update_parameters(mod: T, *, params: T) -> T:
