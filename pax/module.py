@@ -119,7 +119,7 @@ class Module:
         * If ``value`` is a ``Module``'s instance and ``name`` is not in ``_name_to_kind``, its kind will be ``PaxFieldKind.MODULE``.
         """
 
-        if name in ["_name_to_kind", "_name_to_kind_to_unfreeze", "_training", "_name"]:
+        if name in ["_name_to_kind", "_training", "_name"]:
             raise ValueError(
                 f"You SHOULD NOT modify `{name}`. "
                 f"If you _really_ want to, use `self.__dict__[name] = value` instead."
