@@ -107,7 +107,7 @@ class LM(pax.Module):
 
 
 def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
-    model = model.update(params)
+    model = pax.update_parameters(model, params=params)
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
@@ -118,30 +118,28 @@ def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
     return loss, (loss, model)
 
 
-def update_step(prev, batch: jnp.ndarray):
-    model, optimizer = prev
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
-        model.parameters(), model, batch
-    )
+def update_step(model_and_optimizer, batch: jnp.ndarray):
+    model, optimizer = model_and_optimizer
+    params = model.parameters()
+    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
     grads = jax.lax.pmean(grads, axis_name="i")
-    model = model.update(
-        optimizer.step(grads, model.parameters()),
-    )
+    model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
     return (model, optimizer), loss
 
 
 @partial(pax.pmap, axis_name="i")
-def update_fn(
-    model: LM, optimizer: opax.GradientTransformation, multi_batch: jnp.ndarray
-):
+def update_fn(model, optimizer, multi_batch: jnp.ndarray):
     (model, optimizer), losses = pax.utils.scan(
         update_step, (model, optimizer), multi_batch
     )
-    return jnp.sum(losses), model, optimizer
+    return model, optimizer, jnp.sum(losses)
 
 
 net = LM(vocab_size=vocab_size, hidden_dim=hidden_dim)
-optimizer = opax.chain(opax.clip_by_global_norm(1.0), opax.adam(1e-4))(net.parameters())
+optimizer = opax.chain(
+    opax.clip_by_global_norm(1.0),
+    opax.adam(1e-4),
+)(net.parameters())
 
 # replicate on multiple devices
 net = jax.device_put_replicated(net, jax.devices())
@@ -181,7 +179,7 @@ for step in tr:
     batch = next(tfdata)
     # (num_devices,) is for pax.pmap, (steps_per_update,) is for pax.utils.scan
     batch = jnp.reshape(batch, (num_devices, steps_per_update, -1) + batch.shape[1:])
-    loss, net, optimizer = update_fn(net, optimizer, batch)
+    net, optimizer, loss = update_fn(net, optimizer, batch)
     losses = losses + loss
     if step % 1000 == 0:
         loss = jnp.mean(losses) / (1000 if step > 0 else steps_per_update)

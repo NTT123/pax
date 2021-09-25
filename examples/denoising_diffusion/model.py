@@ -283,7 +283,7 @@ class GaussianDiffusion(pax.Module):
         self.channels = channels
         self.image_size = image_size
         self.denoise_fn = denoise_fn
-        self.rng_seq = pax.utils.RngSeq(random_seed)
+        self.rng_seq = pax.nn.RngSeq(random_seed)
 
         if exists(betas):
             betas = jnp.array(betas)

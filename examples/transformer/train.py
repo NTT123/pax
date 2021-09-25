@@ -3,6 +3,8 @@
 import inspect
 import os
 from functools import partial
+from math import gamma
+from typing import Tuple
 
 import jax
 import jax.numpy as jnp
@@ -11,6 +13,7 @@ import numpy as np
 import opax
 import pax
 import tensorflow as tf
+from opax.transform import GradientTransformation
 from tqdm.auto import tqdm
 
 from model import LM
@@ -51,7 +54,7 @@ else:
 
 
 def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
-    model = model.update(params)
+    model = pax.update_parameters(model, params=params)
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
@@ -64,29 +67,19 @@ def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
 
 def update_step(prev, batch: jnp.ndarray):
     model, optimizer = prev
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
-        model.parameters(), model, batch
-    )
+    params = model.parameters()
+    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
     grads = jax.lax.pmean(grads, axis_name="i")
-    model = model.update(
-        optimizer.step(grads, model.parameters()),
-    )
+    model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
     return (model, optimizer), loss
 
 
 @partial(pax.pmap, axis_name="i")
-def update_fn(
-    model: LM,
-    optimizer: pax.Module,
-    multi_batch: jnp.ndarray,
-    total_losses: jnp.ndarray,
-):
+def update_fn(model: LM, optimizer: GradientTransformation, multi_batch: jnp.ndarray):
     (model, optimizer), losses = pax.utils.scan(
         update_step, (model, optimizer), multi_batch
     )
-
-    total_losses = total_losses + jnp.sum(losses)
-    return total_losses, model, optimizer
+    return model, optimizer, jnp.sum(losses)
 
 
 def tokenize(text):
@@ -169,13 +162,13 @@ def train():
     )
 
     tfdata = double_buffer(tfdata)
-    losses = 0.0
+    total_losses = 0.0
     tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")
-    total_losses = jnp.array([0.0] * num_devices, dtype=jnp.float32)
     for step in tr:
         batch = next(tfdata)
         # (num_devices,) is for pax.pmap, (steps_per_update,) is for pax.utils.scan
-        total_losses, net, optimizer = update_fn(net, optimizer, batch, total_losses)
+        net, optimizer, loss = update_fn(net, optimizer, batch)
+        total_losses = total_losses + loss
         if step % 1000 == 0:
             loss = jnp.mean(total_losses) / (1000 if step > 0 else steps_per_update)
             total_losses = jnp.zeros_like(total_losses)

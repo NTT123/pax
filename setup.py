@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-__version__ = "0.2.9"
+__version__ = "0.2.10"
 url = "https://github.com/ntt123/pax"
 
 install_requires = [
@@ -13,7 +13,7 @@ tests_require = [
     "dm-haiku",
     "fire",
     "mypy",
-    "opax >= 0.1.6",
+    "opax @ git+https://github.com/ntt123/opax",
     "pytest",
     "tensorflow_datasets",
     "tensorflow",

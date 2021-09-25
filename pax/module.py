@@ -5,19 +5,18 @@ https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda807690385362
 which is under MIT License.
 """
 
-import copy
 from collections import OrderedDict
 from enum import Enum
 from types import MappingProxyType
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
-from unittest import TestCase
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
-import jmp
+import numpy as np
+from jax.dtypes import issubdtype as isdt
 
-from . import ctx
+from .ctx import state as ctx_state
 
 T = TypeVar("T", bound="Module")
 
@@ -61,25 +60,23 @@ class Module:
 
     # Field Name To Kind
     _name_to_kind: Dict[str, PaxFieldKind]
-    _name_to_kind_to_unfreeze: Optional[Dict[str, PaxFieldKind]]
     _training: bool
     _name: Optional[str]
 
     def __new__(cls: Type[T], *args, **kwargs) -> T:
         """Initialize _name_to_kind and _training in `__new__` method to avoid
-        calling `super().__init__()` in the every subclass of Module."""
+        calling `super().__init__()` in every subclass of Module."""
 
-        if not ctx.state._enable_mutability:
+        if not ctx_state._enable_mutability:
             raise ValueError("Cannot create new module in immutable mode")
 
         obj = object.__new__(cls)
         obj.__dict__["_name_to_kind"] = MappingProxyType(OrderedDict())
-        obj.__dict__["_name_to_kind_to_unfreeze"] = None
         obj.__dict__["_training"] = True
         obj.__dict__["_name"] = None
 
-        # scan for unregistered submodules and ndarray's.
-        obj.deep_scan()
+        # scan class attributes for unregistered modules and ndarray's.
+        obj._scan_fields(obj.__class__.__dict__)
 
         return obj
 
@@ -99,7 +96,7 @@ class Module:
         """Update the `_name_to_kind` dictionary.
 
         Create a new dictionary and wrap it with `MappingProxyType` to avoid side effects."""
-        if not ctx.state._enable_mutability:
+        if not ctx_state._enable_mutability:
             raise ValueError(
                 "Cannot update `_name_to_kind` dictionary in immutable mode."
             )
@@ -138,7 +135,7 @@ class Module:
         any_modules = any(isinstance(mod, Module) for mod in module_leaves)
 
         def is_ndarray(x):
-            return isinstance(x, jnp.ndarray)
+            return isinstance(x, (np.ndarray, jnp.ndarray))
 
         all_ndarray = all(is_ndarray(x) for x in ndarray_leaves)
         any_ndarray = any(is_ndarray(x) for x in ndarray_leaves)
@@ -165,7 +162,7 @@ class Module:
                         f"Assigning a value which contains a non-Module object to an attribute of kind {kind}"
                     )
 
-        if ctx.state._enable_mutability:
+        if ctx_state._enable_mutability:
             super().__setattr__(name, value)
         else:
             if kind in [
@@ -207,7 +204,7 @@ class Module:
         self._scan_fields(fields=(name,))
 
     def __delattr__(self, name: str) -> None:
-        if ctx.state._enable_mutability:
+        if ctx_state._enable_mutability:
             super().__delattr__(name)
         else:
             raise ValueError(
@@ -272,21 +269,11 @@ class Module:
             else:
                 not_tree[name] = value
 
-        if not ctx.state._enable_mutability:
+        if not ctx_state._enable_mutability:
             leaves, treedef = jax.tree_flatten(not_tree)
-            leaves_clone = []
-
-            for leaf in leaves:
-                if isinstance(leaf, MappingProxyType):
-                    leaves_clone.append(leaf)
-                else:
-                    # TODO: fix this!
-                    x = copy.deepcopy(leaf)
-                    if x != leaf:
-                        x = leaf
-                    leaves_clone.append(x)
-
-            not_tree = jax.tree_unflatten(treedef, leaves_clone)
+            # TODO: it is possible that `leaves` can change its internal states,
+            # `jax.jit` will not detect the change. Fix this!
+            not_tree = jax.tree_unflatten(treedef, leaves)
 
         return children, (children_names, not_tree)
 
@@ -294,9 +281,9 @@ class Module:
     def tree_unflatten(cls, aux_data: ModuleAuxiliaryData, children):
         """Recreate a module from its ``(children, treedef)``."""
         module = object.__new__(cls)
-        children_names, _not_tree = aux_data
+        children_names, not_tree = aux_data
         md = module.__dict__
-        md.update(_not_tree)
+        md.update(not_tree)
         # don't have to copy `_name_to_kind` anymore, speed thing up!
         # md["_name_to_kind"] = OrderedDict(module._name_to_kind)
         md.update(zip(children_names, children))
@@ -311,67 +298,6 @@ class Module:
         """Return a copy of current module."""
         return jax.tree_map(lambda x: x, self)
 
-    def assertStructureEqual(self: T, other: T):
-        """Assert that the two modules are structurally the same.
-
-        Print out the difference.
-        """
-        if jax.tree_structure(self) == jax.tree_structure(other):
-            return True
-
-        def check(a, b):
-            if isinstance(a, Module) and isinstance(b, Module):
-                a.assertStructureEqual(b)
-
-        tc = TestCase()
-        tc.maxDiff = None
-
-        def filter_out_module(d):
-            return {
-                k: ((v.shape, v.dtype) if isinstance(v, jnp.ndarray) else v)
-                for (k, v) in d.items()
-                if (k not in self._name_to_kind)
-                or (
-                    self._name_to_kind[k]
-                    not in [PaxFieldKind.MODULE, PaxFieldKind.MODULE_SUBTREE]
-                )
-            }
-
-        tc.assertDictEqual(
-            filter_out_module(vars(self)), filter_out_module(vars(other))
-        )
-
-        jax.tree_map(
-            check,
-            self,
-            other,
-            is_leaf=lambda x: isinstance(x, Module)
-            and x is not self
-            and x is not other,
-        )
-
-    def filter(self: T, keep: PaxFieldKind) -> T:
-        """Filtering a module by trainable parameters and non-trainable states.
-
-        Arguments:
-            keep: kind of leaves that will be kept.
-        """
-        assert keep in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]
-        if keep == PaxFieldKind.STATE:
-            none_list = [PaxFieldKind.PARAMETER, PaxFieldKind.PARAMETER_SUBTREE]
-        else:
-            none_list = [PaxFieldKind.STATE, PaxFieldKind.STATE_SUBTREE]
-
-        def _filter_fn(mod: T) -> T:
-            for k, v in mod._name_to_kind.items():
-                if v in none_list:
-                    value = getattr(mod, k)
-                    none_v = jax.tree_map(lambda _: None, value)
-                    setattr(mod, k, none_v)
-            return mod
-
-        return self.apply(_filter_fn)
-
     def update(self: T, other: T, in_place: bool = False) -> T:
         """Use parameters/state from ``other``.
 
@@ -385,67 +311,6 @@ class Module:
             return self
         else:
             return new_self
-
-    def train(self: T, mode: bool = True):
-        """Rebuild a new module recursively and set ``self._training = mode``.
-
-        Arguments:
-            mode: return a copy module in ``train`` mode module if ``True``.
-        """
-
-        def _train_apply_fn(mod: T) -> T:
-            mod.__dict__["_training"] = mode
-            return mod
-
-        return self.apply(_train_apply_fn)
-
-    def eval(self: T) -> T:
-        """Return a copy module in ``eval`` mode."""
-        return self.train(False)
-
-    def parameters(self: T) -> T:
-        """Return trainable parameters of the module."""
-        params = self.filter(PaxFieldKind.PARAMETER)
-        return params
-
-    def freeze(self: T) -> T:
-        """Return a copy module with all trainable parameters are converted to non-trainable states."""
-
-        def _freeze_fn(mod: T) -> T:
-            if mod._name_to_kind_to_unfreeze is not None:
-                raise ValueError("Freezing a frozen module is NOT allowed")
-
-            new_name_to_kind = OrderedDict()
-            for k, v in mod._name_to_kind.items():
-                if v == PaxFieldKind.PARAMETER:
-                    new_name_to_kind[k] = PaxFieldKind.STATE
-                elif v == PaxFieldKind.PARAMETER_SUBTREE:
-                    new_name_to_kind[k] = PaxFieldKind.STATE_SUBTREE
-                else:
-                    new_name_to_kind[k] = v
-
-            # save a backup for later unfreeze calls
-            mod.__dict__["_name_to_kind_to_unfreeze"] = mod.__dict__["_name_to_kind"]
-            # use proxy to avoid any side effects
-            mod.__dict__["_name_to_kind"] = MappingProxyType(new_name_to_kind)
-            return mod
-
-        return self.apply(_freeze_fn)
-
-    def unfreeze(self: T) -> T:
-        """Return the original module before frozen."""
-
-        def _unfreeze_fn(mod: T) -> T:
-            if mod._name_to_kind_to_unfreeze is None:
-                return mod
-            else:
-                mod.__dict__["_name_to_kind"] = mod.__dict__[
-                    "_name_to_kind_to_unfreeze"
-                ]
-                mod.__dict__["_name_to_kind_to_unfreeze"] = None
-                return mod
-
-        return self.apply(_unfreeze_fn)
 
     def sub_modules(self) -> List["Module"]:
         """Return a list of sub-modules."""
@@ -499,19 +364,8 @@ class Module:
         else:
             return "\n".join(output)
 
-    def deep_scan(self) -> None:
-        """Scan a module recursively to find any *potential* bug."""
-
-        self._scan_fields(self.__class__.__dict__)
-        self._scan_fields(self.__dict__)
-
-        for mod in self.sub_modules():
-            mod.deep_scan()
-
     def _scan_fields(self, fields: Sequence[str]):
         """Scan fields for *potential* bugs."""
-
-        from jax.dtypes import issubdtype as isdt
 
         for name in fields:
             value = getattr(self, name)
@@ -568,94 +422,6 @@ class Module:
                             f"SHOULD NOT contains a pax.Module instance: {mod}"
                         )
 
-    def mixed_precision(
-        self: T, mp_policy: jmp.Policy, method_name: str = "__call__"
-    ) -> T:
-        """Convert the module to a MixedPrecision module.
-
-        Return a clone object whose ``method_name`` method is wrapped to enforce the mixed-precision policy.
-
-        Arguments:
-            mp_policy: a ``jmp`` mixed precision policy.
-            method_name: name of the method that will be affected.
-        """
-        if hasattr(self, "unwrap_mixed_precision"):
-            raise ValueError(
-                "Enforcing mixed-precision policy on an object twice is not allowed. "
-                "Unwrap it with the `unwrap_mixed_precision` method first!"
-            )
-        casted_self = mp_policy.cast_to_param(self)
-
-        cls: Type[T] = casted_self.__class__
-
-        class MixedPrecisionWrapper(cls):
-            def unwrap_mixed_precision(self):
-                """Recreate the original class.
-
-                Note: No guarantee that the parameter/state's dtype will be the same
-                as the original module.
-                """
-                back = cls.__new__(cls)
-                back.__dict__.update(self.__dict__)
-                return back
-
-        def mp_call(self_: T, *args, **kwargs):
-            """This method does four tasks:
-
-            Task 1: It casts all parameters and arguments to the "compute" data type.
-            Task 2: It calls the original method.
-            Task 3: It casts all the parameters back to the "param" data type.
-               However, if a parameter is NOT modified during the forward pass,
-               the original parameter will be reused to avoid a `cast` operation.
-            Task 4: It casts the output to the "output" data type.
-            """
-            old_self_clone = self_.copy()
-
-            # task 1
-            casted_self, casted_args, casted_kwargs = mp_policy.cast_to_compute(
-                (self_, args, kwargs)
-            )
-            self_.update(casted_self, in_place=True)
-
-            casted_self_clone = self_.copy()
-
-            # task 2
-            output = getattr(cls, method_name)(self_, *casted_args, **casted_kwargs)
-
-            # task 3
-            if jax.tree_structure(self_) != jax.tree_structure(old_self_clone):
-                raise RuntimeError(
-                    f"The module `{self_.__class__.__name__}` has its treedef modified during the forward pass. "
-                    f"This is currently not supported for a mixed-precision module!"
-                )
-
-            def reuse_params_fn(updated_new, new, old):
-                # reuse the original parameter if it is
-                # NOT modified during the forward pass.
-                if updated_new is new:
-                    return old  # nothing change
-                else:
-                    return mp_policy.cast_to_param(updated_new)
-
-            casted_to_param_self = jax.tree_map(
-                reuse_params_fn, self_, casted_self_clone, old_self_clone
-            )
-
-            self_.update(casted_to_param_self, in_place=True)
-
-            # task 4
-            output = mp_policy.cast_to_output(output)
-            return output
-
-        assert hasattr(
-            MixedPrecisionWrapper, method_name
-        ), f"The method {self.__class__.__name__}.{method_name} does not exists."
-        setattr(MixedPrecisionWrapper, method_name, mp_call)
-        MixedPrecisionWrapper.__name__ = self.__class__.__name__ + "@MixedPrecision"
-        new = MixedPrecisionWrapper.__new__(MixedPrecisionWrapper)
-        new.__dict__.update(casted_self.__dict__)
-        return new
-
     def apply(self: T, apply_fn) -> T:
         """Apply a function to all sub-modules.
 
@@ -707,3 +473,24 @@ class Module:
         leaves, treedef = jax.tree_flatten(self)
         leaves = jax.tree_map(lambda x: (x.shape, x.dtype), leaves)
         return hash((tuple(leaves), treedef))
+
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def train(self: T) -> T:
+        """Return a module in training mode."""
+        from .transforms import enable_train_mode
+
+        return enable_train_mode(self)
+
+    def eval(self: T) -> T:
+        """Return a module in evaluation mode."""
+        from .transforms import enable_eval_mode
+
+        return enable_eval_mode(self)
+
+    def parameters(self: T) -> T:
+        """Return trainable parameters."""
+        from .transforms import select_parameters
+
+        return select_parameters(self)

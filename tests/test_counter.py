@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import pax
+from pax.transforms import select_parameters
 
 
 def test_counter():
@@ -18,7 +19,7 @@ def test_counter():
             return self.counter * x + self.bias
 
     def loss_fn(params: Counter, model: Counter, x: jnp.ndarray):
-        model = model.update(params)
+        model = pax.update_parameters(model, params=params)
         y = model(x)
         loss = jnp.mean(jnp.square(x - y))
         return loss, (loss, model)
@@ -27,6 +28,6 @@ def test_counter():
 
     net = Counter(3)
     x = jnp.array(10.0)
-    grads, (loss, net) = grad_fn(net.parameters(), net, x)
+    grads, (loss, net) = grad_fn(select_parameters(net), net, x)
     assert grads.counter is None
     assert grads.bias.item() == 60.0

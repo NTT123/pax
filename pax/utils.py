@@ -1,24 +1,29 @@
 """Useful functions."""
 
 import inspect
-from typing import Any, Callable, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Callable, Tuple, TypeVar, Union
+from unittest import TestCase
 
 import jax
 import jax.numpy as jnp
 
-from . import rng
-from .module import Module
-from .pax_transforms import grad
+from .module import Module, PaxFieldKind
 from .rng import KeyArray
 
-T = TypeVar("T", bound="Module")
+GradientTransformation = "GradientTransformation"
+T = TypeVar("T", bound=Module)
+O = TypeVar("O", bound=GradientTransformation)
 
-LossFnOutput = Tuple[jnp.ndarray, Tuple[Any, T]]
+LossFnOutput = Tuple[jnp.ndarray, Any]
 LossFn = Callable[[T, T, Any], LossFnOutput]
-UpdateFn = Callable[[T, Module, Any], Tuple[Any, T, Module]]
+
+UpdateFn_ = Callable[[T, O, Any], Tuple[T, O, Any]]
+UpdateFnScan = Callable[[Tuple[T, O], Any], Tuple[Tuple[T, O], Any]]
+
+UpdateFn = Union[UpdateFn_, UpdateFnScan]
 
 
-def build_update_fn(loss_fn: LossFn) -> UpdateFn:
+def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
     """Build a simple update function.
 
     This function can be very useful. However, you have to follow its requirements *exactly*.
@@ -27,10 +32,14 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
     * The input ``loss_fn`` function has three parameters with names: ``params``, ``model``, ``inputs``.
     * ``loss_fn``'s output be annotated with type ``LossFnOutput``.
 
+    Arguments:
+        loss_fn: The loss function.
+        scan_mode: If true, use `(model, optimizer)` as a single argument.
+
     Example:
 
     >>> def mse_loss(params, model, inputs) -> pax.utils.LossFnOutput:
-    ...     model = model.update(params)
+    ...     model = pax.update_parameters(model, params=params)
     ...     x, y = inputs
     ...     y_hat = model(x)
     ...     loss = jnp.mean(jnp.square(y - y_hat))
@@ -38,14 +47,14 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
     The returned ``update_fn`` function is:
 
-    >>> def _update_fn(model: T, optimizer: Module, inputs: Any):
-    ...     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(
-    ...         model.parameters(), model, inputs
-    ...     )
-    ...     model = model.update(
-    ...         optimizer.step(grads, model.parameters()),
-    ...     )
-    ...     return loss, model, optimizer
+    >>> def _update_fn(model: Module, optimizer: GradientTransformation, inputs: Any):
+    ...     params = select_parameters(model)
+    ...     grads, (aux, model) = pax.grad(loss_fn, has_aux=True)(params, model, inputs)
+    ...     assertStructureEqual(grads, select_parameters(model))
+    ...     updates, optimizer = transform_gradients(grads, optimizer, params=params)
+    ...     params = apply_updates(params, updates=updates)
+    ...     model = update_parameters(model, params=params)
+    ...     return model, optimizer, aux
     """
 
     sig = inspect.signature(loss_fn)
@@ -60,9 +69,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
         """
         )
 
-    from opax import GradientTransformation
-
-    def _update_fn(model: T, optimizer: GradientTransformation, inputs: Any):
+    def _update_fn(model: T, optimizer: O, inputs: Any) -> Tuple[T, O, Any]:
         """An update function.
 
         Note that: ``model`` and ``optimizer`` have internal states.
@@ -70,25 +77,38 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
 
 
         Arguments:
-            model: a callable pax.Module
-            optimizer: an optimizer
+            model_and_optimizer: (a callable pax.Module, an optimizer),
             inputs: input batch.
 
         Returns:
-            loss: the loss value
-            model: updated model
-            optimizer: updated optimizer
+            model_and_optimizer: updated (model, optimizer),
+            aux: the aux info.
         """
-        grads, (loss, model) = grad(loss_fn, has_aux=True)(
-            model.parameters(), model, inputs
-        )
-        grads.assertStructureEqual(model.parameters())
-        model = model.update(
-            optimizer.step(grads, model.parameters()),
-        )
-        return loss, model, optimizer
 
-    return _update_fn
+        from .strict_mode import grad
+        from .transforms import (
+            apply_updates,
+            select_parameters,
+            transform_gradients,
+            update_parameters,
+        )
+
+        params = select_parameters(model)
+        grads, (aux, model) = grad(loss_fn, has_aux=True)(params, model, inputs)
+        assertStructureEqual(grads, select_parameters(model))
+        updates, optimizer = transform_gradients(grads, optimizer, params=params)
+        params = apply_updates(params, updates=updates)
+        model = update_parameters(model, params=params)
+        return model, optimizer, aux
+
+    def _update_fn_scan(
+        model_and_optimizer: Tuple[T, O], inputs: Any
+    ) -> Tuple[Tuple[T, O], Any]:
+        model, optimizer = model_and_optimizer
+        model, optimizer, aux = _update_fn(model, optimizer, inputs)
+        return (model, optimizer), aux
+
+    return _update_fn_scan if scan_mode else _update_fn
 
 
 def dropout(rng_key: KeyArray, dropout_rate: float, x: jnp.ndarray) -> jnp.ndarray:
@@ -135,122 +155,37 @@ def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):
         return state, output
 
 
-class Lambda(Module):
-    """A pure functional module.
+def assertStructureEqual(self: T, other: T):
+    """Assert that the two modules are structurally the same.
 
-    Note: We put ``Lambda`` module definition here so both ``haiku`` and ``nn`` modules can use it.
+    Print out the difference.
     """
+    if jax.tree_structure(self) == jax.tree_structure(other):
+        return True
 
-    def __init__(self, f: Callable, name: Optional[str] = None):
-        super().__init__(name=name)
-        self.f = f
+    def check(a, b):
+        if isinstance(a, Module) and isinstance(b, Module):
+            assertStructureEqual(a, b)
 
-    def __call__(self, x):
-        return self.f(x)
+    tc = TestCase()
+    tc.maxDiff = None
 
-    def __repr__(self, info=None) -> str:
-        if self.name is not None:
-            return super().__repr__()
-        else:
-            return f"{self.__class__.__name__}[{self.f}]"
-
-    def summary(self, return_list: bool = False) -> Union[str, List[str]]:
-        if self.name is not None:
-            name = self.name
-        elif self.f == jax.nn.relu:
-            name = "relu"
-        else:
-            name = f"{self.f}"
-        output = f"x => {name}(x)"
-        return [output] if return_list else output
-
-
-class RngSeq(Module):
-    """A module which generates an infinite sequence of rng keys."""
-
-    _rng_key: KeyArray
-
-    def __init__(self, seed: Optional[int] = None, rng_key: Optional[KeyArray] = None):
-        """Initialize a random key sequence.
-
-        **Note**: ``rng_key`` has higher priority than ``seed``.
-
-        Arguments:
-            seed: an integer seed.
-            rng_key: a jax random key.
-        """
-        super().__init__()
-        if rng_key is not None:
-            _rng_key = rng_key
-        elif seed is not None:
-            _rng_key = jax.random.PRNGKey(seed)
-        else:
-            _rng_key = rng.next_rng_key()
-
-        if isinstance(_rng_key, jnp.ndarray):
-            self.register_state("_rng_key", _rng_key)
-        else:
-            raise ValueError("Impossible")
-
-    def next_rng_key(
-        self, num_keys: int = 1
-    ) -> Union[rng.KeyArray, Sequence[rng.KeyArray]]:
-        """Return the next random key of the sequence.
-
-        **Note**:
-
-            * Return a key if ``num_keys`` is ``1``,
-            * Return a list of keys if ``num_keys`` is greater than ``1``.
-            * This is not a deterministic sequence if values of ``num_keys`` is mixed randomly.
-
-        Arguments:
-            num_keys: return more than one key.
-        """
-        _rng_key, *rng_keys = jax.random.split(self._rng_key, num_keys + 1)
-
-        # only update internal state in `train` mode.
-        if self.training:
-            self._rng_key = _rng_key
-        if num_keys == 1:
-            return rng_keys[0]
-        else:
-            return rng_keys
-
-
-class EMA(Module):
-    """Exponential Moving Average (EMA) Module"""
-
-    averages: Any
-    decay_rate: float
-    debias: Optional[jnp.ndarray] = None
-
-    def __init__(self, initial_value, decay_rate: float, debias: bool = False):
-        """Create a new EMA module.
-
-        Arguments:
-            initial_value: the initial value.
-            decay_rate: the decay rate.
-            debias: ignore the initial value to avoid biased estimates.
-        """
-
-        super().__init__()
-        self.register_state_subtree("averages", initial_value)
-        self.decay_rate = decay_rate
-        if debias:
-            self.register_state("debias", jnp.array(False))
-
-    def __call__(self, xs):
-        if self.debias is not None:
-            self.averages = jax.tree_map(
-                lambda a, x: jnp.where(self.debias, a, x), self.averages, xs
+    def filter_out_module(d):
+        return {
+            k: ((v.shape, v.dtype) if isinstance(v, jnp.ndarray) else v)
+            for (k, v) in d.items()
+            if (k not in self._name_to_kind)
+            or (
+                self._name_to_kind[k]
+                not in [PaxFieldKind.MODULE, PaxFieldKind.MODULE_SUBTREE]
             )
+        }
 
-            self.debias = jnp.logical_or(self.debias, True)
+    tc.assertDictEqual(filter_out_module(vars(self)), filter_out_module(vars(other)))
 
-        self.averages = jax.tree_map(
-            lambda a, x: a * self.decay_rate + x * (1 - self.decay_rate),
-            self.averages,
-            xs,
-        )
-
-        return self.averages
+    jax.tree_map(
+        check,
+        self,
+        other,
+        is_leaf=lambda x: isinstance(x, Module) and x is not self and x is not other,
+    )

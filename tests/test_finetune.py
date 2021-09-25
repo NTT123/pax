@@ -29,7 +29,7 @@ def test_finetune():
     net = MLP([10, 2, 2, 2, 10])
 
     def loss_fn(params: MLP, model: MLP, x):
-        model = model.update(params)
+        model = pax.update_parameters(model, params=params)
         y = model(x)
         loss = jnp.mean(jnp.square(x - y))
         return loss, (loss, model)
@@ -38,23 +38,21 @@ def test_finetune():
 
     # make all layers non-trainable except the last layer.
     for i in range(len(net.layers) - 1):
-        net.layers[i] = net.layers[i].freeze()
+        net.layers[i] = pax.freeze_parameters(net.layers[i])
 
     # net.layers[-1] = pax.nn.Linear(2, 10)
     optimizer = opax.adam(1e-2)(net.parameters())
 
     @pax.jit
-    def update_fn(model: MLP, optimizer: pax.Module, x):
+    def update_fn(model, optimizer, x):
         params = model.parameters()
         grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, x)
-        model = model.update(
-            optimizer.step(grads, model.parameters()),
-        )
-        return loss, model, optimizer
+        model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
+        return model, optimizer, loss
 
     old_layers = net.layers
     for i in range(100):
-        loss, net, optimizer = update_fn(net, optimizer, x)
+        net, optimizer, loss = update_fn(net, optimizer, x)
         if i % 10 == 0:
             print(f"[step {i:03d}] loss {loss:.3f}")
     new_layers = net.layers

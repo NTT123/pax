@@ -17,7 +17,7 @@ def test_train_linear_regression():
         model: pax.nn.Linear,
         inputs: Tuple[jnp.ndarray, jnp.ndarray],
     ) -> LossFnOutput:
-        model = model.update(params)
+        model = pax.update_parameters(model, params=params)
         x, y = inputs
         y_hat = model(x)
         loss = jnp.mean(jnp.square(y - y_hat))
@@ -27,7 +27,7 @@ def test_train_linear_regression():
     net = pax.nn.Linear(1, 1)
     optimizer = opax.adamw(1e-1)(net.parameters())
     for step in range(100):
-        loss, net, optimizer = update_fn(net, optimizer, (x, y))
+        net, optimizer, loss = update_fn(net, optimizer, (x, y))
     print(f"[step {step}]  loss {loss:.3f}")
 
 
@@ -53,7 +53,7 @@ def test_train_linear_regression():
         model: M,
         inputs: Tuple[jnp.ndarray, jnp.ndarray],
     ) -> LossFnOutput:
-        model = model.update(params)
+        model = pax.update_parameters(model, params=params)
         x, y = inputs
         y_hat = model(x)
         loss = jnp.mean(jnp.square(y - y_hat))
@@ -63,5 +63,5 @@ def test_train_linear_regression():
     net = M()
     optimizer = opax.adamw(1e-1)(net.parameters())
     for step in range(100):
-        loss, net, optimizer = update_fn(net, optimizer, (x, y))
+        net, optimizer, loss = update_fn(net, optimizer, (x, y))
     print(f"[step {step}]  loss {loss:.3f}")

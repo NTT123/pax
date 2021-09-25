@@ -1,26 +1,26 @@
-import jax
 import jax.numpy as jnp
 import numpy as np
 import opax
 import pax
-from pax.utils import EMA, LossFnOutput, RngSeq
+from pax import LossFnOutput
+from pax.nn import EMA, RngSeq
 
 
 def test_util_update_fn():
     def loss_fn(params: pax.nn.Linear, model: pax.nn.Linear, inputs) -> LossFnOutput:
         x, target = inputs
-        model = model.update(params)
+        model = pax.update_parameters(model, params=params)
         y = model(x)
         loss = jnp.mean(jnp.square(y - target))
         return loss, (loss, model)
 
     net = pax.nn.Linear(2, 1)
     opt = opax.adamw(learning_rate=1e-1)(net.parameters())
-    update_fn = pax.jit(pax.utils.build_update_fn(loss_fn))
+    update_fn = pax.jit(pax.utils.build_update_fn(loss_fn, scan_mode=True))
     x = np.random.normal(size=(32, 2))
     y = np.random.normal(size=(32, 1))
     for step in range(3):
-        loss, net, opt = update_fn(net, opt, (x, y))
+        (net, opt), loss = update_fn((net, opt), (x, y))
     print(step, loss)
 
 
@@ -37,7 +37,7 @@ def test_Rng_Seq():
     assert r1.tolist() != rs[0].tolist()
     assert h1.tolist() != h2.tolist(), "update internal state in `train` mode"
 
-    rng_seq = rng_seq.eval()
+    rng_seq = pax.enable_eval_mode(rng_seq)
     r3 = rng_seq.next_rng_key()
     r4 = rng_seq.next_rng_key()
     assert r3.tolist() == r4.tolist()

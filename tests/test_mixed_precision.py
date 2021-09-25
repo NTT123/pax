@@ -4,7 +4,7 @@ import jmp
 import pax
 import pytest
 
-half = jnp.float16  # On TPU this should be jnp.bfloat16.
+half = jmp.half_dtype()
 full = jnp.float32
 
 
@@ -12,10 +12,10 @@ def test_wrap_unwrap_mixed_precision():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
-    ff = f.mixed_precision(my_policy)
+    ff = pax.apply_mp_policy(f, mp_policy=my_policy)
     fff = ff.unwrap_mixed_precision()
-    assert "MixedPrecision" in ff.__class__.__name__
-    assert "MixedPrecision" not in fff.__class__.__name__
+    assert "mp" in ff.__class__.__name__
+    assert "mp" not in fff.__class__.__name__
 
     x = jax.numpy.ones((3, 3))
     assert f(x).dtype == full
@@ -37,9 +37,9 @@ def test_sequential_mixed_precision():
 
     def policy_fn(mod):
         if isinstance(mod, pax.nn.Linear):
-            return mod.mixed_precision(linear_policy)
+            return pax.apply_mp_policy(mod, mp_policy=linear_policy)
         elif isinstance(mod, pax.nn.BatchNorm2D):
-            return mod.mixed_precision(batchnorm_policy)
+            return pax.apply_mp_policy(mod, mp_policy=batchnorm_policy)
         else:
             # unchanged
             return mod
@@ -66,11 +66,13 @@ def test_change_internal_state():
     mp = jmp.Policy(
         compute_dtype=jnp.float16, param_dtype=jnp.float32, output_dtype=jnp.float16
     )
-    mm = m.apply(lambda x: (x.mixed_precision(mp) if isinstance(x, M) else x))
+    mm = m.apply(
+        lambda x: (pax.apply_mp_policy(x, mp_policy=mp) if isinstance(x, M) else x)
+    )
     x = jnp.array(0.0)
-    assert mm.counter.item() == 0
+    assert mm._module.counter.item() == 0  # type: ignore
     y = mm(x)
-    assert mm.counter.item() == 1
+    assert mm._module.counter.item() == 1  # type: ignore
     assert m.counter.item() == 0
 
 
@@ -93,12 +95,14 @@ def test_change_tree_def():
     mp = jmp.Policy(
         compute_dtype=jnp.float16, param_dtype=jnp.float32, output_dtype=jnp.float16
     )
-    mm = m.apply(lambda x: (x.mixed_precision(mp) if isinstance(x, M) else x))
+    mm = m.apply(
+        lambda x: (pax.apply_mp_policy(x, mp_policy=mp) if isinstance(x, M) else x)
+    )
     x = jnp.array(0.0)
-    assert mm.counter.item() == 0
+    assert mm._module.counter.item() == 0  # type: ignore
     with pytest.raises(RuntimeError):
         y = mm(x)
-    assert mm.counter.item() == 1
+    assert mm._module.counter.item() == 1  # type: ignore
     assert m.counter.item() == 0
 
 
@@ -106,22 +110,22 @@ def test_wrap_wrap_mixed_precision():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
-    f = f.mixed_precision(my_policy)
+    f = pax.apply_mp_policy(f, mp_policy=my_policy)
     with pytest.raises(ValueError):
-        f = f.mixed_precision(my_policy)
+        f = pax.apply_mp_policy(f, mp_policy=my_policy)
 
     f = f.unwrap_mixed_precision()
-    f = f.mixed_precision(my_policy)
+    f = pax.apply_mp_policy(f, mp_policy=my_policy)
 
     with pytest.raises(ValueError):
-        f = f.mixed_precision(my_policy)
+        f = pax.apply_mp_policy(f, mp_policy=my_policy)
 
 
 def test_mixed_precision_clone():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
-    ff = f.mixed_precision(my_policy)
+    ff = pax.apply_mp_policy(f, mp_policy=my_policy)
     f.new_fc = pax.nn.Linear(1, 1)
     assert "new_fc" not in ff._name_to_kind
 
@@ -130,15 +134,15 @@ def test_mixed_precision_unwrap_clone():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
-    ff = f.mixed_precision(my_policy)
+    ff = pax.apply_mp_policy(f, mp_policy=my_policy)
     f = ff.unwrap_mixed_precision()
     f.new_fc = pax.nn.Linear(1, 1)
     assert "new_fc" not in ff._name_to_kind
 
 
-def test_mixed_precision_no_method():
+def test_mixed_precision_no_method_name():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
-    with pytest.raises(AssertionError):
-        ff = f.mixed_precision(my_policy, method_name="aaa")
+    # with pytest.raises(TypeError):
+    ff = pax.apply_mp_policy(f, mp_policy=my_policy)

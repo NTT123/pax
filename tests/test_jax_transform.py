@@ -28,7 +28,7 @@ def test_grad_deepscan():
             return self.fc(x)
 
     def loss_fn(params, model, inputs):
-        model = model.update(params)
+        model = pax.update_parameters(model, params=params)
         loss = jnp.mean(model(inputs))
         return loss, (loss, model)
 
@@ -36,4 +36,4 @@ def test_grad_deepscan():
     x = jnp.zeros((1, 2))
     m.__dict__["fc1"] = pax.nn.Linear(2, 2)
     with pytest.raises(ValueError):
-        y = pax.grad(loss_fn, has_aux=True)(m.parameters(), m, x)
+        y = pax.grad(loss_fn, has_aux=True)(pax.select_parameters(m), m, x)

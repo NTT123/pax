@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from ..module import Module
-from ..utils import Lambda
+from .lambda_module import Lambda
 
 
 class Sequential(Module):

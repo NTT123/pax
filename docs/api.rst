@@ -197,21 +197,164 @@ MultiHeadAttention
    :members:
 
 
-Identity
---------
-
-.. autoclass:: Identity
-   :members:
-
+Utilities
+---------
 
 Sequential
-----------
-
+~~~~~~~~~~
 
 .. autoclass:: Sequential
    :members:
 
 
+RngSeq
+~~~~~~
+
+.. autoclass:: RngSeq
+   :members:
+
+
+Lambda
+~~~~~~
+
+.. autoclass:: Lambda
+
+
+Identity
+~~~~~~~~
+
+.. autoclass:: Identity
+   :members:
+
+EMA
+~~~
+
+.. autoclass:: EMA
+   :members:
+
+
+Module Transformations
+======================
+
+.. currentmodule:: pax
+
+A module transformation is a pure function that inputs Pax's modules and outputs Pax's modules.
+
+.. autosummary::
+
+   mutate
+   update_parameters
+   update_states
+   enable_train_mode
+   enable_eval_mode
+   select_kind
+   select_parameters
+   select_states
+   freeze_parameters
+   unfreeze_parameters
+   transform_gradients
+   apply_updates
+   apply_gradients
+   scan_bugs
+   flatten_module
+   apply_mp_policy
+
+
+mutate
+-------
+
+.. autofunction:: mutate
+
+
+update_parameters
+-----------------
+
+.. autofunction:: update_parameters
+
+
+update_states
+-------------
+
+.. autofunction:: update_states
+
+
+enable_train_mode
+-----------------
+
+.. autofunction:: enable_train_mode
+
+
+enable_eval_mode
+----------------
+
+.. autofunction:: enable_eval_mode
+
+
+select_kind
+-----------
+
+.. autofunction:: select_kind
+
+
+select_parameters
+-----------------
+
+.. autofunction:: select_parameters
+
+
+select_states
+-------------
+
+.. autofunction:: select_states
+
+
+freeze_parameters
+-----------------
+
+.. autofunction:: freeze_parameters
+
+
+unfreeze_parameters
+-------------------
+
+.. autofunction:: unfreeze_parameters
+
+
+transform_gradients
+-------------------
+
+.. autofunction:: transform_gradients
+
+
+apply_updates
+-------------
+
+.. autofunction:: apply_updates
+
+
+apply_gradients
+---------------
+
+.. autofunction:: apply_gradients
+
+
+scan_bugs
+---------
+
+.. autofunction:: scan_bugs
+
+
+flatten_module
+--------------
+
+.. autoclass:: flatten_module
+
+
+apply_mp_policy
+---------------
+
+.. autoclass:: apply_mp_policy
+   :members: __init__
 
 
 
@@ -290,10 +433,10 @@ immutable
 .. autoclass:: immutable
 
 
-Pax Transformations
-===================
+Function Transformations
+========================
 
-Pax transformations are thin wrappers of Jax transformations. 
+Pax's function transformations are thin wrappers of Jax transformations. 
 
 These wrappers enable immutable mode and additional checking to prevent potential bugs.
 
@@ -340,8 +483,6 @@ Utilities
     scan
     build_update_fn
     dropout
-    Lambda
-    RngSeq
 
 
 scan
@@ -361,14 +502,3 @@ dropout
 
 .. autofunction:: dropout
 
-
-Lambda
-------
-
-.. autoclass:: Lambda
-
-RngSeq
-------
-
-.. autoclass:: RngSeq
-   :members:

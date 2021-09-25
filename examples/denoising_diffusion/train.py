@@ -66,7 +66,7 @@ def train(
     )
 
     def loss_fn(params, model, inputs) -> pax.LossFnOutput:
-        model = model.update(params)
+        model = pax.update_parameters(model, params=params)
         loss = model(inputs)
         return loss, (loss, model)
 
@@ -81,7 +81,7 @@ def train(
     tr = tqdm(dataloader)
     for step, batch in enumerate(tr, 1):
         batch = jax.tree_map(lambda x: x.numpy(), batch)
-        loss, diffusion, optimizer = fast_update_fn(diffusion, optimizer, batch)
+        diffusion, optimizer, loss = fast_update_fn(diffusion, optimizer, batch)
         total_loss = total_loss + loss
 
         if step % log_freq == 0:

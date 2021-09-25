@@ -13,7 +13,7 @@ from model import WaveGRU
 
 
 def loss_fn(params: WaveGRU, model: WaveGRU, inputs) -> pax.utils.LossFnOutput:
-    model = model.update(params)
+    model = pax.update_parameters(model, params=params)
     logmel, wav = inputs
     input_wav = wav[:, :-1]
     target_wav = wav[:, 1:]
@@ -62,10 +62,11 @@ def train(
     wave_gru = WaveGRU(n_mels, hidden_dim)
     print(wave_gru.summary())
 
+    params = wave_gru.parameters()
     optimizer = opax.chain(
         opax.clip_by_global_norm(max_global_norm),
         opax.adam(learning_rate),
-    )(wave_gru.parameters())
+    )(params)
 
     split_loader = partial(
         data_loader,
@@ -89,7 +90,7 @@ def train(
     tr = tqdm(range(1, 1 + num_training_steps))
     for step in tr:
         batch = next(data_iter)
-        loss, wave_gru, optimizer = update_fn(wave_gru, optimizer, batch)
+        wave_gru, optimizer, loss = update_fn(wave_gru, optimizer, batch)
         total_loss = total_loss + loss
 
         if step % log_freq == 0:
