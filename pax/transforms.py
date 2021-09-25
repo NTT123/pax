@@ -31,7 +31,7 @@ def enable_train_mode(mod: T) -> T:
 
 
 def enable_eval_mode(mod: T) -> T:
-    """Return a module in evaluation model."""
+    """Return a module in evaluation mode."""
 
     def _eval_apply_fn(mod: T) -> T:
         mod.__dict__["_training"] = False
@@ -70,7 +70,7 @@ def unfreeze_parameters(mod: T, *, origin: T) -> T:
 
 
 def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
-    """Select leaves of kind `kind` while setting all other leaves to ``None``.
+    """Select leaves of kind ``kind`` while setting all other leaves to ``None``.
 
     Arguments:
         mod: The module.
