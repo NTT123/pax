@@ -1,3 +1,4 @@
+"""Thin wrappers for jax transformation."""
 import jax
 
 from . import ctx

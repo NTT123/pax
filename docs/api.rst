@@ -249,7 +249,7 @@ Module Transformations
    select_states
    freeze_parameters
    unfreeze_parameters
-   apply_grads
+   apply_gradients
    apply_mp_policy
    apply_updates
    transform_gradients
@@ -310,10 +310,10 @@ unfreeze_parameters
 .. autofunction:: unfreeze_parameters
 
 
-apply_grads
------------
+apply_gradients
+---------------
 
-.. autofunction:: apply_grads
+.. autofunction:: apply_gradients
 
 
 apply_mp_policy

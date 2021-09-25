@@ -91,7 +91,7 @@ def build_update_fn(loss_fn: LossFn) -> UpdateFn:
             update_parameters,
         )
 
-        from .pax_transforms import grad
+        from .strict_mode import grad
 
         model, optimizer = model_and_optimizer
         params = select_parameters(model)

@@ -48,7 +48,7 @@ def test_finetune():
         model, optimizer = model_and_optimizer
         params = pax.select_parameters(model)
         grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, x)
-        model, optimizer = pax.apply_grads(model, optimizer, grads=grads)
+        model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
         return (model, optimizer), loss
 
     old_layers = net.layers

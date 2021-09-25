@@ -7,8 +7,9 @@
 | [**Pax and others**](#paxandfriends)
 | [**Examples**](https://github.com/ntt123/pax/tree/main/examples/)
 | [**Modules**](#modules)
+| [**Optimizers**](#optimizers)
+| [**Transformations**](#transformations)
 | [**Fine-tuning**](#finetune)
-| [**Documentation**](https://pax.readthedocs.io/en/main)
 
 ![pytest](https://github.com/ntt123/pax/workflows/pytest/badge.svg)
 ![docs](https://readthedocs.org/projects/pax/badge/?version=main)
@@ -138,6 +139,22 @@ We intent to add new modules in the near future.
 Pax has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's github repository for more information. 
 
 
+## Module transformations<a id="transformations"></a>
+
+A module transformation is a pure function that inputs Pax's modules and outputs Pax's modules.
+A Pax program can be seen as a series of module transformations.
+
+Pax provides several module transformations:
+
+- `pax.mutate`: modify a module without side effects.
+- `pax.select_{parameters,states}`: select parameter/state leaves.
+- `pax.apply_gradients`: update model & optimizer using gradients.
+- `pax.update_{parameters,states}`: updates module's parameters/states.
+- `pax.enable_{train,eval}_mode`: turn on/off training mode.
+- `pax.(un)freeze_parameters`: freeze/unfreeze trainable parameters.
+- `pax.apply_mp_policy`: apply a mixed-precision policy.
+
+
 ## Fine-tunning models<a id="finetune"></a>
 
 Pax's Module provides the ``freeze`` method to convert all trainable parameters to non-trainable states.
@@ -152,9 +169,14 @@ net = pax.nn.Sequential(
 # freeze all parameters.
 net = pax.freeze_parameters(net) 
 
-# replace the last layer by a new module.
-net.modules[-1] = pax.nn.Linear(64, 2)
+def replace_last_layer(mod):
+    mod[-1] = pax.nn.Linear(64, 2)
+    return mod
+
+net = pax.mutate(net, with_fn=replace_last_layer)
 ```
+
+Even though, we can modify `net` directly with ``net[-1] = pax.nn.Linear(64, 2)``. It is not recommended. We use ``pax.mutate`` transformation to ensure that our modification does not have side effects.
 
 After this, ``pax.select_parameters(net)`` will only return trainable parameters of the last layer.
 

@@ -69,7 +69,7 @@ def test_loss_fn(model: ConvNet, batch: Batch):
 def update_fn(model: ConvNet, optimizer: GradientTransformation, batch: Batch):
     params = pax.select_parameters(model)
     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
-    model, optimizer = pax.apply_grads(model, optimizer, grads=grads)
+    model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
     return model, optimizer, loss
 
 
