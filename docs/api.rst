@@ -236,7 +236,7 @@ EMA
 Module Transformations
 ======================
 
-.. currentmodule:: pax.transforms
+.. currentmodule:: pax
 
 A module transformation is a pure function that inputs Pax's modules and outputs Pax's modules.
 
