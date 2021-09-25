@@ -123,7 +123,9 @@ def transform_gradients(grads: T, optimizer: O, *, params: T) -> Tuple[T, O]:
         optimizer: The gradient transformation.
         params: The trainable parameters.
 
-    Returns: (updates, optimizer)
+    Returns: 
+        A pair ``(updates, optimizer)``
+        
         - **updates** : The transformed gradients.
         - **optimizer** : The *updated* optimizer.
     """
@@ -156,9 +158,11 @@ def apply_gradients(
         grads: the gradients w.r.t to trainable parameters of `model`.
         all_finite: True if gradients are finite. Default: `None`.
 
-    Returns: (new_model, new_optimizer)
-        - **new\_model**: the updated model.
-        - **new\_optimizer**: the updated optimizer.
+    Returns: 
+        A pair ``(new_model, new_optimizer)``
+
+        - **new_model**: the updated model.
+        - **new_optimizer**: the updated optimizer.
     """
     params = select_parameters(model)
     updates, new_optimizer = transform_gradients(grads, optimizer, params=params)
