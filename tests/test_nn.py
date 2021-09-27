@@ -866,19 +866,3 @@ def test_identity_module():
     x = jnp.zeros((3, 3))
     y = ident(x)
     assert jnp.array_equal(x, y) == True
-
-
-def test_batchnorm_debias_change():
-    bn = pax.nn.Sequential(pax.nn.BatchNorm1D(3, True, True, 0.9), jax.nn.relu)
-    x = jnp.zeros((1, 10, 3))
-    print()
-    print(bn[0].training, bn[0].ema_mean.debias)
-
-    @pax.jit
-    def fwd(net, i):
-        net(i)
-        return net
-
-    bn = fwd(bn, x)
-
-    print(bn[0].training, bn[0].ema_mean.debias)
