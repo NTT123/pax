@@ -37,3 +37,36 @@ def test_grad_deepscan():
     m.__dict__["fc1"] = pax.nn.Linear(2, 2)
     with pytest.raises(ValueError):
         y = pax.grad(loss_fn, has_aux=True)(pax.select_parameters(m), m, x)
+
+
+def test_loss_fn_no_return_model():
+    def loss_fn(params, model, inputs):
+        model = pax.update_parameters(model, params=params)
+        y = model(inputs)
+        return jnp.sum(y)
+
+    grad_fn = pax.grad(loss_fn)
+    x = jnp.zeros((3, 3))
+    net = pax.nn.Linear(3, 3)
+    with pytest.raises(ValueError):
+        y = grad_fn(net.parameters(), net, x)
+
+
+def test_jit__call__():
+    class M(pax.Module):
+        @pax.jit
+        def __call__(self, x):
+            return x, self
+
+    x = jnp.zeros((3, 3))
+    net = M()
+    y = net(x)
+
+    class M(pax.Module):
+        @pax.jit
+        def __call__(self, x):
+            return x
+
+    net = M()
+    with pytest.raises(ValueError):
+        y = net(x)
