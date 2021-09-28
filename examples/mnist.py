@@ -50,7 +50,7 @@ class ConvNet(pax.Module):
 def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
     x = batch["image"].astype(jnp.float32) / 255
     target = batch["label"]
-    model, logits = pax.forward(model, x=x, params=params)
+    model, logits = model.forward(x, params=params)
     log_pr = jax.nn.log_softmax(logits, axis=-1)
     log_pr = jnp.sum(jax.nn.one_hot(target, log_pr.shape[-1]) * log_pr, axis=-1)
     loss = -jnp.mean(log_pr)

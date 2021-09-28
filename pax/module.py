@@ -494,3 +494,8 @@ class Module:
         from .transforms import select_parameters
 
         return select_parameters(self)
+
+    def forward(self, *args, params=None, **kwargs):
+        from .transforms import forward
+
+        return forward(self, *args, params=params, **kwargs)

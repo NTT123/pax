@@ -107,11 +107,10 @@ class LM(pax.Module):
 
 
 def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
-    model = pax.update_parameters(model, params=params)
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
-    logits = model(inputs)
+    model, logits = model.forward(inputs, params=params)
     log_pr = jax.nn.log_softmax(logits, axis=-1)
     targets = jax.nn.one_hot(targets, num_classes=model.vocab_size)
     loss = -jnp.mean(jnp.sum(targets * log_pr, axis=-1))
