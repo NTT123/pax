@@ -134,12 +134,19 @@ class Conv(Module):
         info = {
             "in_features": self.in_features,
             "out_features": self.out_features,
-            "data_format": self.data_format,
+            "kernel_shape": self.kernel_shape,
             "padding": self.padding,
             "stride": self.stride,
             "rate": self.rate,
             "with_bias": self.with_bias,
+            "data_format": self.data_format,
         }
+        all_one = lambda x: all(e == 1 for e in x)
+        if all_one(info["rate"]):
+            del info["rate"]
+        if all_one(info["stride"]):
+            del info["stride"]
+
         return super().__repr__(info)
 
 

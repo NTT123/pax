@@ -28,38 +28,57 @@ def enable_strict_mode(f):
     - a function must return the updated input modules.
     """
 
-    def wrapper(fn, *args, **kwds):
+    def wrapper(
+        fn,
+        *args,
+        deep_scan: bool = True,
+        copy: bool = True,
+        io_check: bool = True,
+        **kwargs,
+    ):
+        """Jax transformation with some additional arguments.
+
+        Arguments:
+            deep_scan: scan inputs for bugs.
+            copy: copy inputs to avoid side effects.
+            io_check: an function must returns the updated input modules.
+        """
         assert callable(fn), "Expecting a callable object as the first argument."
 
         def fake_fn(*u, **v):
 
             # scan for bugs
-            jax.tree_map(_deep_scan, (u, v), is_leaf=lambda x: isinstance(x, Module))
+            if deep_scan:
+                jax.tree_map(
+                    _deep_scan, (u, v), is_leaf=lambda x: isinstance(x, Module)
+                )
 
             # enable immutable mode
             with ctx.immutable():
                 # use copy of the inputs to prevent side effects
                 # therefore, the function `f` has to returns modified
                 # objects as its outputs.
-                leaves, treedef = jax.tree_flatten((u, v))
-                u, v = jax.tree_unflatten(treedef=treedef, leaves=leaves)
+                if copy:
+                    u, v = jax.tree_map(lambda x: x, (u, v))
 
-                input_treedefs = _get_all_module_treedefs((u, v))
+                if io_check:
+                    input_treedefs = _get_all_module_treedefs((u, v))
 
                 out = fn(*u, **v)
 
-                output_treedefs = _get_all_module_treedefs(out)
-                if input_treedefs != output_treedefs:
-                    raise ValueError(
-                        f"In Pax's strict mode, a function must return the updated versions of input modules.\n"
-                        f"\n"
-                        f"Input treedefs:  {input_treedefs}\n"
-                        f"Output treedef:  {output_treedefs}\n"
-                    )
+                if io_check:
+                    output_treedefs = _get_all_module_treedefs(out)
+                    if input_treedefs != output_treedefs:
+                        raise ValueError(
+                            f"In Pax's strict mode, a function must return the updated versions of input modules.\n"
+                            f"\n"
+                            f"Input treedefs:  {input_treedefs}\n"
+                            f"Output treedef:  {output_treedefs}\n"
+                        )
 
                 return out
 
-        return f(fake_fn, *args, **kwds)
+        return f(fake_fn, *args, **kwargs)
 
     return wrapper
 

@@ -20,6 +20,22 @@ GradientTransformation = Module
 O = TypeVar("O", bound=GradientTransformation)
 
 
+def forward(mod: T, *, params=None, **kwinputs) -> T:
+    """Execute the forward pass and return the updated module.
+
+    Arguments:
+        mod: The module to be executed.
+        params: Use parameters in `params` if not ``None``.
+        **kwinputs: Inputs to the module.
+    """
+    mod = mod.copy()
+    if params is not None:
+        mod = update_parameters(mod, params=params)
+
+    output = mod(**kwinputs)
+    return mod, output
+
+
 def enable_train_mode(mod: T) -> T:
     """Return a module in training mode."""
 
