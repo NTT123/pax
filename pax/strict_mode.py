@@ -15,7 +15,8 @@ def _deep_scan(mod):
 def _get_all_module_treedefs(v):
     leaves = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
     mods = [x for x in leaves if isinstance(x, Module)]
-    mods = [x for x in mods if not (None in jax.tree_leaves(x))]
+    any_none = lambda xs: any(x is None for x in xs)
+    mods = [x for x in mods if not any_none(jax.tree_leaves(x))]
     return set([jax.tree_flatten(x, is_leaf=lambda x: x is None)[1] for x in mods])
 
 
