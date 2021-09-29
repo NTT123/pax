@@ -47,10 +47,10 @@ class ConvNet(pax.Module):
         return jnp.squeeze(x, (1, 2))
 
 
-def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
+def loss_fn(model: ConvNet, batch: Batch):
     x = batch["image"].astype(jnp.float32) / 255
     target = batch["label"]
-    model, logits = model.forward(x, params=params)
+    logits = model(x)
     log_pr = jax.nn.log_softmax(logits, axis=-1)
     log_pr = jnp.sum(jax.nn.one_hot(target, log_pr.shape[-1]) * log_pr, axis=-1)
     loss = -jnp.mean(log_pr)
@@ -60,14 +60,12 @@ def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
 @partial(pax.jit, io_check=False)
 def test_loss_fn(model: ConvNet, batch: Batch):
     model = model.eval()
-    params = model.parameters()
-    return loss_fn(params, model, batch)[0]
+    return loss_fn(model, batch)[0]
 
 
 @pax.jit
 def update_fn(model: ConvNet, optimizer: GradientTransformation, batch: Batch):
-    params = model.parameters()
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
+    grads, (loss, model) = pax.grad_module(loss_fn, has_aux=True)(model, batch)
     model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
     return model, optimizer, loss
 

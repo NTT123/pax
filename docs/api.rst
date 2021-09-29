@@ -458,6 +458,13 @@ pax.grad
 
 
 
+pax.grad_module
+---------------
+
+.. autofunction:: grad_module
+
+
+
 pax.vmap
 --------
 

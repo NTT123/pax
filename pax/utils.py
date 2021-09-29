@@ -15,7 +15,7 @@ T = TypeVar("T", bound=Module)
 O = TypeVar("O", bound=GradientTransformation)
 
 LossFnOutput = Tuple[jnp.ndarray, Any]
-LossFn = Callable[[T, T, Any], LossFnOutput]
+LossFn = Callable[[T, Any], LossFnOutput]
 
 UpdateFn_ = Callable[[T, O, Any], Tuple[T, O, Any]]
 UpdateFnScan = Callable[[Tuple[T, O], Any], Tuple[Tuple[T, O], Any]]
@@ -29,7 +29,7 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
     This function can be very useful. However, you have to follow its requirements *exactly*.
     This is to make sure you know exactly what you are doing.
 
-    * The input ``loss_fn`` function has three parameters with names: ``params``, ``model``, ``inputs``.
+    * The input ``loss_fn`` function has three parameters with names: ``model``, ``inputs``.
     * ``loss_fn``'s output be annotated with type ``LossFnOutput``.
 
     Arguments:
@@ -38,8 +38,7 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
 
     Example:
 
-    >>> def mse_loss(params, model, inputs) -> pax.utils.LossFnOutput:
-    ...     model = pax.update_parameters(model, params=params)
+    >>> def mse_loss(model, inputs) -> pax.LossFnOutput:
     ...     x, y = inputs
     ...     y_hat = model(x)
     ...     loss = jnp.mean(jnp.square(y - y_hat))
@@ -48,9 +47,9 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
     The returned ``update_fn`` function is:
 
     >>> def _update_fn(model: Module, optimizer: GradientTransformation, inputs: Any):
-    ...     params = select_parameters(model)
-    ...     grads, (aux, model) = pax.grad(loss_fn, has_aux=True)(params, model, inputs)
+    ...     grads, (aux, model) = pax.grad_module(loss_fn)(model, inputs)
     ...     assertStructureEqual(grads, select_parameters(model))
+    ...     params = select_parameters(model)
     ...     updates, optimizer = transform_gradients(grads, optimizer, params=params)
     ...     params = apply_updates(params, updates=updates)
     ...     model = update_parameters(model, params=params)
@@ -60,12 +59,12 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
     sig = inspect.signature(loss_fn)
     parameters = sig.parameters
     if (
-        list(parameters.keys()) != ["params", "model", "inputs"]
+        list(parameters.keys()) != ["model", "inputs"]
         or sig.return_annotation != LossFnOutput
     ):
         raise ValueError(
             """Expecting a loss function with an _exact_ signature:  
-        ``(params, model, inputs) -> LossFnOutput``
+        ``(model, inputs) -> pax.LossFnOutput``
         """
         )
 
@@ -85,7 +84,7 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
             aux: the aux info.
         """
 
-        from .strict_mode import grad
+        from .grad_module import grad_module
         from .transforms import (
             apply_updates,
             select_parameters,
@@ -93,9 +92,9 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
             update_parameters,
         )
 
-        params = select_parameters(model)
-        grads, (aux, model) = grad(loss_fn, has_aux=True)(params, model, inputs)
+        grads, (aux, model) = grad_module(loss_fn)(model, inputs)
         assertStructureEqual(grads, select_parameters(model))
+        params = select_parameters(model)
         updates, optimizer = transform_gradients(grads, optimizer, params=params)
         params = apply_updates(params, updates=updates)
         model = update_parameters(model, params=params)

@@ -1,5 +1,6 @@
 from . import ctx, initializers, module, nets, nn, strict_mode, transforms, utils
 from .ctx import immutable, mutable
+from .grad_module import grad_module
 from .module import Module, PaxFieldKind
 from .rng import next_rng_key, seed_rng_key
 from .strict_mode import grad, jit, pmap, vmap

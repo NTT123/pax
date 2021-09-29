@@ -48,12 +48,7 @@ def test_train_linear_regression():
             x = self.fc2(x)
             return x
 
-    def loss_fn(
-        params: M,
-        model: M,
-        inputs: Tuple[jnp.ndarray, jnp.ndarray],
-    ) -> LossFnOutput:
-        model = pax.update_parameters(model, params=params)
+    def loss_fn(model: M, inputs: Tuple[jnp.ndarray, jnp.ndarray]) -> LossFnOutput:
         x, y = inputs
         y_hat = model(x)
         loss = jnp.mean(jnp.square(y - y_hat))

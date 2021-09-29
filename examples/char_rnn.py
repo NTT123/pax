@@ -106,11 +106,11 @@ class LM(pax.Module):
         return jnp.concatenate(out)
 
 
-def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
+def loss_fn(model: LM, batch: jnp.ndarray):
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
-    model, logits = model.forward(inputs, params=params)
+    logits = model(inputs)
     log_pr = jax.nn.log_softmax(logits, axis=-1)
     targets = jax.nn.one_hot(targets, num_classes=model.vocab_size)
     loss = -jnp.mean(jnp.sum(targets * log_pr, axis=-1))
@@ -119,8 +119,7 @@ def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
 
 def update_step(model_and_optimizer, batch: jnp.ndarray):
     model, optimizer = model_and_optimizer
-    params = model.parameters()
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
+    grads, (loss, model) = pax.grad_module(loss_fn)(model, batch)
     grads = jax.lax.pmean(grads, axis_name="i")
     model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
     return (model, optimizer), loss

@@ -499,3 +499,8 @@ class Module:
         from .transforms import forward
 
         return forward(self, *args, params=params, **kwargs)
+
+    def update_parameters(self: T, params: T) -> T:
+        from .transforms import update_parameters
+
+        return update_parameters(self, params=params)
