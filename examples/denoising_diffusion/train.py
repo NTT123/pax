@@ -59,7 +59,7 @@ def train(
     dataloader = (
         dataset.cache()
         .repeat()
-        .shuffle(len(dataset))
+        .shuffle(batch_size * 100)
         .batch(batch_size)
         .take(num_training_steps)
         .prefetch(tf.data.AUTOTUNE)
