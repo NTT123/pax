@@ -2,6 +2,7 @@ from typing import Optional, Sequence, Union
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 from .. import rng
 from ..module import Module
@@ -31,7 +32,7 @@ class RngSeq(Module):
         else:
             _rng_key = rng.next_rng_key()
 
-        if isinstance(_rng_key, jnp.ndarray):
+        if isinstance(_rng_key, (np.ndarray, jnp.ndarray)):
             self.register_state("_rng_key", _rng_key)
         else:
             raise ValueError("Impossible")
