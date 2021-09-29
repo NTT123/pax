@@ -61,7 +61,7 @@ def loss_fn(model: Counter, x: jnp.ndarray):
     loss = jnp.mean(jnp.square(x - y))
     return loss, (loss, model)
 
-grad_fn = pax.grad_module(loss_fn, has_aux=True)
+grad_fn = pax.grad_module(loss_fn)
 
 net = Counter(3)
 x = jnp.array(10.)
