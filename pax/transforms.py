@@ -20,6 +20,21 @@ GradientTransformation = Module
 O = TypeVar("O", bound=GradientTransformation)
 
 
+def forward(mod: T, *inputs, params=None, **kwinputs) -> Tuple[T, Any]:
+    """Execute the forward pass and return the updated module.
+
+    Arguments:
+        mod: The module to be executed.
+        params: Use parameters in `params` if not ``None``.
+    """
+    mod = mod.copy()
+    if params is not None:
+        mod = update_parameters(mod, params=params)
+
+    output = mod(*inputs, **kwinputs)
+    return mod, output
+
+
 def enable_train_mode(mod: T) -> T:
     """Return a module in training mode."""
 
@@ -123,14 +138,14 @@ def transform_gradients(grads: T, optimizer: O, *, params: T) -> Tuple[T, O]:
         optimizer: The gradient transformation.
         params: The trainable parameters.
 
-    Returns: 
+    Returns:
         A pair ``(updates, optimizer)``
-        
+
         - **updates** : The transformed gradients.
         - **optimizer** : The *updated* optimizer.
     """
     optimizer = optimizer.copy()
-    updates = optimizer(grads, params=params)
+    updates = optimizer(grads.parameters(), params=params)
     return updates, optimizer
 
 
@@ -158,13 +173,13 @@ def apply_gradients(
         grads: the gradients w.r.t to trainable parameters of `model`.
         all_finite: True if gradients are finite. Default: `None`.
 
-    Returns: 
+    Returns:
         A pair ``(new_model, new_optimizer)``
 
         - **new_model**: the updated model.
         - **new_optimizer**: the updated optimizer.
     """
-    params = select_parameters(model)
+    params = model.parameters()
     updates, new_optimizer = transform_gradients(grads, optimizer, params=params)
     new_params = apply_updates(params, updates=updates)
 
@@ -241,7 +256,6 @@ class apply_mp_policy(Module, Generic[T]):
 
     def __init__(self, mod: T, *, mp_policy: jmp.Policy):
         """Create a wrapper module to enforce the mixed-precision policy.
-
         Arguments:
             mod: the module.
             mp_policy: a ``jmp`` mixed precision policy.
@@ -262,21 +276,18 @@ class apply_mp_policy(Module, Generic[T]):
 
     def unwrap_mixed_precision(self) -> T:
         """Recreate the original module.
-
         **Note**: No guarantee that the parameter/state's dtype will be the same as the original module.
         """
         return self._module.copy()
 
     def __call__(self, *args, **kwargs):
         """This method does four tasks:
-
         * Task 1: It casts all parameters and arguments to the "compute" data type.
         * Task 2: It calls the original module.
         * Task 3: It casts all the parameters back to the "param" data type.
           However, if a parameter is NOT modified during the forward pass,
           the original parameter will be reused to avoid a `cast` operation.
         * Task 4: It casts the output to the "output" data type.
-
         """
         old_mod_clone = self._module.copy()
 

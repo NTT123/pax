@@ -1,5 +1,6 @@
 """train a handwritten digit classifier."""
 
+from functools import partial
 from typing import List, Mapping, Tuple
 
 import jax
@@ -47,8 +48,7 @@ class ConvNet(pax.Module):
         return jnp.squeeze(x, (1, 2))
 
 
-def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
-    model = pax.update_parameters(model, params=params)
+def loss_fn(model: ConvNet, batch: Batch):
     x = batch["image"].astype(jnp.float32) / 255
     target = batch["label"]
     logits = model(x)
@@ -58,17 +58,15 @@ def loss_fn(params: ConvNet, model: ConvNet, batch: Batch):
     return loss, (loss, model)
 
 
-@pax.jit
+@partial(pax.jit, io_check=False)
 def test_loss_fn(model: ConvNet, batch: Batch):
     model = model.eval()
-    params = model.parameters()
-    return loss_fn(params, model, batch)[0]
+    return loss_fn(model, batch)[0]
 
 
 @pax.jit
 def update_fn(model: ConvNet, optimizer: GradientTransformation, batch: Batch):
-    params = model.parameters()
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
+    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(model, batch)
     model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
     return model, optimizer, loss
 

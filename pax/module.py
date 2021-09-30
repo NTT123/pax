@@ -119,7 +119,7 @@ class Module:
         * If ``value`` is a ``Module``'s instance and ``name`` is not in ``_name_to_kind``, its kind will be ``PaxFieldKind.MODULE``.
         """
 
-        if name in ["_name_to_kind", "_name_to_kind_to_unfreeze", "_training", "_name"]:
+        if name in ["_name_to_kind", "_training", "_name"]:
             raise ValueError(
                 f"You SHOULD NOT modify `{name}`. "
                 f"If you _really_ want to, use `self.__dict__[name] = value` instead."
@@ -494,3 +494,13 @@ class Module:
         from .transforms import select_parameters
 
         return select_parameters(self)
+
+    def forward(self, *args, params=None, **kwargs):
+        from .transforms import forward
+
+        return forward(self, *args, params=params, **kwargs)
+
+    def update_parameters(self: T, params: T) -> T:
+        from .transforms import update_parameters
+
+        return update_parameters(self, params=params)

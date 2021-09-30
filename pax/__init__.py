@@ -10,6 +10,7 @@ from .transforms import (
     enable_eval_mode,
     enable_train_mode,
     flatten_module,
+    forward,
     freeze_parameters,
     mutate,
     scan_bugs,

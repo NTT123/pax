@@ -25,8 +25,7 @@ def test_optim_model_update_state():
 
     net = MyModule()
 
-    def loss_fn(params: MyModule, model: MyModule, inputs) -> LossFnOutput:
-        model = pax.update_parameters(model, params=params)
+    def loss_fn(model: MyModule, inputs) -> LossFnOutput:
         y = model(x)
         loss = jnp.mean(jnp.square(x - y))
         return loss, (loss, model)

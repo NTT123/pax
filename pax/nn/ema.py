@@ -11,7 +11,7 @@ class EMA(Module):
 
     averages: Any
     decay_rate: float
-    debias: Optional[jnp.ndarray] = None
+    debias: Optional[jnp.ndarray]
 
     def __init__(self, initial_value, decay_rate: float, debias: bool = False):
         """Create a new EMA module.
@@ -26,16 +26,21 @@ class EMA(Module):
         self.register_state_subtree("averages", initial_value)
         self.decay_rate = decay_rate
         if debias:
-            self.register_state("debias", jnp.array(False))
+            # avoid integer ndarray for `jax.grad` convenience,
+            # e.g., no need to pass `allow_int=True` to `jax.grad`.
+            self.register_state("debias", jnp.array(0.0))
+        else:
+            self.debias = None
 
     def __call__(self, xs):
         """Return the ema of `xs`. Also, update internal states."""
         if self.debias is not None:
+            cond = self.debias > 0
             self.averages = jax.tree_map(
-                lambda a, x: jnp.where(self.debias, a, x), self.averages, xs
+                lambda a, x: jnp.where(cond, a, x), self.averages, xs
             )
 
-            self.debias = jnp.logical_or(self.debias, True)
+            self.debias = jnp.array(1.0)
 
         self.averages = jax.tree_map(
             lambda a, x: a * self.decay_rate + x * (1 - self.decay_rate),

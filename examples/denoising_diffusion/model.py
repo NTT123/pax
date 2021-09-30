@@ -2,6 +2,7 @@
 # https://github.com/lucidrains/denoising-diffusion-pytorch/blob/master/denoising_diffusion_pytorch/denoising_diffusion_pytorch.py
 
 import math
+from functools import partial
 from inspect import isfunction
 from typing import List
 
@@ -368,7 +369,7 @@ class GaussianDiffusion(pax.Module):
         )
         return model_mean, posterior_variance, posterior_log_variance
 
-    @pax.jit
+    @partial(pax.jit, io_check=False)
     def p_sample(self, x, t, rng_key, clip_denoised=True, repeat_noise=False):
         b = x.shape[0]
         model_mean, _, model_log_variance = self.p_mean_variance(

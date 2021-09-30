@@ -53,8 +53,7 @@ else:
     num_layers = 2
 
 
-def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
-    model = pax.update_parameters(model, params=params)
+def loss_fn(model: LM, batch: jnp.ndarray):
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
@@ -67,9 +66,8 @@ def loss_fn(params: LM, model: LM, batch: jnp.ndarray):
 
 def update_step(prev, batch: jnp.ndarray):
     model, optimizer = prev
-    params = model.parameters()
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, batch)
-    grads = jax.lax.pmean(grads, axis_name="i")
+    grads, (loss, model) = pax.grad(loss_fn, has_aux=True, allow_int=True)(model, batch)
+    grads = jax.lax.pmean(grads.parameters(), axis_name="i")
     model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
     return (model, optimizer), loss
 
@@ -95,7 +93,7 @@ def detokenize(tokens):
 def _device_put_sharded(sharded_tree, devices):
     leaves, treedef = jax.tree_flatten(sharded_tree)
     n = leaves[0].shape[0]
-    return jax.api.device_put_sharded(
+    return jax.device_put_sharded(
         [jax.tree_unflatten(treedef, [l[i] for l in leaves]) for i in range(n)], devices
     )
 

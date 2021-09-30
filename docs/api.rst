@@ -453,21 +453,17 @@ pax.jit
 pax.grad
 --------
 
-
 ``pax.grad`` is a wrapper of ``jax.grad``. 
-
 
 
 pax.vmap
 --------
-
 
 ``pax.vmap`` is a wrapper of ``jax.vmap``. 
 
 
 pax.pmap
 --------
-
 
 ``pax.pmap`` is a wrapper of ``jax.pmap``. 
 
