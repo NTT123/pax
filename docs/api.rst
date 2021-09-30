@@ -453,28 +453,17 @@ pax.jit
 pax.grad
 --------
 
-
 ``pax.grad`` is a wrapper of ``jax.grad``. 
-
-
-
-pax.grad_module
----------------
-
-.. autofunction:: grad_module
-
 
 
 pax.vmap
 --------
-
 
 ``pax.vmap`` is a wrapper of ``jax.vmap``. 
 
 
 pax.pmap
 --------
-
 
 ``pax.pmap`` is a wrapper of ``jax.pmap``. 
 

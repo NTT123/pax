@@ -15,8 +15,8 @@ class BatchNorm(Module):
     Use EMA modules to track the averaged mean and averaged variance for later uses in `eval` mode.
     """
 
-    scale: Optional[jnp.ndarray] = None
-    offset: Optional[jnp.ndarray] = None
+    scale: Optional[jnp.ndarray]
+    offset: Optional[jnp.ndarray]
 
     ema_mean: EMA
     ema_var: EMA
@@ -66,8 +66,12 @@ class BatchNorm(Module):
 
         if create_scale:
             self.register_parameter("scale", jnp.ones(param_shape, dtype=jnp.float32))
+        else:
+            self.scale = None
         if create_offset:
             self.register_parameter("offset", jnp.zeros(param_shape, dtype=jnp.float32))
+        else:
+            self.offset = None
 
         self.ema_mean = EMA(jnp.zeros_like(self.offset), decay_rate, debias=True)
         self.ema_var = EMA(jnp.zeros_like(self.offset), decay_rate, debias=True)

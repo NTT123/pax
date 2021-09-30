@@ -25,8 +25,8 @@ class LayerNorm(Module):
     See: https://arxiv.org/abs/1607.06450.
     """
 
-    scale: Optional[jnp.ndarray] = None
-    offset: Optional[jnp.ndarray] = None
+    scale: Optional[jnp.ndarray]
+    offset: Optional[jnp.ndarray]
 
     def __init__(
         self,
@@ -88,10 +88,14 @@ class LayerNorm(Module):
             self.register_parameter(
                 "scale", self.scale_init(param_shape, jnp.float32, rng1)
             )
+        else:
+            self.scale = None
         if create_offset:
             self.register_parameter(
                 "offset", self.offset_init(param_shape, jnp.float32, rng2)
             )
+        else:
+            self.offset = None
 
     def __call__(
         self,

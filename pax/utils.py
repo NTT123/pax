@@ -47,8 +47,8 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
     The returned ``update_fn`` function is:
 
     >>> def _update_fn(model: Module, optimizer: GradientTransformation, inputs: Any):
-    ...     grads, (aux, model) = pax.grad_module(loss_fn)(model, inputs)
-    ...     assertStructureEqual(grads, select_parameters(model))
+    ...     grads, (aux, model) = pax.grad(loss_fn, hax_aux=True, allow_int=True)(model, inputs)
+    ...     assertStructureEqual(grads, model)
     ...     params = select_parameters(model)
     ...     updates, optimizer = transform_gradients(grads, optimizer, params=params)
     ...     params = apply_updates(params, updates=updates)
@@ -84,7 +84,7 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
             aux: the aux info.
         """
 
-        from .grad_module import grad_module
+        from .strict_mode import grad
         from .transforms import (
             apply_updates,
             select_parameters,
@@ -92,8 +92,8 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
             update_parameters,
         )
 
-        grads, (aux, model) = grad_module(loss_fn)(model, inputs)
-        assertStructureEqual(grads, select_parameters(model))
+        grads, (aux, model) = grad(loss_fn, has_aux=True, allow_int=True)(model, inputs)
+        assertStructureEqual(grads, model)
         params = select_parameters(model)
         updates, optimizer = transform_gradients(grads, optimizer, params=params)
         params = apply_updates(params, updates=updates)

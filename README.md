@@ -61,12 +61,12 @@ def loss_fn(model: Counter, x: jnp.ndarray):
     loss = jnp.mean(jnp.square(x - y))
     return loss, (loss, model)
 
-grad_fn = pax.grad_module(loss_fn)
+grad_fn = pax.grad(loss_fn, has_aux=True, allow_int=True)
 
 net = Counter(3)
 x = jnp.array(10.)
 grads, (loss, net) = grad_fn(net, x)
-print(grads.counter) # None
+print(grads.counter) # (b'',)
 print(grads.bias) # 60.0
 ```
 
@@ -75,8 +75,8 @@ There are a few important things in the above example:
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``loss_fn`` returns the updated `model` in its output.
-* ``pax.grad_module`` is a thin wrapper of `jax.grad`. It returns a function which computes the gradients with respect to trainable parameters of a module. It also enables immutable mode and other safeguards to prevent potential bugs.
-
+* ``pax.grad`` is a thin wrapper of `jax.grad`. It returns the gradient transformation of `loss_fn`. It also enables immutable mode and other safeguards to prevent potential bugs.
+* ``allow_int=True`` to compute gradients with respect to ``model`` which contains integer ``ndarray`` leaves.
 
 ## Pax and other libraries <a id="paxandfriends"></a>
 

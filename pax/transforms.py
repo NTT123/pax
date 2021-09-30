@@ -145,7 +145,7 @@ def transform_gradients(grads: T, optimizer: O, *, params: T) -> Tuple[T, O]:
         - **optimizer** : The *updated* optimizer.
     """
     optimizer = optimizer.copy()
-    updates = optimizer(grads, params=params)
+    updates = optimizer(grads.parameters(), params=params)
     return updates, optimizer
 
 
@@ -179,7 +179,7 @@ def apply_gradients(
         - **new_model**: the updated model.
         - **new_optimizer**: the updated optimizer.
     """
-    params = select_parameters(model)
+    params = model.parameters()
     updates, new_optimizer = transform_gradients(grads, optimizer, params=params)
     new_params = apply_updates(params, updates=updates)
 
