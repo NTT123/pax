@@ -300,14 +300,12 @@ class apply_mp_policy(Module, Generic[T]):
             (self._module, args, kwargs)
         )
 
-        self._module.update(casted_mod, in_place=True)
-
-        casted_mod_clone = self._module.copy()
+        casted_mod_clone = casted_mod._module.copy()
         # task 2
-        output = self._module(*casted_args, **casted_kwargs)
+        output = casted_mod(*casted_args, **casted_kwargs)
 
         # task 3
-        if jax.tree_structure(self._module) != jax.tree_structure(old_mod_clone):
+        if jax.tree_structure(casted_mod) != jax.tree_structure(old_mod_clone):
             raise RuntimeError(
                 f"The module `{self._module.__class__.__name__}` has its treedef modified during the forward pass. "
                 f"This is currently not supported for a mixed-precision module!"
@@ -321,11 +319,9 @@ class apply_mp_policy(Module, Generic[T]):
             else:
                 return self.mp_policy.cast_to_param(updated_new)
 
-        casted_to_param_mod = jax.tree_map(
-            reuse_params_fn, self._module, casted_mod_clone, old_mod_clone
+        self._module = jax.tree_map(
+            reuse_params_fn, casted_mod, casted_mod_clone, old_mod_clone
         )
-
-        self._module.update(casted_to_param_mod, in_place=True)
 
         # task 4
         output = self.mp_policy.cast_to_output(output)
