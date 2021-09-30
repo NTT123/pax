@@ -319,9 +319,11 @@ class apply_mp_policy(Module, Generic[T]):
             else:
                 return self.mp_policy.cast_to_param(updated_new)
 
-        self._module = jax.tree_map(
+        casted_mod = jax.tree_map(
             reuse_params_fn, casted_mod, casted_mod_clone, old_mod_clone
         )
+
+        self._module.update(casted_mod, in_place=True)
 
         # task 4
         output = self.mp_policy.cast_to_output(output)
