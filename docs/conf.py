@@ -31,7 +31,7 @@ copyright = "2021, Thông Nguyễn"
 author = "Thông Nguyễn"
 
 # The full version, including alpha/beta/rc tags
-release = "v0.2.11rc"
+release = "v0.2.11"
 
 
 # -- General configuration ---------------------------------------------------
