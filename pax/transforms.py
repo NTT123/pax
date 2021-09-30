@@ -300,7 +300,7 @@ class apply_mp_policy(Module, Generic[T]):
             (self._module, args, kwargs)
         )
 
-        casted_mod_clone = casted_mod._module.copy()
+        casted_mod_clone = casted_mod.copy()
         # task 2
         output = casted_mod(*casted_args, **casted_kwargs)
 
