@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-__version__ = "0.2.11"
+__version__ = "0.2.12rc"
 url = "https://github.com/ntt123/pax"
 
 install_requires = [

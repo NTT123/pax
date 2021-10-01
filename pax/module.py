@@ -20,10 +20,7 @@ from .ctx import state as ctx_state
 
 T = TypeVar("T", bound="Module")
 
-# TODO: use NamedTuple, but, it is slower :-(
-ModuleAuxiliaryData = Tuple
 
-# All supported module's field kinds
 class PaxFieldKind(Enum):
     """``PaxFieldKind`` lists all supported attribute kinds in ``pax.Module``.
 
@@ -46,15 +43,14 @@ class PaxFieldKind(Enum):
 
 
 class Module:
-    """Module is the central object of Pax.
+    """Module manages all information related to the pytree.
 
-    It manages all information related to the pytree.
-    It also includes methods (usually, ``__call__``) that can be executed to compute functions on the pytree.
+    There are two important methods:
 
-    The two important methods: ``tree_flatten`` and ``tree_unflatten`` specify how a module can be converted to a ``(leaves, treedef)``,
-    and otherwise from ``(treedef, leaves)`` back to a module.
+    - ``tree_flatten`` converts a module to ``(leaves, treedef)``
+    - ``tree_unflatten`` restores the module.
 
-    A module maintains a ``_name_to_kind`` dictionary that tells if an attribute is part of
+    Module maintains a ``_name_to_kind`` dictionary that tells if an attribute is part of
     the pytree and the kind of the tree part (parameter, state, module, etc.).
     """
 
@@ -278,7 +274,7 @@ class Module:
         return children, (children_names, not_tree)
 
     @classmethod
-    def tree_unflatten(cls, aux_data: ModuleAuxiliaryData, children):
+    def tree_unflatten(cls, aux_data, children):
         """Recreate a module from its ``(children, treedef)``."""
         module = object.__new__(cls)
         children_names, not_tree = aux_data
