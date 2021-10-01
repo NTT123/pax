@@ -337,3 +337,25 @@ def test_deepcopy_pytreedef():
         g = f.copy()
 
     assert jax.tree_structure(g) == jax.tree_structure(f)
+
+
+def test_delete_attribute():
+    f = pax.nn.Linear(3, 3)
+    f.t = pax.nn.Linear(1, 1)
+    assert "t" in f._name_to_kind
+    with pytest.raises(ValueError):
+        del f.t
+
+
+def test_module_list_contains_int():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+
+            self.register_modules("lst", [])
+            self.lst.append(pax.nn.Linear(3, 3))
+            self.lst.append(0)
+
+    m = M()
+    with pytest.raises(ValueError):
+        pax.scan_bugs(m)
