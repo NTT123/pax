@@ -174,10 +174,7 @@ def assertStructureEqual(self: T, other: T):
             k: ((v.shape, v.dtype) if isinstance(v, jnp.ndarray) else v)
             for (k, v) in d.items()
             if (k not in self._name_to_kind)
-            or (
-                self._name_to_kind[k]
-                not in [PaxFieldKind.MODULE, PaxFieldKind.MODULE_SUBTREE]
-            )
+            or (self._name_to_kind[k] != PaxFieldKind.MODULE)
         }
 
     tc.assertDictEqual(filter_out_module(vars(self)), filter_out_module(vars(other)))

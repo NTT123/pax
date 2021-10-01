@@ -64,8 +64,6 @@ def freeze_parameters(mod: T) -> T:
         for k, v in mod._name_to_kind.items():
             if v == PaxFieldKind.PARAMETER:
                 new_name_to_kind[k] = PaxFieldKind.STATE
-            elif v == PaxFieldKind.PARAMETER_SUBTREE:
-                new_name_to_kind[k] = PaxFieldKind.STATE_SUBTREE
             else:
                 new_name_to_kind[k] = v
 
@@ -94,9 +92,9 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
     """
     assert kind in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]
     if kind == PaxFieldKind.STATE:
-        none_list = [PaxFieldKind.PARAMETER, PaxFieldKind.PARAMETER_SUBTREE]
+        none_list = [PaxFieldKind.PARAMETER]
     else:
-        none_list = [PaxFieldKind.STATE, PaxFieldKind.STATE_SUBTREE]
+        none_list = [PaxFieldKind.STATE]
 
     def _select_apply_fn(mod: T) -> T:
         for k, v in mod._name_to_kind.items():
@@ -217,8 +215,8 @@ class flatten_module(Module, Generic[T]):
         self.params_treedef = params_treedef
         self.states_treedef = states_treedef
         self.module_treedef = jax.tree_structure(mod)
-        self.register_parameter_subtree("params_leaves", params_leaves)
-        self.register_state_subtree("states_leaves", states_leaves)
+        self.register_parameters("params_leaves", params_leaves)
+        self.register_states("states_leaves", states_leaves)
         self.num_leaves = len(jax.tree_leaves(mod))
 
         if hasattr(mod, "unflatten"):

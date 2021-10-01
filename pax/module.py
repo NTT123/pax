@@ -24,21 +24,16 @@ T = TypeVar("T", bound="Module")
 class PaxFieldKind(Enum):
     """``PaxFieldKind`` lists all supported attribute kinds in ``pax.Module``.
 
-    An attribute will be considered as part of the pytree structure if its kind is one of ``STATE_*``, ``PARAMETER_*``, ``MODULE_*``.
+    An attribute will be considered as part of the pytree structure if its kind is one of ``STATE``, ``PARAMETER``, ``MODULE``.
 
     * A ``STATE`` attribute is a non-trainable leaf of the pytree.
-    * A ``STATE_SUBTREE`` attribute is a non-trainable subtree.
     * A ``PARAMETER`` attribute is a trainable leaf of the pytree.
-    * A ``PARAMETER_SUBTREE`` attribute is a trainable subtree.
-    * A ``MODULE`` or ``MODULE_SUBTREE`` attribute is a generic subtree.
+    * A ``MODULE`` attribute is a generic subtree.
     """
 
     STATE: int = 1
     PARAMETER: int = 2
     MODULE: int = 3
-    STATE_SUBTREE: int = 4
-    PARAMETER_SUBTREE: int = 5
-    MODULE_SUBTREE: int = 6
     OTHERS: int = -1
 
 
@@ -138,33 +133,22 @@ class Module:
 
         if kind != PaxFieldKind.OTHERS and value is not None:
             if kind in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]:
-                if not is_ndarray(value):
+                if not (is_ndarray(value) or all_ndarray):
                     raise ValueError(
                         f"Assigning a non-ndarray value to an attribute of kind {kind}"
                     )
-            elif kind in [PaxFieldKind.PARAMETER_SUBTREE, PaxFieldKind.STATE_SUBTREE]:
-                if not all_ndarray:
-                    raise ValueError(
-                        f"Assigning a value which contains a non-ndarray object to an attribute of kind {kind}"
-                    )
             elif kind == PaxFieldKind.MODULE:
-                if not isinstance(value, Module):
+                if not (isinstance(value, Module) or all_modules):
                     raise ValueError(
                         f"Assigning a non-Module object to an attribute of kind {kind}"
                     )
-            elif kind == PaxFieldKind.MODULE_SUBTREE:
-                if not all_modules:
-                    raise ValueError(
-                        f"Assigning a value which contains a non-Module object to an attribute of kind {kind}"
-                    )
+            else:
+                pass
 
         if ctx_state._enable_mutability:
             super().__setattr__(name, value)
         else:
-            if kind in [
-                PaxFieldKind.STATE,
-                PaxFieldKind.STATE_SUBTREE,
-            ]:
+            if kind == PaxFieldKind.STATE:
                 super().__setattr__(name, value)
             else:
                 raise ValueError(
@@ -172,8 +156,7 @@ class Module:
                 )
 
         # The automatic kind registering system:
-        #   - if a value is a Module's instance, it is registered as MODULE,
-        #   - if it contains Module's instances only, it is registered MODULE_SUBTREE,
+        #   - if it contains Module's instances only, it is registered MODULE,
         #   - if it contains a Module, raise ValueError,
         #   - if it contains a ndarray, raise ValueError.
         if (
@@ -181,10 +164,8 @@ class Module:
             and len(module_leaves) > 0
             and name not in self._name_to_kind
         ):
-            if isinstance(value, Module):
+            if isinstance(value, Module) or all_modules:
                 self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
-            elif all_modules:
-                self._update_name_to_kind_dict(name, PaxFieldKind.MODULE_SUBTREE)
             elif any_modules:
                 raise ValueError(
                     "Cannot mix a `pax.Module` with other kind in the same attribute."
@@ -207,7 +188,7 @@ class Module:
                 "Cannot delete module's attribute {name} in immutable mode."
             )
 
-    def register_parameter(self, name: str, value: jnp.ndarray):
+    def register_parameters(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
 
@@ -217,7 +198,7 @@ class Module:
         self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
         setattr(self, name, value)
 
-    def register_state(self, name: str, value: jnp.ndarray):
+    def register_states(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
 
@@ -227,7 +208,7 @@ class Module:
         self._update_name_to_kind_dict(name, PaxFieldKind.STATE)
         setattr(self, name, value)
 
-    def register_module(self, name: str, value: "Module"):
+    def register_modules(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.MODULE`` in the ``_name_to_kind`` dictionary."""
 
@@ -235,36 +216,6 @@ class Module:
             raise RuntimeError("Cannot register an existing attribute")
 
         self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
-        setattr(self, name, value)
-
-    def register_parameter_subtree(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.PARAMETER_SUBTREE`` in the ``_name_to_kind`` dictionary."""
-
-        if hasattr(self, name):
-            raise RuntimeError("Cannot register an existing attribute")
-
-        self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER_SUBTREE)
-        setattr(self, name, value)
-
-    def register_state_subtree(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.STATE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
-
-        if hasattr(self, name):
-            raise RuntimeError("Cannot register an existing attribute")
-
-        self._update_name_to_kind_dict(name, PaxFieldKind.STATE_SUBTREE)
-        setattr(self, name, value)
-
-    def register_module_subtree(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.MODULE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
-
-        if hasattr(self, name):
-            raise RuntimeError("Cannot register an existing attribute")
-
-        self._update_name_to_kind_dict(name, PaxFieldKind.MODULE_SUBTREE)
         setattr(self, name, value)
 
     def tree_flatten(self) -> Tuple[list, Tuple[List[str], Any]]:
@@ -326,7 +277,7 @@ class Module:
         module_subtrees = [
             getattr(self, name)
             for name, kind in self._name_to_kind.items()
-            if kind in [PaxFieldKind.MODULE, PaxFieldKind.MODULE_SUBTREE]
+            if kind == PaxFieldKind.MODULE
         ]
 
         submods, _ = jax.tree_flatten(
@@ -383,7 +334,7 @@ class Module:
             leaves = jax.tree_leaves(value)
             # Check if a parameter or parameter subtree
             # contains non-differentiable ndarray (e.g., uint32 array)
-            if kind in [PaxFieldKind.PARAMETER, PaxFieldKind.PARAMETER_SUBTREE]:
+            if kind == PaxFieldKind.PARAMETER:
                 for leaf in leaves:
                     if hasattr(leaf, "dtype") and not (
                         isdt(leaf.dtype, jnp.complexfloating)
@@ -406,7 +357,7 @@ class Module:
                         raise ValueError(
                             f"Unregistered field `{self}.{name}` ({kind}) contains a Module "
                             f"({leaf}). "
-                            f"Consider registering it as a MODULE or MODULE_SUBTREE."
+                            f"Consider registering it as a MODULE."
                         )
 
                 # Check if a field contains unregistered ndarray
@@ -418,12 +369,7 @@ class Module:
                         )
 
             # Check if an unregistered field contains pax.Module instance
-            if kind not in [
-                PaxFieldKind.MODULE,
-                PaxFieldKind.MODULE_SUBTREE,
-                PaxFieldKind.STATE,
-                PaxFieldKind.STATE_SUBTREE,
-            ]:
+            if kind not in [PaxFieldKind.MODULE, PaxFieldKind.STATE]:
                 for mod in mods:
                     if isinstance(mod, Module):
                         raise ValueError(

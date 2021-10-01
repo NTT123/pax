@@ -65,11 +65,13 @@ class BatchNorm(Module):
         self.reduced_axes = tuple(reduced_axes)
 
         if create_scale:
-            self.register_parameter("scale", jnp.ones(param_shape, dtype=jnp.float32))
+            self.register_parameters("scale", jnp.ones(param_shape, dtype=jnp.float32))
         else:
             self.scale = None
         if create_offset:
-            self.register_parameter("offset", jnp.zeros(param_shape, dtype=jnp.float32))
+            self.register_parameters(
+                "offset", jnp.zeros(param_shape, dtype=jnp.float32)
+            )
         else:
             self.offset = None
 

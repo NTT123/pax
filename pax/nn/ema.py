@@ -23,12 +23,12 @@ class EMA(Module):
         """
 
         super().__init__()
-        self.register_state_subtree("averages", initial_value)
+        self.register_states("averages", initial_value)
         self.decay_rate = decay_rate
         if debias:
             # avoid integer ndarray for `jax.grad` convenience,
             # e.g., no need to pass `allow_int=True` to `jax.grad`.
-            self.register_state("debias", jnp.array(0.0))
+            self.register_states("debias", jnp.array(0.0))
         else:
             self.debias = None
 

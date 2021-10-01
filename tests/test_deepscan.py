@@ -14,14 +14,14 @@ def test_list_of_mod():
             self.a = [pax.nn.Linear(3, 3)]
 
     m = M()
-    m._name_to_kind["a"] == pax.module.PaxFieldKind.MODULE_SUBTREE
+    m._name_to_kind["a"] == pax.module.PaxFieldKind.MODULE
 
 
 def test_assigned_field_an_array():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            self.register_parameter("a", np.array([3.0, 1.0], dtype=np.float32))
+            self.register_parameters("a", np.array([3.0, 1.0], dtype=np.float32))
 
     # no error because we will automatically assign `a` to kind PARAMETER
     m = M()
@@ -34,7 +34,7 @@ def test_assigned_field_an_array():
     n = N()
     n = pax.scan_bugs(n)
     # no error because we will automatically assign `a` to kind PARAMETER
-    n.register_parameter("b", jnp.array([1, 2, 3], dtype=jnp.float32))
+    n.register_parameters("b", jnp.array([1, 2, 3], dtype=jnp.float32))
     assert n._name_to_kind["b"] == pax.module.PaxFieldKind.PARAMETER
 
 
@@ -42,7 +42,7 @@ def test_assign_int_to_param():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            self.register_parameter("a", np.array([3, 1], dtype=np.int32))
+            self.register_parameters("a", np.array([3, 1], dtype=np.int32))
 
     with pytest.raises(ValueError):
         m = M()

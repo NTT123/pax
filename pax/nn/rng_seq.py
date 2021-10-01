@@ -33,7 +33,7 @@ class RngSeq(Module):
             _rng_key = rng.next_rng_key()
 
         if isinstance(_rng_key, (np.ndarray, jnp.ndarray)):
-            self.register_state("_rng_key", _rng_key)
+            self.register_states("_rng_key", _rng_key)
         else:
             raise ValueError("Impossible")
 

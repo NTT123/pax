@@ -47,7 +47,7 @@ class Embed(Module):
         if rng_key is None:
             rng_key = next_rng_key()
 
-        self.register_parameter("weight", w_init(shape, jnp.float32, rng_key))
+        self.register_parameters("weight", w_init(shape, jnp.float32, rng_key))
 
     def __call__(self, x: jnp.ndarray):
         """Return embedded vectors indexed by ``x``."""
