@@ -295,11 +295,9 @@ class apply_mp_policy(Module, Generic[T]):
         old_mod_clone = self._module.copy()
 
         # task 1
-        casted_mod, casted_args, casted_kwargs = self.mp_policy.cast_to_compute(
+        self._module, casted_args, casted_kwargs = self.mp_policy.cast_to_compute(
             (self._module, args, kwargs)
         )
-
-        self._module.update(casted_mod, in_place=True)
 
         casted_mod_clone = self._module.copy()
         # task 2
@@ -320,11 +318,9 @@ class apply_mp_policy(Module, Generic[T]):
             else:
                 return self.mp_policy.cast_to_param(updated_new)
 
-        casted_to_param_mod = jax.tree_map(
+        self._module = jax.tree_map(
             reuse_params_fn, self._module, casted_mod_clone, old_mod_clone
         )
-
-        self._module.update(casted_to_param_mod, in_place=True)
 
         # task 4
         output = self.mp_policy.cast_to_output(output)
