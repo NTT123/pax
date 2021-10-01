@@ -437,7 +437,7 @@ class Module:
                         )
 
     def apply(self: T, apply_fn) -> T:
-        """Apply a function to all sub-modules.
+        """Apply a function to all submodules.
 
         **Note**: this function returns a transformed copy of the current module.
 
