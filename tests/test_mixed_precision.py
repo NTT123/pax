@@ -20,7 +20,7 @@ def test_wrap_unwrap_mixed_precision():
     x = jax.numpy.ones((3, 3))
     assert f(x).dtype == full
     assert ff(x).dtype == half
-    assert fff(x).dtype == full
+    assert fff(x).dtype == full  # type: ignore
 
 
 def test_sequential_mixed_precision():

@@ -27,6 +27,7 @@ def forward(mod: T, *inputs, params=None, **kwinputs) -> Tuple[T, Any]:
         mod: The module to be executed.
         params: Use parameters in `params` if not ``None``.
     """
+    assert callable(mod), "Expecting a callable module." ""
     mod = mod.copy()
     if params is not None:
         mod = update_parameters(mod, params=params)
@@ -144,6 +145,7 @@ def transform_gradients(grads: T, optimizer: O, *, params: T) -> Tuple[T, O]:
         - **updates** : The transformed gradients.
         - **optimizer** : The *updated* optimizer.
     """
+    assert callable(optimizer), "Expecting a callable optimizer." ""
     optimizer = optimizer.copy()
     updates = optimizer(grads.parameters(), params=params)
     return updates, optimizer
@@ -237,6 +239,7 @@ class flatten_module(Module, Generic[T]):
     def __call__(self, *args, **kwargs):
         """Recreate the original module, then call it."""
         module = self.unflatten()
+        assert callable(module), "Expecting a callable module." ""
         out = module(*args, **kwargs)
 
         with ctx.mutable():

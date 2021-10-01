@@ -488,9 +488,6 @@ class Module:
         leaves = jax.tree_map(lambda x: (x.shape, x.dtype), leaves)
         return hash((tuple(leaves), treedef))
 
-    def __call__(self, *args, **kwargs):
-        raise NotImplementedError
-
     def train(self: T) -> T:
         """Return a module in training mode."""
         from .transforms import enable_train_mode

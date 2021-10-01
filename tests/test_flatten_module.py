@@ -31,6 +31,9 @@ def test_flatten_non_callable_module():
         def __init__(self):
             super().__init__()
 
+        def __call__(self, x):
+            return x
+
     m = M()
 
     # with pytest.raises(ValueError):
