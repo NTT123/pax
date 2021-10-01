@@ -114,10 +114,6 @@ class Module:
 
         kind = self._name_to_kind.get(name, PaxFieldKind.OTHERS)
 
-        module_leaves, _ = jax.tree_flatten(
-            value, is_leaf=lambda x: isinstance(x, Module)
-        )
-
         if ctx_state._enable_mutability:
             super().__setattr__(name, value)
         else:
@@ -129,6 +125,9 @@ class Module:
                 )
 
         # If `value` contains Module's instances only, it is registered as MODULE.
+        module_leaves, _ = jax.tree_flatten(
+            value, is_leaf=lambda x: isinstance(x, Module)
+        )
         all_modules = all(isinstance(mod, Module) for mod in module_leaves)
         if (
             value is not None
@@ -360,7 +359,7 @@ class Module:
     def apply(self: T, apply_fn) -> T:
         """Apply a function to all submodules.
 
-        **Note**: this function returns a transformed copy of the current module.
+        **Note**: this function returns a transformed copy of the module.
 
         Arguments:
             apply_fn: a function which inputs a module and outputs a transformed module.
