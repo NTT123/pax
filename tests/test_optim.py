@@ -48,7 +48,7 @@ def test_sgd():
             super().__init__()
             self.momentum = momentum
             self.learning_rate = learning_rate
-            self.register_state_subtree(
+            self.register_states(
                 "velocity", jax.tree_map(lambda x: jnp.zeros_like(x), params)
             )
 

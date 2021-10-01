@@ -20,7 +20,7 @@ def test_wrap_unwrap_mixed_precision():
     x = jax.numpy.ones((3, 3))
     assert f(x).dtype == full
     assert ff(x).dtype == half
-    assert fff(x).dtype == full
+    assert fff(x).dtype == full  # type: ignore
 
 
 def test_sequential_mixed_precision():
@@ -56,7 +56,7 @@ def test_change_internal_state():
 
         def __init__(self):
             super().__init__()
-            self.register_state("counter", jnp.array(0))
+            self.register_states("counter", jnp.array(0))
 
         def __call__(self, x):
             self.counter = self.counter + 1
@@ -83,7 +83,7 @@ def test_change_tree_def():
 
         def __init__(self):
             super().__init__()
-            self.register_state("counter", jnp.array(0))
+            self.register_states("counter", jnp.array(0))
             self.count = 0
 
         def __call__(self, x):

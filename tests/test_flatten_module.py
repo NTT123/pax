@@ -18,7 +18,7 @@ def test_none_state():
 
         def __init__(self):
             super().__init__()
-            self.register_state_subtree("s", [])
+            self.register_states("s", [])
 
     m = M()
     p = pax.select_parameters(m)
@@ -30,6 +30,9 @@ def test_flatten_non_callable_module():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
+
+        def __call__(self, x):
+            return x
 
     m = M()
 

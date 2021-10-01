@@ -30,7 +30,7 @@ def test_type_union():
 
         def __init__(self):
             super().__init__()
-            self.register_state("count", [0])
+            self.register_states("count", [0])
 
     with pytest.raises(ValueError):
         counter = Counter()
@@ -57,7 +57,7 @@ def test_type_sequence():
 
         def __init__(self):
             super().__init__()
-            self.register_parameter_subtree("count", jnp.array([0.0]))
+            self.register_parameters("count", jnp.array([0.0]))
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -70,9 +70,7 @@ def test_type_dict():
 
         def __init__(self):
             super().__init__()
-            self.register_state_subtree(
-                "count", {"conv1": [1, 2, 3], "conv2": ["a", "b"]}
-            )
+            self.register_states("count", {"conv1": [1, 2, 3], "conv2": ["a", "b"]})
 
     with pytest.raises(ValueError):
         counter = Counter()
@@ -86,7 +84,7 @@ def test_type_dict_dict1():
 
         def __init__(self):
             super().__init__()
-            self.register_state_subtree(
+            self.register_states(
                 "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
@@ -102,7 +100,7 @@ def test_type_dict_dict_optional():
 
         def __init__(self):
             super().__init__()
-            self.register_state_subtree(
+            self.register_states(
                 "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
@@ -144,7 +142,7 @@ def test_type_optional():
 
         def __init__(self):
             super().__init__()
-            self.register_state("count", jnp.array(0))
+            self.register_states("count", jnp.array(0))
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -169,14 +167,14 @@ def test_state_of_param():
     class M1(pax.Module):
         def __init__(self):
             super().__init__()
-            self.register_parameter("p1", jnp.array(0.0, dtype=jnp.float32))
+            self.register_parameters("p1", jnp.array(0.0, dtype=jnp.float32))
 
     m1 = M1()
 
     class M2(pax.Module):
         def __init__(self, m11):
             super().__init__()
-            self.register_state_subtree("m2", {"m1": m11})
+            self.register_states("m2", {"m1": m11})
 
     m2 = M2(m1)
     assert len(jax.tree_leaves(pax.select_kind(m1, kind=pax.PaxFieldKind.STATE))) == 0
@@ -277,7 +275,7 @@ def test_assign_empty_list_1():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            # self.register_module_subtree("fc", [])
+            # self.register_modules("fc", [])
             self.fc = []
             for i in range(5):
                 self.fc.append(pax.nn.Linear(3, 3))
@@ -293,7 +291,7 @@ def test_assign_empty_list_2():
 
         def __init__(self):
             super().__init__()
-            self.register_module_subtree("fc", [])
+            self.register_modules("fc", [])
             for i in range(5):
                 self.fc.append(pax.nn.Linear(3, 3))
 
@@ -316,7 +314,7 @@ def test_apply_inside_state_subtree():
 
         def __init__(self, m11):
             super().__init__()
-            self.register_state_subtree("m2", {"m1": m11})
+            self.register_states("m2", {"m1": m11})
 
     m2 = M2(pax.nn.Linear(2, 2))
     assert m2.training == True
@@ -339,3 +337,25 @@ def test_deepcopy_pytreedef():
         g = f.copy()
 
     assert jax.tree_structure(g) == jax.tree_structure(f)
+
+
+def test_delete_attribute():
+    f = pax.nn.Linear(3, 3)
+    f.t = pax.nn.Linear(1, 1)
+    assert "t" in f._name_to_kind
+    with pytest.raises(ValueError):
+        del f.t
+
+
+def test_module_list_contains_int():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+
+            self.register_modules("lst", [])
+            self.lst.append(pax.nn.Linear(3, 3))
+            self.lst.append(0)
+
+    m = M()
+    with pytest.raises(ValueError):
+        pax.scan_bugs(m)

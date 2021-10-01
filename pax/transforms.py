@@ -27,6 +27,7 @@ def forward(mod: T, *inputs, params=None, **kwinputs) -> Tuple[T, Any]:
         mod: The module to be executed.
         params: Use parameters in `params` if not ``None``.
     """
+    assert callable(mod), "Expecting a callable module." ""
     mod = mod.copy()
     if params is not None:
         mod = update_parameters(mod, params=params)
@@ -63,8 +64,6 @@ def freeze_parameters(mod: T) -> T:
         for k, v in mod._name_to_kind.items():
             if v == PaxFieldKind.PARAMETER:
                 new_name_to_kind[k] = PaxFieldKind.STATE
-            elif v == PaxFieldKind.PARAMETER_SUBTREE:
-                new_name_to_kind[k] = PaxFieldKind.STATE_SUBTREE
             else:
                 new_name_to_kind[k] = v
 
@@ -93,9 +92,9 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
     """
     assert kind in [PaxFieldKind.PARAMETER, PaxFieldKind.STATE]
     if kind == PaxFieldKind.STATE:
-        none_list = [PaxFieldKind.PARAMETER, PaxFieldKind.PARAMETER_SUBTREE]
+        none_list = [PaxFieldKind.PARAMETER]
     else:
-        none_list = [PaxFieldKind.STATE, PaxFieldKind.STATE_SUBTREE]
+        none_list = [PaxFieldKind.STATE]
 
     def _select_apply_fn(mod: T) -> T:
         for k, v in mod._name_to_kind.items():
@@ -144,6 +143,7 @@ def transform_gradients(grads: T, optimizer: O, *, params: T) -> Tuple[T, O]:
         - **updates** : The transformed gradients.
         - **optimizer** : The *updated* optimizer.
     """
+    assert callable(optimizer), "Expecting a callable optimizer." ""
     optimizer = optimizer.copy()
     updates = optimizer(grads.parameters(), params=params)
     return updates, optimizer
@@ -215,8 +215,8 @@ class flatten_module(Module, Generic[T]):
         self.params_treedef = params_treedef
         self.states_treedef = states_treedef
         self.module_treedef = jax.tree_structure(mod)
-        self.register_parameter_subtree("params_leaves", params_leaves)
-        self.register_state_subtree("states_leaves", states_leaves)
+        self.register_parameters("params_leaves", params_leaves)
+        self.register_states("states_leaves", states_leaves)
         self.num_leaves = len(jax.tree_leaves(mod))
 
         if hasattr(mod, "unflatten"):
@@ -237,6 +237,7 @@ class flatten_module(Module, Generic[T]):
     def __call__(self, *args, **kwargs):
         """Recreate the original module, then call it."""
         module = self.unflatten()
+        assert callable(module), "Expecting a callable module." ""
         out = module(*args, **kwargs)
 
         with ctx.mutable():
@@ -292,11 +293,9 @@ class apply_mp_policy(Module, Generic[T]):
         old_mod_clone = self._module.copy()
 
         # task 1
-        casted_mod, casted_args, casted_kwargs = self.mp_policy.cast_to_compute(
+        self._module, casted_args, casted_kwargs = self.mp_policy.cast_to_compute(
             (self._module, args, kwargs)
         )
-
-        self._module.update(casted_mod, in_place=True)
 
         casted_mod_clone = self._module.copy()
         # task 2
@@ -317,11 +316,9 @@ class apply_mp_policy(Module, Generic[T]):
             else:
                 return self.mp_policy.cast_to_param(updated_new)
 
-        casted_to_param_mod = jax.tree_map(
+        self._module = jax.tree_map(
             reuse_params_fn, self._module, casted_mod_clone, old_mod_clone
         )
-
-        self._module.update(casted_to_param_mod, in_place=True)
 
         # task 4
         output = self.mp_policy.cast_to_output(output)
