@@ -290,7 +290,8 @@ class apply_mp_policy(Module, Generic[T]):
           the original parameter will be reused to avoid a `cast` operation.
         * Task 4: It casts the output to the "output" data type.
         """
-        old_mod_clone = self._module.copy()
+        with ctx.immutable():
+            old_mod_clone = self._module.copy()
 
         # task 1
         mod, casted_args, casted_kwargs = self.mp_policy.cast_to_compute(

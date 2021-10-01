@@ -102,7 +102,7 @@ def test_change_tree_def():
     assert mm._module.counter.item() == 0  # type: ignore
     with pytest.raises(RuntimeError):
         y = mm(x)
-    assert mm._module.counter.item() == 1  # type: ignore
+    assert mm._module.counter.item() == 0  # type: ignore
     assert m.counter.item() == 0
 
 
