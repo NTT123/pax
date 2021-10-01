@@ -818,7 +818,7 @@ def test_conv_wrong_input_size():
         y = conv1(x)
 
 
-def test_list_sub_modules_in_state():
+def test_list_submodules_in_state():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
@@ -826,7 +826,7 @@ def test_list_sub_modules_in_state():
             self.register_state_subtree("state_of_module", pax.nn.Linear(2, 5))
 
     m = M()
-    mods = m.sub_modules()
+    mods = m.submodules()
     assert len(mods) == 1, "expecting `state_of_module` is not counted as a module"
 
 

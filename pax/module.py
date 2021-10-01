@@ -211,12 +211,18 @@ class Module:
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
 
+        if hasattr(self, name):
+            raise RuntimeError("Cannot register an existing attribute")
+
         self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
         setattr(self, name, value)
 
     def register_state(self, name: str, value: jnp.ndarray):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
+
+        if hasattr(self, name):
+            raise RuntimeError("Cannot register an existing attribute")
 
         self._update_name_to_kind_dict(name, PaxFieldKind.STATE)
         setattr(self, name, value)
@@ -225,12 +231,18 @@ class Module:
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.MODULE`` in the ``_name_to_kind`` dictionary."""
 
+        if hasattr(self, name):
+            raise RuntimeError("Cannot register an existing attribute")
+
         self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
         setattr(self, name, value)
 
     def register_parameter_subtree(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER_SUBTREE`` in the ``_name_to_kind`` dictionary."""
+
+        if hasattr(self, name):
+            raise RuntimeError("Cannot register an existing attribute")
 
         self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER_SUBTREE)
         setattr(self, name, value)
@@ -239,12 +251,18 @@ class Module:
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
 
+        if hasattr(self, name):
+            raise RuntimeError("Cannot register an existing attribute")
+
         self._update_name_to_kind_dict(name, PaxFieldKind.STATE_SUBTREE)
         setattr(self, name, value)
 
     def register_module_subtree(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.MODULE_SUBTREE`` in the ``_name_to_kind`` dictionary."""
+
+        if hasattr(self, name):
+            raise RuntimeError("Cannot register an existing attribute")
 
         self._update_name_to_kind_dict(name, PaxFieldKind.MODULE_SUBTREE)
         setattr(self, name, value)
@@ -308,8 +326,8 @@ class Module:
         else:
             return new_self
 
-    def sub_modules(self) -> List["Module"]:
-        """Return a list of sub-modules."""
+    def submodules(self) -> List["Module"]:
+        """Return a list of submodules."""
         module_subtrees = [
             getattr(self, name)
             for name, kind in self._name_to_kind.items()
@@ -343,14 +361,14 @@ class Module:
             raise ValueError(
                 f"The `{self.__class__}.__repr__` method returns a `None` value."
             )
-        sub_modules = self.sub_modules()
+        submodules = self.submodules()
 
         def indent(lines: List[str], s) -> List[str]:
             return [s + l for l in lines]
 
-        for i, module in enumerate(sub_modules):
+        for i, module in enumerate(submodules):
             lines = module.summary(return_list=True)
-            if i + 1 < len(sub_modules):  # middle submodules
+            if i + 1 < len(submodules):  # middle submodules
                 indented_lines = indent(lines[:1], "├── ") + indent(lines[1:], "│   ")
             else:  # last submodule
                 indented_lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
@@ -433,11 +451,11 @@ class Module:
             else:
                 return x
 
-        sub_modules = self.sub_modules()
+        submodules = self.submodules()
         new_self = jax.tree_map(
             rec_fn,
             self,
-            is_leaf=lambda x: isinstance(x, Module) and (x in sub_modules),
+            is_leaf=lambda x: isinstance(x, Module) and (x in submodules),
         )
         # tree_map already created a copy of self,
         # hence `apply_fn` is guaranteed to have no side effects.
