@@ -349,12 +349,14 @@ def test_delete_attribute():
 
 def test_module_list_contains_int():
     class M(pax.Module):
+        lst: List[Module]
+
         def __init__(self):
             super().__init__()
 
             self.register_modules("lst", [])
             self.lst.append(pax.nn.Linear(3, 3))
-            self.lst.append(0)
+            self.lst.append(0)  # type: ignore
 
     m = M()
     with pytest.raises(ValueError):
