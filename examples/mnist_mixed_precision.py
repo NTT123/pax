@@ -75,7 +75,7 @@ net = ConvNet()
 
 
 # TODO: check why this makes training so slow on CPU.
-half = jnp.float16  # or bfloat16
+half = jmp.half_dtype()
 full = jnp.float32
 linear_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=full)
 batchnorm_policy = jmp.Policy(compute_dtype=full, param_dtype=full, output_dtype=full)

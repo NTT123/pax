@@ -3,6 +3,7 @@ import jax.numpy as jnp
 import jmp
 import pax
 import pytest
+from pax.transforms import apply_mp_policy
 
 half = jmp.half_dtype()
 full = jnp.float32
@@ -146,3 +147,22 @@ def test_mixed_precision_no_method_name():
 
     # with pytest.raises(TypeError):
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
+
+
+def test_mp_call_classmethod():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(3, 3)
+
+        @classmethod
+        def t(x, y):
+            return y
+
+    m = M()
+    x = jnp.zeros((3, 3))
+    y = m.t(x)
+    my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
+    m = apply_mp_policy(m, mp_policy=my_policy)
+    with pytest.raises(ValueError):
+        y = m.t(x)
