@@ -44,7 +44,7 @@ class ModuleMetaclass(type):
     def __call__(cls: Type[T], *args, **kwargs) -> T:
         module = cls.__new__(cls, *args, **kwargs)
         cls.__init__(module, *args, **kwargs)
-        module._find_and_register_submodules()
+        module.find_and_register_submodules()
         # scan module after initialization for potential bugs
         module._scan_fields(module.__dict__)
 
@@ -443,7 +443,7 @@ class Module(object, metaclass=ModuleMetaclass):
 
         return update_parameters(self, params=params)
 
-    def _find_and_register_submodules(self):
+    def find_and_register_submodules(self):
         """Find unregistered submodules and register it with MODULE kind."""
 
         def all_module_leaves(x):

@@ -373,5 +373,6 @@ def mutate(mod: T, *, with_fn: Callable[[T], K]) -> K:
         mod = mod.copy()  # prevent side effects
     mod = scan_bugs(mod)
     new_mod = with_fn(mod)
+    new_mod.find_and_register_submodules()
     new_mod = scan_bugs(new_mod)
     return new_mod
