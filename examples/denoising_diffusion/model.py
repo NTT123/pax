@@ -369,7 +369,6 @@ class GaussianDiffusion(pax.Module):
         )
         return model_mean, posterior_variance, posterior_log_variance
 
-    @partial(pax.jit, io_check=False)
     def p_sample(self, x, t, rng_key, clip_denoised=True, repeat_noise=False):
         b = x.shape[0]
         model_mean, _, model_log_variance = self.p_mean_variance(
@@ -389,12 +388,18 @@ class GaussianDiffusion(pax.Module):
         rng_key_, rng_key = jax.random.split(rng_key)
         img = jax.random.normal(rng_key_, shape)
 
-        for i in reversed(range(0, self.num_timesteps)):
-            rng_key_, rng_key = jax.random.split(rng_key)
-            img = self.p_sample(img, jnp.full((b,), i, dtype=jnp.int32), rng_key_)
+        i_s = jnp.flip(jnp.arange(0, self.num_timesteps, dtype=jnp.int32))
+        rng_keys = jax.random.split(rng_key, self.num_timesteps)
 
+        def loop_fn(img, inputs):
+            i, rng_key = inputs
+            img = self.p_sample(img, jnp.full((b,), i, dtype=jnp.int32), rng_key)
+            return img, None
+
+        img, _ = pax.utils.scan(loop_fn, img, (i_s, rng_keys))
         return img
 
+    @partial(pax.jit, static_argnums=[1, 2], io_check=False)
     def sample(self, batch_size=16, random_seed=42):
         image_size = self.image_size
         channels = self.channels

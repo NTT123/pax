@@ -1,10 +1,13 @@
 """Thin wrappers for jax transformation."""
 from functools import wraps
+from typing import Any, Callable, TypeVar, Union
 
 import jax
 
 from . import ctx
 from .module import Module
+
+C = TypeVar("C", bound=Callable)
 
 
 def _deep_scan(mod):
@@ -36,13 +39,13 @@ def enable_strict_mode(f):
 
     @wraps(f)
     def wrapper(
-        fn,
+        fn: C,
         *args,
         deep_scan: bool = True,
         copy: bool = True,
         io_check: bool = True,
         **kwargs,
-    ):
+    ) -> Union[Callable, C]:
         """Jax transformation with some additional arguments.
 
         Arguments:
