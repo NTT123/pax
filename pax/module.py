@@ -149,7 +149,7 @@ class Module:
                 "Cannot delete module's attribute {name} in immutable mode."
             )
 
-    def register_parameters(self, name: str, value: Any):
+    def register_parameter(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
 
@@ -159,7 +159,7 @@ class Module:
         self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
         setattr(self, name, value)
 
-    def register_states(self, name: str, value: Any):
+    def register_state(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
 
@@ -178,6 +178,11 @@ class Module:
 
         self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
         setattr(self, name, value)
+
+    # TODO: this is redundant, fix it!
+    register_parameters = register_parameter
+    register_states = register_state
+    register_module = register_modules
 
     def tree_flatten(self) -> Tuple[list, Tuple[List[str], Any]]:
         """Convert a module to ``(children, treedef)``."""

@@ -30,7 +30,7 @@ def test_type_union():
 
         def __init__(self):
             super().__init__()
-            self.register_states("count", [0])
+            self.register_state("count", [0])
 
     with pytest.raises(ValueError):
         counter = Counter()
@@ -57,7 +57,7 @@ def test_type_sequence():
 
         def __init__(self):
             super().__init__()
-            self.register_parameters("count", jnp.array([0.0]))
+            self.register_parameter("count", jnp.array([0.0]))
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -84,7 +84,7 @@ def test_type_dict_dict1():
 
         def __init__(self):
             super().__init__()
-            self.register_states(
+            self.register_state(
                 "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
@@ -100,7 +100,7 @@ def test_type_dict_dict_optional():
 
         def __init__(self):
             super().__init__()
-            self.register_states(
+            self.register_state(
                 "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
@@ -142,7 +142,7 @@ def test_type_optional():
 
         def __init__(self):
             super().__init__()
-            self.register_states("count", jnp.array(0))
+            self.register_state("count", jnp.array(0))
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -167,7 +167,7 @@ def test_state_of_param():
     class M1(pax.Module):
         def __init__(self):
             super().__init__()
-            self.register_parameters("p1", jnp.array(0.0, dtype=jnp.float32))
+            self.register_parameter("p1", jnp.array(0.0, dtype=jnp.float32))
 
     m1 = M1()
 

@@ -48,8 +48,8 @@ import pax
 class Counter(pax.Module):
     def __init__(self, start_value: int = 0):
         super().__init__()
-        self.register_parameters("bias", jnp.array(0.0))
-        self.register_states("counter", jnp.array(start_value))
+        self.register_parameter("bias", jnp.array(0.0))
+        self.register_state("counter", jnp.array(start_value))
 
 
     def __call__(self, x):
@@ -72,8 +72,8 @@ print(grads.bias) # 60.0
 
 There are a few important things in the above example:
 
-* ``bias`` is registered as a trainable parameter using ``register_parameters`` method.
-* ``counter`` is registered as a non-trainable state using ``register_states`` method.
+* ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
+* ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``loss_fn`` returns the updated `model` in its output.
 * ``pax.grad`` is a thin wrapper of `jax.grad`. It returns the gradient transformation of `loss_fn`. It also enables immutable mode and other safeguards to prevent potential bugs.
 * ``allow_int=True`` to compute gradients with respect to ``model`` which contains integer ``ndarray`` leaves.
@@ -82,8 +82,8 @@ There are a few important things in the above example:
 
 Pax module has several methods that are similar to Pytorch. 
 
-- ``self.register_parameters(name, value)`` registers ``name`` as a trainable parameter.
-- ``self.register_modules(name, mod)`` registers ``mod`` as a submodule of ``self``.
+- ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameter.
+- ``self.register_module(name, mod)`` registers ``mod`` as a submodule of ``self``.
 - ``self.apply(func)`` applies ``func`` on all modules of ``self`` recursively.
 - ``self.train()`` and ``self.eval()`` returns a new module in ``train/eval`` mode.
 - ``self.training`` returns if ``self`` is in training mode.
