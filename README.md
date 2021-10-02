@@ -83,7 +83,6 @@ There are a few important things in the above example:
 Pax module has several methods that are similar to Pytorch. 
 
 - ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameter.
-- ``self.register_module(name, mod)`` registers ``mod`` as a submodule of ``self``.
 - ``self.apply(func)`` applies ``func`` on all modules of ``self`` recursively.
 - ``self.train()`` and ``self.eval()`` returns a new module in ``train/eval`` mode.
 - ``self.training`` returns if ``self`` is in training mode.

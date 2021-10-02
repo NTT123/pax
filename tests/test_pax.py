@@ -271,18 +271,28 @@ def test_assign_empty_list_dict():
     fc.b[1] = 2
 
 
-def test_assign_empty_list_1():
+def test_automatic_assign_module_list_1():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            # self.register_modules("fc", [])
             self.fc = []
             for i in range(5):
                 self.fc.append(pax.nn.Linear(3, 3))
 
-    with pytest.raises(ValueError):
-        m = M()
-        m = pax.scan_bugs(m)
+    m = M()
+    m = pax.scan_bugs(m)
+
+
+def test_automatic_assign_module_dict_1():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc = {}
+            for i in range(5):
+                self.fc[i] = pax.nn.Linear(3, 3)
+
+    m = M()
+    m = pax.scan_bugs(m)
 
 
 def test_assign_empty_list_2():
@@ -358,6 +368,5 @@ def test_module_list_contains_int():
             self.lst.append(pax.nn.Linear(3, 3))
             self.lst.append(0)  # type: ignore
 
-    m = M()
     with pytest.raises(ValueError):
-        pax.scan_bugs(m)
+        m = M()

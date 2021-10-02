@@ -177,8 +177,8 @@ class UNet(pax.Module):
             time_dim = None
             self.time_mlp = None
 
-        self.register_modules("downs", [])
-        self.register_modules("ups", [])
+        self.downs = []
+        self.ups = []
         num_resolutions = len(in_out)
 
         for ind, (dim_in, dim_out) in enumerate(in_out):

@@ -38,7 +38,20 @@ class PaxFieldKind(Enum):
     OTHERS: int = -1
 
 
-class Module:
+class ModuleMetaclass(type):
+    """Metaclass for `Module`."""
+
+    def __call__(cls: Type[T], *args, **kwargs) -> T:
+        module = cls.__new__(cls, *args, **kwargs)
+        cls.__init__(module, *args, **kwargs)
+        module._find_and_register_submodules()
+        # scan module after initialization for potential bugs
+        module._scan_fields(module.__dict__)
+
+        return module
+
+
+class Module(object, metaclass=ModuleMetaclass):
     """Module manages all information related to the pytree.
 
     There are two important methods:
@@ -101,9 +114,7 @@ class Module:
         """Whenever a user sets an attribute, we will check the assignment:
 
         - Setting `_name_to_kind` and `_training` are forbidden.
-
         - In immutable mode, only STATE attributes are allowed to be set. In mutable mode, all kinds are allowed to be set.
-
         - If `value` is a pytree of modules and `name` is not in `_name_to_kind`, its kind will be `PaxFieldKind.MODULE`.
         """
 
@@ -431,3 +442,15 @@ class Module:
         from .transforms import update_parameters
 
         return update_parameters(self, params=params)
+
+    def _find_and_register_submodules(self):
+        """Find unregistered submodules and register it with MODULE kind."""
+
+        def all_module_leaves(x):
+            leaves = jax.tree_flatten(x, is_leaf=lambda m: isinstance(m, Module))[0]
+            return len(leaves) > 0 and all(isinstance(m, Module) for m in leaves)
+
+        for name, value in vars(self).items():
+            if name not in self._name_to_kind:
+                if all_module_leaves(value):
+                    self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
