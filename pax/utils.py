@@ -23,6 +23,21 @@ UpdateFnScan = Callable[[Tuple[T, O], Any], Tuple[Tuple[T, O], Any]]
 UpdateFn = Union[UpdateFn_, UpdateFnScan]
 
 
+@jax.tree_util.register_pytree_node_class
+class EmptyNode(Tuple):
+    """We use this class to mark deleted nodes.
+
+    Note: this is inspired by treex's `Nothing` class.
+    """
+
+    def tree_flatten(self):
+        return (), None
+
+    @classmethod
+    def tree_unflatten(cls, _, __):
+        return EmptyNode()
+
+
 def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
     """Build a simple update function.
 

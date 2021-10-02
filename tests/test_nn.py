@@ -202,6 +202,11 @@ def test_sequential_all_jax():
     assert y.shape == (2, 1)
 
 
+def test_conv_no_bias():
+    conv = pax.nn.Conv2D(3, 3, 3, 1, 1, "SAME", False)
+    assert conv.bias == None and "bias" not in conv._name_to_kind
+
+
 def test_native_conv1d_1():
     rng_key = jax.random.PRNGKey(42)
     conv1d = pax.nn.Conv1D(

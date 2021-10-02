@@ -13,11 +13,14 @@ def _deep_scan(mod):
 
 
 def _get_all_module_treedefs(v):
+    from .utils import EmptyNode
+
     leaves = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
     mods = [x for x in leaves if isinstance(x, Module)]
-    any_none = lambda xs: any(x is None for x in xs)
-    mods = [x for x in mods if not any_none(jax.tree_leaves(x))]
-    return set([jax.tree_flatten(x, is_leaf=lambda x: x is None)[1] for x in mods])
+    tree_defs = [
+        jax.tree_flatten(x, is_leaf=lambda x: isinstance(x, EmptyNode))[1] for x in mods
+    ]
+    return set(tree_defs)
 
 
 def enable_strict_mode(f):

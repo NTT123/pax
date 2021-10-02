@@ -17,7 +17,7 @@ class Conv(Module):
     """Convolution Base Class."""
 
     weight: jnp.ndarray
-    bias: jnp.ndarray
+    bias: Optional[jnp.ndarray]
 
     def __init__(
         self,
@@ -85,12 +85,16 @@ class Conv(Module):
         if w_init is None:
             fan_in = np.prod(w_shape[:-1])
             w_init = initializers.truncated_normal(stddev=1.0 / np.sqrt(fan_in))
-        if b_init is None:
-            b_init = initializers.zeros
 
         self.register_parameter("weight", w_init(w_shape, jnp.float32, w_rng_key))
-        b_shape = [out_features]
-        self.register_parameter("bias", b_init(b_shape, jnp.float32, b_rng_key))
+
+        if with_bias:
+            if b_init is None:
+                b_init = initializers.zeros
+            b_shape = [out_features]
+            self.register_parameter("bias", b_init(b_shape, jnp.float32, b_rng_key))
+        else:
+            self.bias = None
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         assert len(x.shape) == len(self.kernel_format)

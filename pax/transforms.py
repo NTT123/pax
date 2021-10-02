@@ -9,6 +9,7 @@ import jmp
 
 from . import ctx
 from .module import Module, PaxFieldKind
+from .utils import EmptyNode
 
 TreeDef = Any
 
@@ -100,7 +101,7 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
         for k, v in mod._name_to_kind.items():
             if v in none_list:
                 value = getattr(mod, k)
-                none_v = jax.tree_map(lambda _: None, value)
+                none_v = jax.tree_map(lambda _: EmptyNode(), value)
                 setattr(mod, k, none_v)
         return mod
 
@@ -230,8 +231,8 @@ class flatten_module(Module, Generic[T]):
         params = jax.tree_unflatten(self.params_treedef, self.params_leaves)
         states = jax.tree_unflatten(self.states_treedef, self.states_leaves)
         module = jax.tree_unflatten(self.module_treedef, [0] * self.num_leaves)
-        module = module.update(params)
-        module = module.update(states)
+        module = update_pytree(module, other=params)
+        module = update_pytree(module, other=states)
         return module
 
     def __call__(self, *args, **kwargs):
@@ -343,14 +344,30 @@ class apply_mp_policy(Module, Generic[T]):
         return super().__repr__(info=info)
 
 
+def update_pytree(mod: T, *, other: T) -> T:
+    """Use non-EmptyNode leaves from others"""
+
+    def _select_fn(x, y):
+        if isinstance(y, EmptyNode):
+            return x
+        else:
+            return y
+
+    return jax.tree_map(
+        _select_fn,
+        mod,
+        other,
+    )
+
+
 def update_parameters(mod: T, *, params: T) -> T:
     """Return a module which uses trainable parameters in `params`."""
-    return mod.update(select_parameters(params))
+    return update_pytree(mod, other=select_parameters(params))
 
 
 def update_states(mod: T, *, states: T) -> T:
     """Return a module which uses non-trainable states in `states`."""
-    return mod.update(select_states(states))
+    return update_pytree(mod, other=select_states(states))
 
 
 def mutate(mod: T, *, with_fn: Callable[[T], K]) -> K:
