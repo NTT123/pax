@@ -437,6 +437,16 @@ Pax's function transformations are thin wrappers of Jax transformations.
 
 These wrappers enable immutable mode and additional checking to prevent potential bugs.
 
+Additional flags:
+
+- ``deep_scan``: scan input modules for potential bugs. Default: ``True``.
+- ``copy``: copy inputs to avoid side effects. Default: ``True``.
+- ``io_check``: check if a function returns the updated input modules. Default: ``True``.
+
+For example, to disable ``io_check``:
+
+>>> grad_fn = pax.grad(loss_fn, io_check=False)
+
 
 .. currentmodule:: pax
 
@@ -444,26 +454,22 @@ These wrappers enable immutable mode and additional checking to prevent potentia
 pax.jit
 -------
 
-``pax.jit`` is a wrapper of ``jax.jit``. 
-
+.. autofunction:: jit
 
 pax.grad
 --------
 
-``pax.grad`` is a wrapper of ``jax.grad``. 
-
+.. autofunction:: grad
 
 pax.vmap
 --------
 
-``pax.vmap`` is a wrapper of ``jax.vmap``. 
-
+.. autofunction:: vmap
 
 pax.pmap
 --------
 
-``pax.pmap`` is a wrapper of ``jax.pmap``. 
-
+.. autofunction:: pmap
 
 
 Utilities

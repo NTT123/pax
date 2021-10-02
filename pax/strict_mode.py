@@ -1,4 +1,6 @@
 """Thin wrappers for jax transformation."""
+from functools import wraps
+
 import jax
 
 from . import ctx
@@ -32,6 +34,7 @@ def enable_strict_mode(f):
     - a function must return the updated input modules.
     """
 
+    @wraps(f)
     def wrapper(
         fn,
         *args,
@@ -45,11 +48,12 @@ def enable_strict_mode(f):
         Arguments:
             deep_scan: scan inputs for bugs.
             copy: copy inputs to avoid side effects.
-            io_check: an function must returns the updated input modules.
+            io_check: a function must returns the updated input modules.
         """
         assert callable(fn), "Expecting a callable object as the first argument."
 
-        def fake_fn(*u, **v):
+        @wraps(fn)
+        def _fn(*u, **v):
 
             # scan for bugs
             if deep_scan:
@@ -82,7 +86,7 @@ def enable_strict_mode(f):
 
                 return out
 
-        return f(fake_fn, *args, **kwargs)
+        return f(_fn, *args, **kwargs)
 
     return wrapper
 

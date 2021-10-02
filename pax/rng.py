@@ -18,6 +18,7 @@ def seed_rng_key(seed: int) -> None:
     Arguments:
         seed: an interger seed.
     """
+    assert isinstance(seed, int)
     state._seed = seed
     state._rng_key = None  # reset `_rng_key`
 

@@ -17,8 +17,7 @@ T = TypeVar("T", bound=Module)
 K = TypeVar("K", bound=Module)
 
 
-GradientTransformation = Module
-O = TypeVar("O", bound=GradientTransformation)
+O = TypeVar("O", bound="GradientTransformation")
 
 
 def forward(mod: T, *inputs, params=None, **kwinputs) -> Tuple[T, Any]:
