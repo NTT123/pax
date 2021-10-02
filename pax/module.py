@@ -229,15 +229,6 @@ class Module:
         """Return a copy of current module."""
         return jax.tree_map(lambda x: x, self)
 
-    def update(self: T, other: T) -> T:
-        """Use parameters/state from ``other``.
-
-        Arguments:
-            other: parameter/state tree.
-        """
-        new_self = jax.tree_map(lambda s, o: (s if o is None else o), self, other)
-        return new_self
-
     def submodules(self) -> List["Module"]:
         """Return a list of submodules."""
         module_subtrees = [

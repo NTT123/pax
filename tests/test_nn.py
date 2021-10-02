@@ -63,7 +63,7 @@ def test_batchnorm_params_filter():
         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
     )
     params = pax.select_parameters(bn)
-    bn = bn.update(params)
+    bn = bn.update_parameters(params)
 
 
 def test_conv_1d_basic():
