@@ -1,7 +1,5 @@
 """Useful functions."""
 
-import functools
-import inspect
 from typing import Any, Callable, Tuple, TypeVar, Union
 from unittest import TestCase
 
@@ -12,19 +10,10 @@ from .module import Module, PaxFieldKind
 from .rng import KeyArray
 from .strict_mode import grad
 
-GradientTransformation = "GradientTransformation"
+GradientTransformation = Module
 T = TypeVar("T", bound=Module)
 O = TypeVar("O", bound=GradientTransformation)
 C = TypeVar("C")
-
-
-LossFnOutput = Tuple[jnp.ndarray, Any]
-LossFn = Callable[[T, Any], LossFnOutput]
-
-UpdateFn_ = Callable[[T, O, Any], Tuple[T, O, Any]]
-UpdateFnScan = Callable[[Tuple[T, O], Any], Tuple[Tuple[T, O], Any]]
-
-UpdateFn = Union[UpdateFn_, UpdateFnScan]
 
 
 @jax.tree_util.register_pytree_node_class
@@ -65,7 +54,6 @@ def grad_parameters(
     ... grads, (loss, net) = grad_fn(net, x, x)
     """
 
-    @functools.wraps(fun)
     def _fun(params: T, mod: T, *args, **kwargs):
         mod = mod.update_parameters(params.parameters())
         out = fun(mod, *args, **kwargs)
@@ -83,14 +71,10 @@ def grad_parameters(
     return grad_fn
 
 
-def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
+def build_update_fn(loss_fn, *, scan_mode: bool = False):
     """Build a simple update function.
 
-    This function can be very useful. However, you have to follow its requirements *exactly*.
-    This is to make sure you know exactly what you are doing.
-
-    * The input ``loss_fn`` function has three parameters with names: ``model``, ``inputs``.
-    * ``loss_fn``'s output be annotated with type ``LossFnOutput``.
+    *Note*: The output of ``loss_fn`` must be ``(loss, (aux, model))``.
 
     Arguments:
         loss_fn: The loss function.
@@ -98,37 +82,21 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
 
     Example:
 
-    >>> def mse_loss(model, inputs) -> pax.LossFnOutput:
-    ...     x, y = inputs
+    >>> def mse_loss(model, x, y):
     ...     y_hat = model(x)
     ...     loss = jnp.mean(jnp.square(y - y_hat))
     ...     return loss, (loss, model)
+    ...
+    ... update_fn = pax.utils.build_update_fn(mse_loss)
+    ... net = pax.nn.Linear(2, 2)
+    ... optimizer = opax.adam(1e-4)(net.parameters())
+    ... x = jnp.ones((32, 2))
+    ... y = jnp.zeros((32, 2))
+    ... net, optimizer, loss = update_fn(net, optimizer, x, y)
 
-    The returned ``update_fn`` function is:
-
-    >>> def _update_fn(model: Module, optimizer: GradientTransformation, inputs: Any):
-    ...     grads, (aux, model) = pax.grad(loss_fn, hax_aux=True, allow_int=True)(model, inputs)
-    ...     assertStructureEqual(grads, model)
-    ...     params = select_parameters(model)
-    ...     updates, optimizer = transform_gradients(grads, optimizer, params=params)
-    ...     params = apply_updates(params, updates=updates)
-    ...     model = update_parameters(model, params=params)
-    ...     return model, optimizer, aux
     """
 
-    sig = inspect.signature(loss_fn)
-    parameters = sig.parameters
-    if (
-        list(parameters.keys()) != ["model", "inputs"]
-        or sig.return_annotation != LossFnOutput
-    ):
-        raise ValueError(
-            """Expecting a loss function with an _exact_ signature:  
-        ``(model, inputs) -> pax.LossFnOutput``
-        """
-        )
-
-    def _update_fn(model: T, optimizer: O, inputs: Any) -> Tuple[T, O, Any]:
+    def _update_fn(model: T, optimizer: O, *inputs, **kwinputs) -> Tuple[T, O, Any]:
         """An update function.
 
         Note that: ``model`` and ``optimizer`` have internal states.
@@ -144,7 +112,6 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
             aux: the aux info.
         """
 
-        from .strict_mode import grad
         from .transforms import (
             apply_updates,
             select_parameters,
@@ -152,7 +119,15 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
             update_parameters,
         )
 
-        grads, (aux, model) = grad_parameters(loss_fn)(model, inputs)
+        assert isinstance(model, Module)
+        assert isinstance(optimizer, Module)
+
+        model_treedef = jax.tree_structure(model)
+        grads, (aux, model) = grad_parameters(loss_fn)(model, *inputs, **kwinputs)
+        assert (
+            jax.tree_structure(model) == model_treedef
+        ), "Expecting an updated model in the auxiliary output."
+
         params = select_parameters(model)
         updates, optimizer = transform_gradients(grads, optimizer, params=params)
         params = apply_updates(params, updates=updates)
@@ -160,10 +135,10 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
         return model, optimizer, aux
 
     def _update_fn_scan(
-        model_and_optimizer: Tuple[T, O], inputs: Any
-    ) -> Tuple[Tuple[T, O], Any]:
+        model_and_optimizer: Union[C, Tuple[T, O]], *inputs, **kwinputs
+    ) -> Tuple[C, Any]:
         model, optimizer = model_and_optimizer
-        model, optimizer, aux = _update_fn(model, optimizer, inputs)
+        model, optimizer, aux = _update_fn(model, optimizer, *inputs, **kwinputs)
         return (model, optimizer), aux
 
     return _update_fn_scan if scan_mode else _update_fn

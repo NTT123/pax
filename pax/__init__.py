@@ -22,4 +22,4 @@ from .transforms import (
     update_parameters,
     update_states,
 )
-from .utils import LossFnOutput, dropout, grad_parameters, scan
+from .utils import dropout, grad_parameters, scan

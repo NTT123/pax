@@ -2,7 +2,6 @@ import jax.numpy as jnp
 import numpy as np
 import opax
 import pax
-from pax import LossFnOutput
 from pax.nn import EMA, RngSeq
 
 
@@ -29,8 +28,7 @@ def test_grad_parameters():
 
 
 def test_util_update_fn():
-    def loss_fn(model: pax.nn.Linear, inputs) -> LossFnOutput:
-        x, target = inputs
+    def loss_fn(model: pax.nn.Linear, x, target):
         y = model(x)
         loss = jnp.mean(jnp.square(y - target))
         return loss, (loss, model)
@@ -41,7 +39,7 @@ def test_util_update_fn():
     x = np.random.normal(size=(32, 2))
     y = np.random.normal(size=(32, 1))
     for step in range(3):
-        (net, opt), loss = update_fn((net, opt), (x, y))
+        (net, opt), loss = update_fn((net, opt), x, y)
     print(step, loss)
 
 

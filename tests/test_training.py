@@ -4,7 +4,6 @@ import jax
 import jax.numpy as jnp
 import opax
 import pax
-from pax.utils import LossFnOutput
 
 
 def test_train_linear_regression_1():
@@ -12,11 +11,7 @@ def test_train_linear_regression_1():
     noise = jax.random.normal(jax.random.PRNGKey(43), (32, 1), dtype=jnp.float32) * 0.2
     y = x * 2.5 - 3.1 + noise
 
-    def loss_fn(
-        model: pax.nn.Linear,
-        inputs: Tuple[jnp.ndarray, jnp.ndarray],
-    ) -> LossFnOutput:
-        x, y = inputs
+    def loss_fn(model: pax.nn.Linear, x, y):
         y_hat = model(x)
         loss = jnp.mean(jnp.square(y - y_hat))
         return loss, (loss, model)
@@ -25,7 +20,7 @@ def test_train_linear_regression_1():
     net = pax.nn.Linear(1, 1)
     optimizer = opax.adamw(1e-1)(net.parameters())
     for step in range(100):
-        net, optimizer, loss = update_fn(net, optimizer, (x, y))
+        net, optimizer, loss = update_fn(net, optimizer, x, y)
     print(f"[step {step}]  loss {loss:.3f}")
 
 
@@ -46,8 +41,7 @@ def test_train_linear_regression_2():
             x = self.fc2(x)
             return x
 
-    def loss_fn(model: M, inputs: Tuple[jnp.ndarray, jnp.ndarray]) -> LossFnOutput:
-        x, y = inputs
+    def loss_fn(model: M, x, y):
         y_hat = model(x)
         loss = jnp.mean(jnp.square(y - y_hat))
         return loss, (loss, model)
@@ -56,5 +50,5 @@ def test_train_linear_regression_2():
     net = M()
     optimizer = opax.adamw(1e-1)(net.parameters())
     for step in range(100):
-        net, optimizer, loss = update_fn(net, optimizer, (x, y))
+        net, optimizer, loss = update_fn(net, optimizer, x, y)
     print(f"[step {step}]  loss {loss:.3f}")
