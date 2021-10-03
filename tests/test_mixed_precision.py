@@ -89,7 +89,8 @@ def test_change_tree_def():
 
         def __call__(self, x):
             self.counter = self.counter + 1
-            self.count = self.count + 1
+            with pax.ctx.mutable():
+                self.count = self.count + 1
             return x * self.counter
 
     m = M()
@@ -127,7 +128,8 @@ def test_mixed_precision_clone():
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
-    f.new_fc = pax.nn.Linear(1, 1)
+    with pax.ctx.mutable():
+        f.new_fc = pax.nn.Linear(1, 1)
     assert "new_fc" not in ff._name_to_kind
 
 
@@ -137,7 +139,8 @@ def test_mixed_precision_unwrap_clone():
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
     f = ff.unwrap_mixed_precision()
-    f.new_fc = pax.nn.Linear(1, 1)
+    with pax.ctx.mutable():
+        f.new_fc = pax.nn.Linear(1, 1)
     assert "new_fc" not in ff._name_to_kind
 
 
@@ -195,7 +198,8 @@ def test_mp_call_function():
 
     m = M()
     x = jnp.zeros((3, 3))
-    m.q = lambda x: x
+    with pax.ctx.mutable():
+        m.q = lambda x: x
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
     m = apply_mp_policy(m, mp_policy=my_policy)
     with pytest.raises(ValueError):

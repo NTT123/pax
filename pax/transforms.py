@@ -99,7 +99,8 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
             if v in none_list:
                 value = getattr(mod, k)
                 none_v = jax.tree_map(lambda _: EmptyNode(), value)
-                setattr(mod, k, none_v)
+                with ctx.mutable():
+                    setattr(mod, k, none_v)
         return mod
 
     return mod.apply(_select_apply_fn)
@@ -221,8 +222,9 @@ def mutate(mod: T, *, with_fn: Callable[[T], K]) -> K:
     with ctx.immutable():
         mod = mod.copy()  # prevent side effects
     mod = scan_bugs(mod)
-    new_mod = with_fn(mod)
-    new_mod.find_and_register_submodules()
+    with ctx.mutable():
+        new_mod = with_fn(mod)
+        new_mod.find_and_register_submodules()
     new_mod = scan_bugs(new_mod)
     return new_mod
 

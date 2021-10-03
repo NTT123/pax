@@ -17,9 +17,10 @@ def test_perf_transformer_flatten_unflatten():
 
     start = time.perf_counter()
     n_iters = 10_000
-    for i in range(n_iters):
-        leaves, treedef = jax.tree_flatten(f)
-        f = jax.tree_unflatten(treedef, leaves)
+    with pax.mutable():
+        for i in range(n_iters):
+            leaves, treedef = jax.tree_flatten(f)
+            f = jax.tree_unflatten(treedef, leaves)
     end = time.perf_counter()
     iters_per_second = n_iters / (end - start)
     print(iters_per_second, "iters/second")
@@ -32,9 +33,10 @@ def test_perf_resnet200_flatten_unflatten():
 
     start = time.perf_counter()
     n_iters = 1000
-    for i in range(n_iters):
-        leaves, treedef = jax.tree_flatten(f)
-        f = jax.tree_unflatten(treedef, leaves)
+    with pax.mutable():
+        for i in range(n_iters):
+            leaves, treedef = jax.tree_flatten(f)
+            f = jax.tree_unflatten(treedef, leaves)
     end = time.perf_counter()
     iters_per_second = n_iters / (end - start)
     print(iters_per_second, "iters/second")
@@ -52,9 +54,10 @@ def test_perf_flattenmodule_resnet200_flatten_unflatten():
     np.testing.assert_array_equal(y, y1)
     start = time.perf_counter()
     n_iters = 1000
-    for i in range(n_iters):
-        leaves, treedef = jax.tree_flatten(f)
-        f = jax.tree_unflatten(treedef, leaves)
+    with pax.mutable():
+        for i in range(n_iters):
+            leaves, treedef = jax.tree_flatten(f)
+            f = jax.tree_unflatten(treedef, leaves)
     end = time.perf_counter()
     iters_per_second = n_iters / (end - start)
     print(iters_per_second, "iters/second")

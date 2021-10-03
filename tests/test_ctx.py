@@ -10,4 +10,4 @@ def test_mutability():
                 assert pax.ctx.state._enable_mutability == True
             assert pax.ctx.state._enable_mutability == False
         assert pax.ctx.state._enable_mutability == True
-    assert pax.ctx.state._enable_mutability == True
+    assert pax.ctx.state._enable_mutability == False

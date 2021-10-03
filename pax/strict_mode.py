@@ -89,7 +89,19 @@ def enable_strict_mode(f):
 
                 return out
 
-        return f(_fn, *args, **kwargs)
+        _f = f(_fn, *args, **kwargs)
+
+        if f == jax.grad:
+            return _f
+
+        # enable mutable mode for speed.
+        @wraps(_f)
+        def __f(*u, **v):
+            with ctx.mutable():
+                out = _f(*u, **v)
+            return out
+
+        return __f
 
     return wrapper
 

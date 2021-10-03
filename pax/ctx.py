@@ -8,7 +8,7 @@ from typing import Any
 state = threading.local()
 state._rng_key = None
 state._seed = None
-state._enable_mutability = True
+state._enable_mutability = False
 
 
 class mutable(object):

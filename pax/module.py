@@ -16,6 +16,7 @@ import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
 
+from .ctx import mutable
 from .ctx import state as ctx_state
 
 T = TypeVar("T", bound="Module")
@@ -42,12 +43,13 @@ class ModuleMetaclass(type):
     """Metaclass for `Module`."""
 
     def __call__(cls: Type[T], *args, **kwargs) -> T:
-        module = cls.__new__(cls, *args, **kwargs)
-        cls.__init__(module, *args, **kwargs)
-        module.find_and_register_submodules()
+        with mutable():
+            module = cls.__new__(cls, *args, **kwargs)
+            cls.__init__(module, *args, **kwargs)
+            module.find_and_register_submodules()
+
         # scan module after initialization for potential bugs
         module._scan_fields(module.__dict__)
-
         return module
 
 

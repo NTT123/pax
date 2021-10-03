@@ -201,7 +201,8 @@ def test_module_properties_modify():
 def test_clone_no_side_effect():
     fc1 = pax.nn.Linear(3, 3)
     fc2 = fc1.copy()
-    fc1.new_module = pax.nn.Linear(5, 5)
+    with pax.ctx.mutable():
+        fc1.new_module = pax.nn.Linear(5, 5)
     assert "new_module" in fc1._name_to_kind, "registered 'new_modules' as part of fc1"
     assert (
         "new_module" not in fc2._name_to_kind
@@ -264,10 +265,12 @@ def test_class_attribute_copy():
 
 def test_assign_empty_list_dict():
     fc = pax.nn.Linear(3, 3)
-    fc.a = []
+    with pax.ctx.mutable():
+        fc.a = []
     fc.a.append(1)
     assert fc.a == [1]
-    fc.b = {}
+    with pax.ctx.mutable():
+        fc.b = {}
     fc.b[1] = 2
 
 
@@ -342,7 +345,8 @@ def test_hash_module():
 
 def test_deepcopy_pytreedef():
     f = pax.nn.Linear(3, 3)
-    f.de = jax.tree_structure(f)
+    with pax.mutable():
+        f.de = jax.tree_structure(f)
     with pax.immutable():
         g = f.copy()
 
@@ -351,7 +355,8 @@ def test_deepcopy_pytreedef():
 
 def test_delete_attribute():
     f = pax.nn.Linear(3, 3)
-    f.t = pax.nn.Linear(1, 1)
+    with pax.mutable():
+        f.t = pax.nn.Linear(1, 1)
     assert "t" in f._name_to_kind
     with pytest.raises(ValueError):
         del f.t
