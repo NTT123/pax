@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import jmp
 import pax
 import pytest
-from pax.transforms import apply_mp_policy
+from pax import apply_mp_policy
 
 half = jmp.half_dtype()
 full = jnp.float32
@@ -89,8 +89,7 @@ def test_change_tree_def():
 
         def __call__(self, x):
             self.counter = self.counter + 1
-            with pax.ctx.mutable():
-                self.count = self.count + 1
+            self.count = self.count + 1
             return x * self.counter
 
     m = M()
@@ -102,7 +101,7 @@ def test_change_tree_def():
     )
     x = jnp.array(0.0)
     assert mm._module.counter.item() == 0  # type: ignore
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         y = mm(x)
     assert mm._module.counter.item() == 0  # type: ignore
     assert m.counter.item() == 0
@@ -128,8 +127,12 @@ def test_mixed_precision_clone():
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
-    with pax.ctx.mutable():
-        f.new_fc = pax.nn.Linear(1, 1)
+
+    def add_new_fc(m):
+        m.new_fc = pax.nn.Linear(1, 1)
+        return m
+
+    f = pax.mutate(f, with_fn=add_new_fc)
     assert "new_fc" not in ff._name_to_kind
 
 
@@ -139,8 +142,12 @@ def test_mixed_precision_unwrap_clone():
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
     f = ff.unwrap_mixed_precision()
-    with pax.ctx.mutable():
-        f.new_fc = pax.nn.Linear(1, 1)
+
+    def add_new_fc(m):
+        m.new_fc = pax.nn.Linear(1, 1)
+        return m
+
+    f = pax.mutate(f, with_fn=add_new_fc)
     assert "new_fc" not in ff._name_to_kind
 
 
@@ -198,8 +205,12 @@ def test_mp_call_function():
 
     m = M()
     x = jnp.zeros((3, 3))
-    with pax.ctx.mutable():
+
+    def add_q(m):
         m.q = lambda x: x
+        return m
+
+    m = pax.mutate(m, with_fn=add_q)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
     m = apply_mp_policy(m, mp_policy=my_policy)
     with pytest.raises(ValueError):

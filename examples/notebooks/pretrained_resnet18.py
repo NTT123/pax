@@ -93,33 +93,36 @@ def convert_linear(linear):
 
 
 def load_pretrained_resnet18():
-    resnet18_pt = torchvision.models.resnet18(pretrained=True).eval()
+    def _load_weights(resnet18):
+        resnet18_pt = torchvision.models.resnet18(pretrained=True).eval()
+        pax_resnet = [
+            convert_conv(resnet18_pt.conv1),
+            convert_bn(resnet18_pt.bn1),
+            convert_block_group(resnet18_pt.layer1),
+            convert_block_group(resnet18_pt.layer2),
+            convert_block_group(resnet18_pt.layer3),
+            convert_block_group(resnet18_pt.layer4),
+            convert_linear(resnet18_pt.fc),
+        ]
+
+        # replace resnet18 part by part
+        resnet18.initial_conv = pax_resnet[0]
+        resnet18.initial_batchnorm = pax_resnet[1]
+        for i in range(len(resnet18.block_groups)):
+            bg = resnet18.block_groups[i]
+            for j in range(len(bg.blocks)):
+                b = bg.blocks[j]
+                mods = pax_resnet[2 + i][j]
+                b.layers = mods[0]
+                if b.use_projection:
+                    b.proj_conv = mods[1][0]
+                    b.proj_batchnorm = mods[1][1]
+
+        resnet18.logits = pax_resnet[-1]
+        # make sure we are in `eval` mode when doing evaluation.
+        resnet18 = resnet18.eval()
+        return resnet18
+
     resnet18 = pax.nets.ResNet18(3, 1000)
-
-    pax_resnet = [
-        convert_conv(resnet18_pt.conv1),
-        convert_bn(resnet18_pt.bn1),
-        convert_block_group(resnet18_pt.layer1),
-        convert_block_group(resnet18_pt.layer2),
-        convert_block_group(resnet18_pt.layer3),
-        convert_block_group(resnet18_pt.layer4),
-        convert_linear(resnet18_pt.fc),
-    ]
-
-    # replace resnet18 part by part
-    resnet18.initial_conv = pax_resnet[0]
-    resnet18.initial_batchnorm = pax_resnet[1]
-    for i in range(len(resnet18.block_groups)):
-        bg = resnet18.block_groups[i]
-        for j in range(len(bg.blocks)):
-            b = bg.blocks[j]
-            mods = pax_resnet[2 + i][j]
-            b.layers = mods[0]
-            if b.use_projection:
-                b.proj_conv = mods[1][0]
-                b.proj_batchnorm = mods[1][1]
-
-    resnet18.logits = pax_resnet[-1]
-    # make sure we are in `eval` mode when doing evaluation.
-    resnet18 = resnet18.eval()
+    resnet18 = pax.mutate(resnet18, with_fn=_load_weights)
     return resnet18

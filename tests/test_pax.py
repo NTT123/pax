@@ -7,14 +7,14 @@ import jax.numpy as jnp
 import numpy as np
 import pax
 import pytest
-from pax.module import Module
+from pax import Module
 
 
 def test_pax_next_rng_key():
     # seed 42
     pax.seed_rng_key(42)
-    assert pax.rng.state._rng_key is None
-    assert pax.rng.state._seed == 42
+    # assert pax.rng.state._rng_key is None
+    # assert pax.rng.state._seed == 42
     expected_rng = jnp.array([0, 42], dtype=jnp.uint32)
     rng1 = pax.next_rng_key()
     expected_rng_1, rng_internal = jax.random.split(expected_rng)
@@ -201,8 +201,12 @@ def test_module_properties_modify():
 def test_clone_no_side_effect():
     fc1 = pax.nn.Linear(3, 3)
     fc2 = fc1.copy()
-    with pax.ctx.mutable():
-        fc1.new_module = pax.nn.Linear(5, 5)
+
+    def add_new_module(m):
+        m.new_module = pax.nn.Linear(5, 5)
+        return m
+
+    fc1 = pax.mutate(fc1, with_fn=add_new_module)
     assert "new_module" in fc1._name_to_kind, "registered 'new_modules' as part of fc1"
     assert (
         "new_module" not in fc2._name_to_kind
@@ -244,8 +248,7 @@ def test_not_tree_clone():
         pax.nn.Linear(4, 2),
         jax.nn.one_hot,
     )
-    with pax.ctx.immutable():
-        net = net.copy()
+    net = net.copy()
 
 
 def test_class_attribute_copy():
@@ -265,12 +268,20 @@ def test_class_attribute_copy():
 
 def test_assign_empty_list_dict():
     fc = pax.nn.Linear(3, 3)
-    with pax.ctx.mutable():
-        fc.a = []
+
+    def add_a(m):
+        m.a = []
+        return m
+
+    fc = pax.mutate(fc, with_fn=add_a)
     fc.a.append(1)
     assert fc.a == [1]
-    with pax.ctx.mutable():
-        fc.b = {}
+
+    def add_b(m):
+        m.b = {}
+        return m
+
+    fc = pax.mutate(fc, with_fn=add_b)
     fc.b[1] = 2
 
 
@@ -345,18 +356,25 @@ def test_hash_module():
 
 def test_deepcopy_pytreedef():
     f = pax.nn.Linear(3, 3)
-    with pax.mutable():
-        f.de = jax.tree_structure(f)
-    with pax.immutable():
-        g = f.copy()
+
+    def add_de(m):
+        m.de = jax.tree_structure(f)
+        return m
+
+    f = pax.mutate(f, with_fn=add_de)
+    g = f.copy()
 
     assert jax.tree_structure(g) == jax.tree_structure(f)
 
 
 def test_delete_attribute():
     f = pax.nn.Linear(3, 3)
-    with pax.mutable():
-        f.t = pax.nn.Linear(1, 1)
+
+    def add_t(m):
+        m.t = pax.nn.Linear(1, 1)
+        return m
+
+    f = pax.mutate(f, with_fn=add_t)
     assert "t" in f._name_to_kind
     with pytest.raises(ValueError):
         del f.t

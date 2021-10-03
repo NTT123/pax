@@ -7,18 +7,18 @@ import pax
 import pytest
 
 
-def test_batchnorm_train():
-    bn = pax.nn.batch_norm.BatchNorm(
-        3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
-    )
-    bn = pax.enable_train_mode(bn)
-    x = jnp.ones((1, 10, 3))
-    old_state = bn.ema_var.averages
-    y = bn(x)
-    new_state = bn.ema_var.averages
-    chex.assert_tree_all_equal_shapes(old_state, new_state)
-    chex.assert_tree_all_finite(new_state)
-    assert y.shape == (1, 10, 3)
+# def test_batchnorm_train():
+#     bn = pax.nn.BatchNorm(
+#         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
+#     )
+#     bn = pax.enable_train_mode(bn)
+#     x = jnp.ones((1, 10, 3))
+#     old_state = bn.ema_var.averages
+#     y = bn(x)
+#     new_state = bn.ema_var.averages
+#     chex.assert_tree_all_equal_shapes(old_state, new_state)
+#     chex.assert_tree_all_finite(new_state)
+#     assert y.shape == (1, 10, 3)
 
 
 def test_batchnorm1D_train():
@@ -45,25 +45,25 @@ def test_batchnorm2D_train():
     assert y.shape == (1, 10, 8, 3)
 
 
-def test_batchnorm_eval():
-    bn = pax.nn.batch_norm.BatchNorm(
-        3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
-    )
-    bn = pax.enable_eval_mode(bn)
-    x = jnp.ones((1, 10, 3))
-    old_state = bn.ema_mean
-    y = bn(x)
-    new_state = bn.ema_mean
-    assert y.shape == (1, 10, 3)
-    assert old_state == new_state
+# def test_batchnorm_eval():
+#     bn = pax.nn.BatchNorm(
+#         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
+#     )
+#     bn = pax.enable_eval_mode(bn)
+#     x = jnp.ones((1, 10, 3))
+#     old_state = bn.ema_mean
+#     y = bn(x)
+#     new_state = bn.ema_mean
+#     assert y.shape == (1, 10, 3)
+#     assert old_state == new_state
 
 
-def test_batchnorm_params_filter():
-    bn = pax.nn.batch_norm.BatchNorm(
-        3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
-    )
-    params = pax.select_parameters(bn)
-    bn = bn.update_parameters(params)
+# def test_batchnorm_params_filter():
+#     bn = pax.nn.BatchNorm(
+#         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
+#     )
+#     params = pax.select_parameters(bn)
+#     bn = bn.update_parameters(params)
 
 
 def test_conv_1d_basic():
@@ -199,18 +199,16 @@ def test_sequential_mix():
     assert y.shape == (2, 3)
 
 
-def test_sequential_non_mix():
-    net = pax.nn.Sequential(
-        pax.nn.Linear(1, 2),
-        pax.nn.batch_norm.BatchNorm(
-            2, True, True, 0.99, reduced_axes=[0], param_shape=[1, 2]
-        ),
-        pax.nn.Linear(2, 3),
-    )
-    params = net.parameters()
-    x = jnp.zeros((2, 1))
-    y = net(x)
-    assert y.shape == (2, 3)
+# def test_sequential_non_mix():
+#     net = pax.nn.Sequential(
+#         pax.nn.Linear(1, 2),
+#         pax.nn.BatchNorm(2, True, True, 0.99, reduced_axes=[0], param_shape=[1, 2]),
+#         pax.nn.Linear(2, 3),
+#     )
+#     params = net.parameters()
+#     x = jnp.zeros((2, 1))
+#     y = net(x)
+#     assert y.shape == (2, 3)
 
 
 def test_sequential_all_jax():
@@ -869,8 +867,11 @@ def test_apply_no_side_effect():
     a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(4, 4))
 
     def f(mod):
-        with pax.ctx.mutable():
-            mod.test__ = 123
+        def add_test__(m):
+            m.test__ = 123
+            return m
+
+        mod = pax.mutate(mod, with_fn=add_test__)
         return mod
 
     b = a.apply(f)

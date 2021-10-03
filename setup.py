@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, setup
 
 __version__ = "0.3.1rc"
 url = "https://github.com/ntt123/pax"
@@ -33,7 +33,7 @@ setup(
     install_requires=install_requires,
     setup_requires=setup_requires,
     tests_require=tests_require,
-    packages=find_packages(exclude=["examples", "tests"]),
+    packages=find_namespace_packages(exclude=["examples", "tests"]),
     extras_require={"test": tests_require},
     python_requires=">=3.6",
 )

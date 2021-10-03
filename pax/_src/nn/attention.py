@@ -4,10 +4,10 @@ from typing import Optional
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pax
 
 from .. import initializers
 from ..module import Module
+from .linear import Linear
 
 
 class MultiHeadAttention(Module):
@@ -28,16 +28,16 @@ class MultiHeadAttention(Module):
         self.value_size = key_size
         self.model_size = key_size * num_heads
         w_init = initializers.variance_scaling(w_init_scale)
-        self.query_projection = pax.nn.Linear(
+        self.query_projection = Linear(
             self.model_size, self.model_size, w_init=w_init, name="qry_proj"
         )
-        self.key_projection = pax.nn.Linear(
+        self.key_projection = Linear(
             self.model_size, self.model_size, w_init=w_init, name="key_proj"
         )
-        self.value_projection = pax.nn.Linear(
+        self.value_projection = Linear(
             self.model_size, self.model_size, w_init=w_init, name="val_proj"
         )
-        self.output_projection = pax.nn.Linear(
+        self.output_projection = Linear(
             self.model_size, self.model_size, w_init=w_init, name="out_proj"
         )
 

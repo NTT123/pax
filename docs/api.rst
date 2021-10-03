@@ -3,7 +3,8 @@ Pax Basics
 
 Pax's Module
 ------------
-.. currentmodule:: pax.module
+
+.. currentmodule:: pax
 
 .. autoclass:: Module
    :members:
@@ -15,8 +16,6 @@ Pax's Module
    .. autoattribute:: PARAMETER
    .. autoattribute:: MODULE
    .. autoattribute:: OTHERS
-
-.. currentmodule:: pax
 
 
 Random Number Generator
@@ -408,34 +407,12 @@ variance_scaling
 .. autofunction:: variance_scaling
 
 
-Context Managers
-================
-
-.. currentmodule:: pax.ctx
-
-.. autosummary::
-    mutable
-    immutable
-
-mutable
--------
-
-.. autoclass:: mutable
-
-
-
-immutable
----------
-
-.. autoclass:: immutable
-
-
 Function Transformations
 ========================
 
 Pax's function transformations are thin wrappers of Jax transformations. 
 
-These wrappers enable immutable mode and additional checking to prevent potential bugs.
+These wrappers enable additional checking to prevent potential bugs.
 
 Additional flags:
 

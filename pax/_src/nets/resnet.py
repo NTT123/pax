@@ -6,12 +6,10 @@ from typing import Sequence, Tuple
 
 import jax
 import jax.numpy as jnp
-from pax.nn import max_pool
-from pax.nn.linear import Linear
 
 from .. import initializers
 from ..module import Module
-from ..nn import BatchNorm2D, Conv2D
+from ..nn import BatchNorm2D, Conv2D, Linear, max_pool
 
 
 class ResnetBlock(Module):
