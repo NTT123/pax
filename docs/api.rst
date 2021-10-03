@@ -479,9 +479,16 @@ Utilities
 
 
 .. autosummary::
+    grad_parameters
     scan
     build_update_fn
     dropout
+
+
+grad_parameters
+---------------
+
+.. autofunction:: grad_parameters
 
 
 scan

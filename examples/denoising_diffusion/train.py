@@ -57,7 +57,8 @@ def train(
     dataset = load_celeb_a()
 
     dataloader = (
-        dataset.cache()
+        dataset
+        # .cache()  # TODO: memory leak?
         .repeat()
         .shuffle(batch_size * 100)
         .batch(batch_size)

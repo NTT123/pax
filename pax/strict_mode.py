@@ -1,6 +1,6 @@
 """Thin wrappers for jax transformation."""
 from functools import wraps
-from typing import Any, Callable, TypeVar, Union
+from typing import Callable, TypeVar, Union
 
 import jax
 

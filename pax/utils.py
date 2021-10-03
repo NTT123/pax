@@ -50,7 +50,20 @@ def grad_parameters(
         Callable[..., Tuple[jnp.ndarray, C]],
     ]
 ) -> Callable[..., Tuple[T, C]]:
-    """Compute gradient with respect to trainable parameters of the first argument."""
+    """Compute gradient with respect to trainable parameters of the first argument.
+
+    Example:
+
+    >>> def loss_fn(model: pax.nn.Linear, x, y):
+    ...     y_hat = model(x)
+    ...     loss = jnp.mean(jnp.square(y - y_hat))
+    ...     return loss, (loss, model)
+    ...
+    ... grad_fn = pax.grad_parameters(loss_fn)
+    ... net = pax.nn.Linear(1, 1)
+    ... x = jnp.zeros((3, 1))
+    ... grads, (loss, net) = grad_fn(net, x, x)
+    """
 
     @functools.wraps(fun)
     def _fun(params: T, mod: T, *args, **kwargs):
@@ -175,18 +188,17 @@ def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):
     """``jax.lax.scan`` with an additional ``time_major=False`` mode.
 
 
-    The semantics of ``scan`` are given roughly by this Python implementation::
+    The semantics of ``scan`` are given roughly by this Python implementation:
 
-      def scan(f, init, xs, length=None):
-          if xs is None:
-              xs = [None] * length
-          carry = init
-          ys = []
-          for x in xs:
-              carry, y = f(carry, x)
-              ys.append(y)
-          return carry, np.stack(ys)
-
+    >>> def scan(f, init, xs, length=None):
+    ...     if xs is None:
+    ...         xs = [None] * length
+    ...     carry = init
+    ...     ys = []
+    ...     for x in xs:
+    ...         carry, y = f(carry, x)
+    ...         ys.append(y)
+    ...     return carry, np.stack(ys)
     """
     if time_major:
         # data format: TN...
