@@ -266,10 +266,10 @@ class Module(object, metaclass=ModuleMetaclass):
 
         Example:
             >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
-                Sequential
-                ├── Linear[in_dim=2, out_dim=3, with_bias=True]
-                ├── x => relu(x)
-                └── Linear[in_dim=3, out_dim=4, with_bias=True]
+            Sequential
+            ├── Linear[in_dim=2, out_dim=3, with_bias=True]
+            ├── x => relu(x)
+            └── Linear[in_dim=3, out_dim=4, with_bias=True]
         """
 
         output = [self.__repr__()]

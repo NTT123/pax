@@ -48,10 +48,10 @@ def grad_parameters(
     ...     loss = jnp.mean(jnp.square(y - y_hat))
     ...     return loss, (loss, model)
     ...
-    ... grad_fn = pax.grad_parameters(loss_fn)
-    ... net = pax.nn.Linear(1, 1)
-    ... x = jnp.zeros((3, 1))
-    ... grads, (loss, net) = grad_fn(net, x, x)
+    >>> grad_fn = pax.grad_parameters(loss_fn)
+    >>> net = pax.nn.Linear(1, 1)
+    >>> x = jnp.zeros((3, 1))
+    >>> grads, (loss, net) = grad_fn(net, x, x)
     """
 
     def _fun(params: T, mod: T, *args, **kwargs):
@@ -87,13 +87,12 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
     ...     loss = jnp.mean(jnp.square(y - y_hat))
     ...     return loss, (loss, model)
     ...
-    ... update_fn = pax.utils.build_update_fn(mse_loss)
-    ... net = pax.nn.Linear(2, 2)
-    ... optimizer = opax.adam(1e-4)(net.parameters())
-    ... x = jnp.ones((32, 2))
-    ... y = jnp.zeros((32, 2))
-    ... net, optimizer, loss = update_fn(net, optimizer, x, y)
-
+    >>> update_fn = pax.utils.build_update_fn(mse_loss)
+    >>> net = pax.nn.Linear(2, 2)
+    >>> optimizer = opax.adam(1e-4)(net.parameters())
+    >>> x = jnp.ones((32, 2))
+    >>> y = jnp.zeros((32, 2))
+    >>> net, optimizer, loss = update_fn(net, optimizer, x, y)
     """
 
     def _update_fn(model: T, optimizer: O, *inputs, **kwinputs) -> Tuple[T, O, Any]:
