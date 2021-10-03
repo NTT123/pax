@@ -7,3 +7,4 @@ from .resnet import (
     ResNet152,
     ResNet200,
 )
+from .transformer import Transformer

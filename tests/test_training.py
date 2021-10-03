@@ -7,17 +7,15 @@ import pax
 from pax.utils import LossFnOutput
 
 
-def test_train_linear_regression():
+def test_train_linear_regression_1():
     x = jax.random.normal(jax.random.PRNGKey(42), (32, 1), dtype=jnp.float32)
     noise = jax.random.normal(jax.random.PRNGKey(43), (32, 1), dtype=jnp.float32) * 0.2
     y = x * 2.5 - 3.1 + noise
 
     def loss_fn(
-        params: pax.nn.Linear,
         model: pax.nn.Linear,
         inputs: Tuple[jnp.ndarray, jnp.ndarray],
     ) -> LossFnOutput:
-        model = pax.update_parameters(model, params=params)
         x, y = inputs
         y_hat = model(x)
         loss = jnp.mean(jnp.square(y - y_hat))
@@ -31,7 +29,7 @@ def test_train_linear_regression():
     print(f"[step {step}]  loss {loss:.3f}")
 
 
-def test_train_linear_regression():
+def test_train_linear_regression_2():
     x = jax.random.normal(jax.random.PRNGKey(42), (32, 1), dtype=jnp.float32)
     noise = jax.random.normal(jax.random.PRNGKey(43), (32, 1), dtype=jnp.float32) * 0.2
     y = x * 2.5 - 3.1 + noise

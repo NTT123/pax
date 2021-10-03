@@ -6,6 +6,28 @@ from pax import LossFnOutput
 from pax.nn import EMA, RngSeq
 
 
+def test_grad_parameters():
+    def loss_fn(model: pax.nn.Linear, inputs):
+        x, target = inputs
+        y = model(x)
+        loss = jnp.mean(jnp.square(y - target))
+        return loss, (loss, model)
+
+    @pax.jit
+    def update_fn(model, optimizer, inputs):
+        grads, (loss, model) = pax.grad_parameters(loss_fn)(model, inputs)
+        model, optimizer = pax.apply_gradients(model, opt, grads=grads)
+        return model, optimizer, loss
+
+    net = pax.nn.Linear(2, 1)
+    opt = opax.adamw(learning_rate=1e-1)(net.parameters())
+    x = np.random.normal(size=(32, 2))
+    y = np.random.normal(size=(32, 1))
+    for step in range(5):
+        net, opt, loss = update_fn(net, opt, (x, y))
+        print(step, loss)
+
+
 def test_util_update_fn():
     def loss_fn(model: pax.nn.Linear, inputs) -> LossFnOutput:
         x, target = inputs

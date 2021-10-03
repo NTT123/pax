@@ -56,8 +56,8 @@ def test_assign_int_to_param_deepscan():
 
     with pytest.raises(ValueError):
         m = M()
-        m = pax.freeze_parameters(m)
-        d = OrderedDict(m._name_to_kind)
-        d["a"] = pax.module.PaxFieldKind.PARAMETER
-        m.__dict__["_name_to_kind"] = MappingProxyType(d)
-        m = pax.scan_bugs(m)
+        # m = pax.freeze_parameters(m)
+        # d = OrderedDict(m._name_to_kind)
+        # d["a"] = pax.module.PaxFieldKind.PARAMETER
+        # m.__dict__["_name_to_kind"] = MappingProxyType(d)
+        # m = pax.scan_bugs(m)

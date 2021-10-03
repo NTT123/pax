@@ -37,7 +37,6 @@ class LayerNorm(Module):
         eps: float = 1e-5,
         scale_init: Optional[initializers.Initializer] = None,
         offset_init: Optional[initializers.Initializer] = None,
-        use_fast_variance: bool = False,
         *,
         rng_key: Optional[KeyArray] = None,
         name: Optional[str] = None,
@@ -52,7 +51,6 @@ class LayerNorm(Module):
             eps: Small epsilon to avoid division by zero variance. Defaults ``1e-5``, as in the paper and Sonnet.
             scale_init: Optional initializer for gain (aka scale). By default, one.
             offset_init: Optional initializer for bias (aka offset). By default, zero.
-            use_fast_variance: If true, use a faster but less numerically stable formulation for computing variance.
             rng_key: RNG key.
             name: module name.
         """
@@ -78,7 +76,6 @@ class LayerNorm(Module):
         self.create_offset = create_offset
         self.scale_init = scale_init or initializers.ones
         self.offset_init = offset_init or initializers.zeros
-        self.use_fast_variance = use_fast_variance
         self.num_channels = num_channels
 
         param_shape = [num_channels]
@@ -131,11 +128,7 @@ class LayerNorm(Module):
             axis = tuple(range(inputs.ndim)[axis])
 
         mean = jnp.mean(inputs, axis=axis, keepdims=True)
-        if self.use_fast_variance:
-            mean_of_squares = jnp.mean(jnp.square(inputs), axis=axis, keepdims=True)
-            variance = mean_of_squares - jnp.square(mean)
-        else:
-            variance = jnp.var(inputs, axis=axis, keepdims=True)
+        variance = jnp.var(inputs, axis=axis, keepdims=True)
 
         # param_shape = inputs.shape[-1:]
         if self.create_scale:

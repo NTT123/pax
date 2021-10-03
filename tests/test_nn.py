@@ -83,12 +83,31 @@ def test_conv_2d_basic():
 def test_layer_norm_1():
     """Make sure our LayerNorm behaves the same as hk.LayerNorm."""
     layer_norm = pax.nn.LayerNorm(3, -1, True, True)
-    x = np.empty((32, 3), dtype=np.float32)
+    print(layer_norm.summary())
+    x = np.random.randn(32, 3).astype(np.float32)
     fwd = hk.transform(lambda x: hk.LayerNorm(-1, True, True)(x))
     rng = jax.random.PRNGKey(42)
     params = fwd.init(rng, x)
     np.testing.assert_array_equal(layer_norm.scale, params["layer_norm"]["scale"])
     np.testing.assert_array_equal(layer_norm.offset, params["layer_norm"]["offset"])
+    y1 = fwd.apply(params, None, x)
+    y2 = layer_norm(x)
+    np.testing.assert_array_equal(y1, y2)
+
+
+def test_layer_norm_2():
+    """Make sure our LayerNorm behaves the same as hk.LayerNorm."""
+    layer_norm = pax.nn.LayerNorm(3, -1, False, False)
+    print(layer_norm.summary())
+    x = np.random.randn(32, 3).astype(np.float32)
+    fwd = hk.transform(lambda x: hk.LayerNorm(-1, False, False)(x))
+    rng = jax.random.PRNGKey(42)
+    params = fwd.init(rng, x)
+    # np.testing.assert_array_equal(layer_norm.scale, params["layer_norm"]["scale"])
+    # np.testing.assert_array_equal(layer_norm.offset, params["layer_norm"]["offset"])
+    y1 = fwd.apply(params, None, x)
+    y2 = layer_norm(x)
+    np.testing.assert_array_equal(y1, y2)
 
 
 def test_layer_norm_init():

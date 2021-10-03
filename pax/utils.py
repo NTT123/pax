@@ -1,5 +1,6 @@
 """Useful functions."""
 
+import functools
 import inspect
 from typing import Any, Callable, Tuple, TypeVar, Union
 from unittest import TestCase
@@ -9,10 +10,13 @@ import jax.numpy as jnp
 
 from .module import Module, PaxFieldKind
 from .rng import KeyArray
+from .strict_mode import grad
 
 GradientTransformation = "GradientTransformation"
 T = TypeVar("T", bound=Module)
 O = TypeVar("O", bound=GradientTransformation)
+C = TypeVar("C")
+
 
 LossFnOutput = Tuple[jnp.ndarray, Any]
 LossFn = Callable[[T, Any], LossFnOutput]
@@ -36,6 +40,34 @@ class EmptyNode(Tuple):
     @classmethod
     def tree_unflatten(cls, _, __):
         return EmptyNode()
+
+
+def grad_parameters(
+    fun: Union[
+        Callable[[T, Any], Tuple[jnp.ndarray, C]],
+        Callable[[T, Any, Any], Tuple[jnp.ndarray, C]],
+        Callable[[T, Any, Any, Any], Tuple[jnp.ndarray, C]],
+        Callable[..., Tuple[jnp.ndarray, C]],
+    ]
+) -> Callable[..., Tuple[T, C]]:
+    """Compute gradient with respect to trainable parameters of the first argument."""
+
+    @functools.wraps(fun)
+    def _fun(params: T, mod: T, *args, **kwargs):
+        mod = mod.update_parameters(params.parameters())
+        out = fun(mod, *args, **kwargs)
+        return out
+
+    _grad_fn = grad(_fun, has_aux=True, allow_int=False, io_check=True, copy=True)
+
+    def grad_fn(mod: T, *args, **kwargs) -> Tuple[T, C]:
+        if not isinstance(mod, Module):
+            raise ValueError("Expecting a Pax's Module at the first argument.")
+
+        out = _grad_fn(mod.parameters(), mod, *args, **kwargs)
+        return out
+
+    return grad_fn
 
 
 def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
@@ -107,8 +139,7 @@ def build_update_fn(loss_fn: LossFn, *, scan_mode: bool = False) -> UpdateFn:
             update_parameters,
         )
 
-        grads, (aux, model) = grad(loss_fn, has_aux=True, allow_int=True)(model, inputs)
-        assertStructureEqual(grads, model)
+        grads, (aux, model) = grad_parameters(loss_fn)(model, inputs)
         params = select_parameters(model)
         updates, optimizer = transform_gradients(grads, optimizer, params=params)
         params = apply_updates(params, updates=updates)

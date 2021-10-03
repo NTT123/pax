@@ -166,3 +166,37 @@ def test_mp_call_classmethod():
     m = apply_mp_policy(m, mp_policy=my_policy)
     with pytest.raises(ValueError):
         y = m.t(x)
+
+
+def test_mp_call_staticmethod():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(3, 3)
+
+        @staticmethod
+        def t(x, y):
+            return y
+
+    m = M()
+    x = jnp.zeros((3, 3))
+    y = m.t(x, x)
+    my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
+    m = apply_mp_policy(m, mp_policy=my_policy)
+    with pytest.raises(ValueError):
+        y = m.t(x)
+
+
+def test_mp_call_function():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(3, 3)
+
+    m = M()
+    x = jnp.zeros((3, 3))
+    m.q = lambda x: x
+    my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
+    m = apply_mp_policy(m, mp_policy=my_policy)
+    with pytest.raises(ValueError):
+        m.q(x)

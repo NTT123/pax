@@ -3,7 +3,7 @@
 import inspect
 import os
 from functools import partial
-from typing import List
+from typing import List, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -117,9 +117,9 @@ def loss_fn(model: LM, batch: jnp.ndarray):
     return loss, (loss, model)
 
 
-def update_step(model_and_optimizer, batch: jnp.ndarray):
+def update_step(model_and_optimizer: Tuple[LM, pax.Module], batch: jnp.ndarray):
     model, optimizer = model_and_optimizer
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(model, batch)
+    grads, (loss, model) = pax.grad_parameters(loss_fn)(model, batch)
     grads = jax.lax.pmean(grads, axis_name="i")
     model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
     return (model, optimizer), loss

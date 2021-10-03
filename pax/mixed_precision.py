@@ -1,4 +1,5 @@
 import inspect
+from types import FunctionType
 from typing import Any, Generic, TypeVar
 
 import jax
@@ -47,65 +48,75 @@ class apply_mp_policy(Module, Generic[T]):
         return self.__getattr__("__call__")(*args, **kwargs)
 
     def __getattr__(self, name):
-        if hasattr(self._module.__class__, name):
-            if inspect.ismethod(getattr(self._module.__class__, name)):
-                raise ValueError(
-                    f"Calling an classmethod is not supported for mixed-precision modules."
-                )
-
-            f = getattr(self._module.__class__, name)
-
-            def _fn(*args, **kwargs):
-                """This method does four tasks:
-                * Task 1: It casts all parameters and arguments to the "compute" data type.
-                * Task 2: It calls the original module.
-                * Task 3: It casts all the parameters back to the "param" data type.
-                However, if a parameter is NOT modified during the forward pass,
-                the original parameter will be reused to avoid a `cast` operation.
-                * Task 4: It casts the output to the "output" data type.
-                """
-                old_mod_clone = self._module.copy()
-
-                # task 1
-                mod, casted_args, casted_kwargs = self.mp_policy.cast_to_compute(
-                    (self._module, args, kwargs)
-                )
-
-                casted_mod_clone = mod.copy()
-                # task 2
-                output = f(mod, *casted_args, **casted_kwargs)
-
-                # task 3
-                if jax.tree_structure(mod) != jax.tree_structure(old_mod_clone):
-                    raise RuntimeError(
-                        f"The module `{self._module.__class__.__name__}` has its treedef modified during the forward pass. "
-                        f"This is currently not supported for a mixed-precision module!"
-                    )
-
-                def reuse_params_fn(updated_new, new, old):
-                    # reuse the original parameter if it is
-                    # NOT modified during the forward pass.
-                    if updated_new is new:
-                        return old  # nothing change
-                    else:
-                        return self.mp_policy.cast_to_param(updated_new)
-
-                mod = jax.tree_map(
-                    reuse_params_fn, mod, casted_mod_clone, old_mod_clone
-                )
-
-                with ctx.mutable():
-                    # `mod` has the same pytree structure as `self._module`,
-                    # therefore, this is safe.
-                    self._module = mod
-
-                # task 4
-                output = self.mp_policy.cast_to_output(output)
-                return output
-
-            return _fn
-        else:
+        if not hasattr(self._module, name):
             raise AttributeError
+
+        f = getattr(self._module, name)
+
+        if not inspect.ismethod(f):
+            raise ValueError(
+                f"Accessing a non-method attribute `{name}` of a mixed-precision module is not allowed."
+            )
+
+        if isinstance(f, FunctionType):
+            raise ValueError(
+                f"Calling a static method `{name}` is not supported for mixed-precision modules."
+            )
+
+        f = getattr(self._module.__class__, name)
+
+        if inspect.ismethod(f):
+            raise ValueError(
+                f"Calling a class method `{name}` is not supported for mixed-precision modules."
+            )
+
+        def _fn(*args, **kwargs):
+            """This method does four tasks:
+            * Task 1: It casts all parameters and arguments to the "compute" data type.
+            * Task 2: It calls the original module.
+            * Task 3: It casts all the parameters back to the "param" data type.
+            However, if a parameter is NOT modified during the forward pass,
+            the original parameter will be reused to avoid a `cast` operation.
+            * Task 4: It casts the output to the "output" data type.
+            """
+            old_mod_clone = self._module.copy()
+
+            # task 1
+            mod, casted_args, casted_kwargs = self.mp_policy.cast_to_compute(
+                (self._module, args, kwargs)
+            )
+
+            casted_mod_clone = mod.copy()
+            # task 2
+            output = f(mod, *casted_args, **casted_kwargs)
+
+            # task 3
+            if jax.tree_structure(mod) != jax.tree_structure(old_mod_clone):
+                raise RuntimeError(
+                    f"The module `{self._module.__class__.__name__}` has its treedef modified during the forward pass. "
+                    f"This is currently not supported for a mixed-precision module!"
+                )
+
+            def reuse_params_fn(updated_new, new, old):
+                # reuse the original parameter if it is
+                # NOT modified during the forward pass.
+                if updated_new is new:
+                    return old  # nothing change
+                else:
+                    return self.mp_policy.cast_to_param(updated_new)
+
+            mod = jax.tree_map(reuse_params_fn, mod, casted_mod_clone, old_mod_clone)
+
+            with ctx.mutable():
+                # `mod` has the same pytree structure as `self._module`,
+                # therefore, this is safe.
+                self._module = mod
+
+            # task 4
+            output = self.mp_policy.cast_to_output(output)
+            return output
+
+        return _fn
 
     def __repr__(self):
         dtype_to_name = {
