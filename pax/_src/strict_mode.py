@@ -71,18 +71,16 @@ def enable_strict_mode(f):
             if deep_scan:
                 _deep_scan((u, v))
 
-            # enable immutable mode
-            with ctx.immutable():
-                # use copy of the inputs to prevent side effects
-                # therefore, the function `f` has to returns modified
-                # objects as its outputs.
-                if copy:
-                    u, v = jax.tree_map(lambda x: x, (u, v))
+            # use copy of the inputs to prevent side effects
+            # therefore, the function `f` has to returns modified
+            # objects as its outputs.
+            if copy:
+                u, v = jax.tree_map(lambda x: x, (u, v))
 
-                if io_check:
-                    input_treedefs = _get_all_module_treedefs((u, v))
+            if io_check:
+                input_treedefs = _get_all_module_treedefs((u, v))
 
-                out = fn(*u, **v)
+            out = fn(*u, **v)
 
             # scan outputs for bugs
             if deep_scan:

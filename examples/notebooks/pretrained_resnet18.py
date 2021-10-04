@@ -21,7 +21,8 @@ def convert_conv(conv, name=None):
         name=name,
     )
     assert pax_conv.weight.shape == weight.shape
-    pax_conv.weight = weight
+    with pax.mutate(pax_conv):
+        pax_conv.weight = weight
     return pax_conv
 
 
@@ -46,11 +47,12 @@ def convert_bn(bn, name=None):
     assert pax_bn.ema_mean.averages.shape == running_mean.shape
     assert pax_bn.ema_var.averages.shape == running_var.shape
 
-    pax_bn.scale = weight
-    pax_bn.offset = bias
+    with pax.mutate(pax_bn):
+        pax_bn.scale = weight
+        pax_bn.offset = bias
 
-    pax_bn.ema_mean.averages = running_mean
-    pax_bn.ema_var.averages = running_var
+        pax_bn.ema_mean.averages = running_mean
+        pax_bn.ema_var.averages = running_var
 
     return pax_bn
 
@@ -86,14 +88,16 @@ def convert_linear(linear):
     assert pax_linear.bias.shape == bias.shape
     assert pax_linear.weight.shape == weight.shape
 
-    pax_linear.weight = weight
-    pax_linear.bias = bias
+    with pax.mutate(pax_linear):
+        pax_linear.weight = weight
+        pax_linear.bias = bias
 
     return pax_linear
 
 
 def load_pretrained_resnet18():
-    def _load_weights(resnet18):
+    resnet18 = pax.nets.ResNet18(3, 1000)
+    with pax.mutate(resnet18):
         resnet18_pt = torchvision.models.resnet18(pretrained=True).eval()
         pax_resnet = [
             convert_conv(resnet18_pt.conv1),
@@ -119,10 +123,7 @@ def load_pretrained_resnet18():
                     b.proj_batchnorm = mods[1][1]
 
         resnet18.logits = pax_resnet[-1]
-        # make sure we are in `eval` mode when doing evaluation.
-        resnet18 = resnet18.eval()
-        return resnet18
 
-    resnet18 = pax.nets.ResNet18(3, 1000)
-    resnet18 = pax.mutate(resnet18, with_fn=_load_weights)
+    # make sure we are in `eval` mode when doing evaluation.
+    resnet18 = resnet18.eval()
     return resnet18

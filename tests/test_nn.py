@@ -867,11 +867,8 @@ def test_apply_mutate_no_side_effect():
     a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(4, 4))
 
     def f(mod):
-        def add_test__(m):
-            m.test__ = 123
-            return m
-
-        mod = pax.mutate(mod, with_fn=add_test__)
+        with pax.mutate(mod):
+            mod.test__ = 123
         return mod
 
     b = a.apply(f)

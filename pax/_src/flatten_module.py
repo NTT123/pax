@@ -4,7 +4,6 @@ from typing import Any, Generic, List, TypeVar
 import jax
 import jax.numpy as jnp
 
-from . import ctx
 from .module import Module
 
 TreeDef = Any
@@ -64,8 +63,7 @@ class flatten_module(Module, Generic[T]):
         assert callable(module), "Expecting a callable module." ""
         out = module(*args, **kwargs)
 
-        with ctx.mutable():
-            states_leaves, _ = jax.tree_flatten(select_states(module))
+        states_leaves, _ = jax.tree_flatten(select_states(module))
         self.states_leaves = states_leaves
         return out
 

@@ -160,15 +160,13 @@ net = pax.nn.Sequential(
     pax.nn.Linear(64, 10),
 )
 
-def replace_last_layer(mod):
-    mod[-1] = pax.nn.Linear(64, 2)
-    return mod
-
 net = pax.freeze_parameters(net) 
-net = pax.mutate(net, with_fn=replace_last_layer)
+
+with pax.mutate(net):
+    net[-1] = pax.nn.Linear(64, 2)
 ```
 
-We use ``pax.mutate`` transformation to turn on mutable mode and additional safeguards to ensure that our modifications do not have potential bugs.
+We use ``pax.mutate`` turn on mutable mode and additional safeguards to ensure that our modifications do not have potential bugs.
 
 After this, ``net.parameters()`` will only return trainable parameters of the last layer.
 

@@ -11,9 +11,7 @@ def test_sequential_summary():
     f = pax.nn.Sequential(pax.nn.Linear(3, 32), jax.nn.sigmoid, pax.nn.Linear(32, 64))
     f1 = pax.nn.Linear(5, 5)
 
-    def add_T(m):
-        m.T = f
-        return m
+    with pax.mutate(f1):
+        f1.T = f
 
-    f1 = pax.mutate(f1, with_fn=add_T)
     print(f1.summary())

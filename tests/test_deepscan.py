@@ -33,12 +33,10 @@ def test_assigned_field_an_array():
 
     n = N()
     n = pax.scan_bugs(n)
-    # no error because we will automatically assign `a` to kind PARAMETER
-    def add_b(m):
-        m.register_parameter("b", jnp.array([1, 2, 3], dtype=jnp.float32))
-        return m
+    with pax.mutate(n):
+        # no error because we will automatically assign `a` to kind PARAMETER
+        n.register_parameter("b", jnp.array([1, 2, 3], dtype=jnp.float32))
 
-    n = pax.mutate(m, with_fn=add_b)
     assert n._pax.name_to_kind["b"] == pax.PaxFieldKind.PARAMETER
 
 

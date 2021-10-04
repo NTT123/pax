@@ -202,11 +202,9 @@ def test_clone_no_side_effect():
     fc1 = pax.nn.Linear(3, 3)
     fc2 = fc1.copy()
 
-    def add_new_module(m):
-        m.new_module = pax.nn.Linear(5, 5)
-        return m
+    with pax.mutate(fc1):
+        fc1.new_module = pax.nn.Linear(5, 5)
 
-    fc1 = pax.mutate(fc1, with_fn=add_new_module)
     assert (
         "new_module" in fc1._pax.name_to_kind
     ), "registered 'new_modules' as part of fc1"
@@ -271,20 +269,15 @@ def test_class_attribute_copy():
 def test_assign_empty_list_dict():
     fc = pax.nn.Linear(3, 3)
 
-    def add_a(m):
-        m.a = []
-        return m
+    with pax.mutate(fc):
+        fc.a = []
 
-    fc = pax.mutate(fc, with_fn=add_a)
     fc.a.append(1)
     assert fc.a == [1]
     del fc.a[0]
 
-    def add_b(m):
-        m.b = {}
-        return m
-
-    fc = pax.mutate(fc, with_fn=add_b)
+    with pax.mutate(fc):
+        fc.b = {}
     fc.b[1] = 2
 
 
@@ -360,11 +353,9 @@ def test_hash_module():
 def test_deepcopy_pytreedef():
     f = pax.nn.Linear(3, 3)
 
-    def add_de(m):
-        m.de = jax.tree_structure(f)
-        return m
+    with pax.mutate(f):
+        f.de = jax.tree_structure(f)
 
-    f = pax.mutate(f, with_fn=add_de)
     g = f.copy()
 
     assert jax.tree_structure(g) == jax.tree_structure(f)
@@ -373,11 +364,9 @@ def test_deepcopy_pytreedef():
 def test_delete_attribute():
     f = pax.nn.Linear(3, 3)
 
-    def add_t(m):
-        m.t = pax.nn.Linear(1, 1)
-        return m
+    with pax.mutate(f):
+        f.t = pax.nn.Linear(1, 1)
 
-    f = pax.mutate(f, with_fn=add_t)
     assert "t" in f._pax.name_to_kind
     with pytest.raises(ValueError):
         del f.t

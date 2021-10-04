@@ -8,55 +8,7 @@ from typing import Any
 state = threading.local()
 state._rng_key = None
 state._seed = None
-state._enable_mutability = False
 state._enable_deepcopy_wo_treedef = False
-
-
-class mutable(object):
-    r"""A context manager that turns on mutable mode.
-
-    Example::
-
-        >>> x = pax.nn.Linear(2,2)
-        >>> with pax.ctx.mutable():
-        ...   x.new_field = 123
-        >>> x.new_field
-        123
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.prev = state._enable_mutability
-
-    def __enter__(self):
-        self.prev = state._enable_mutability
-        state._enable_mutability = True
-
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
-        state._enable_mutability = self.prev
-
-
-class immutable(object):
-    r"""A context manager that turns on immutable mode.
-
-    Example::
-
-        >>> x = pax.nn.Linear(2,2)
-        >>> with pax.ctx.immutable():
-        ...   x.new_field = 123
-        RuntimeError: Cannot set an attribute of kind `PaxFieldKind.OTHERS` in immutable mode.`
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.prev = state._enable_mutability
-
-    def __enter__(self):
-        self.prev = state._enable_mutability
-        state._enable_mutability = False
-
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
-        state._enable_mutability = self.prev
 
 
 class enable_deepcopy_wo_treedef(object):
@@ -72,3 +24,19 @@ class enable_deepcopy_wo_treedef(object):
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         state._enable_deepcopy_wo_treedef = self.prev
+
+
+class mutable(object):
+    r"""A context manager that turns on mutable mode."""
+
+    def __init__(self, mod):
+        super().__init__()
+        self.mod = mod
+        self.prev = mod._pax.frozen
+
+    def __enter__(self):
+        self.prev = self.mod._pax.frozen
+        self.mod.__dict__["_pax"] = self.mod._pax._replace(frozen=False)
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        self.mod.__dict__["_pax"] = self.mod._pax._replace(frozen=self.prev)

@@ -39,7 +39,7 @@ def enable_train_mode(mod: T) -> T:
 
     def _train_apply_fn(mod: T) -> T:
         mod.__dict__["_pax"] = mod._pax._replace(training=True)
-        with ctx.mutable():
+        with ctx.mutable(mod):
             mod._update_treedef()
         return mod
 
@@ -51,7 +51,7 @@ def enable_eval_mode(mod: T) -> T:
 
     def _eval_apply_fn(mod: T) -> T:
         mod.__dict__["_pax"] = mod._pax._replace(training=False)
-        with ctx.mutable():
+        with ctx.mutable(mod):
             mod._update_treedef()
         return mod
 
@@ -73,7 +73,7 @@ def freeze_parameters(mod: T) -> T:
         mod.__dict__["_pax"] = mod._pax._replace(
             name_to_kind=MappingProxyType(new_name_to_kind)
         )
-        with ctx.mutable():
+        with ctx.mutable(mod):
             mod._update_treedef()
         return mod
 
@@ -107,9 +107,9 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
             if v in none_list:
                 value = getattr(mod, k)
                 none_v = jax.tree_map(lambda _: EmptyNode(), value)
-                with ctx.mutable():
+                with ctx.mutable(mod):
                     setattr(mod, k, none_v)
-        with ctx.mutable():
+        with ctx.mutable(mod):
             mod._update_treedef()
         return mod
 
@@ -129,10 +129,9 @@ def select_states(mod: T) -> T:
 def scan_bugs(mod: T) -> T:
     """Scan the module for potential bugs."""
 
-    mod.check_treedef()
-
     def _scan_apply_fn(mod: T) -> T:
         assert isinstance(mod, Module)
+        mod.check_treedef()
         mod._scan_fields(mod.__class__.__dict__)
         mod._scan_fields(mod.__dict__)
         return mod
@@ -233,22 +232,31 @@ def update_states(mod: T, *, states: T) -> T:
     return update_pytree(mod, other=select_states(states))
 
 
-def mutate(mod: T, *, with_fn: Callable[[T], K]) -> K:
-    """Mutate a module without side effects and bugs."""
-    with ctx.immutable():
-        mod = mod.copy()  # prevent side effects
-    mod = scan_bugs(mod)
-    with ctx.mutable():
-        new_mod = with_fn(mod)
-        new_mod.find_and_register_submodules()
+class mutate(object):
+    def __init__(self, mod: T):
+        super().__init__()
+        self.mod = mod
+        scan_bugs(self.mod)
 
-        def _update_treedef(m):
-            m._update_treedef()
+    def __enter__(self):
+        def _unfreeze(m: T):
+            m.__dict__["_pax"] = m._pax._replace(frozen=False)
             return m
 
-        new_mod = new_mod.apply(_update_treedef, check_treedef=False)
-    new_mod = scan_bugs(new_mod)
-    return new_mod
+        _mod = self.mod.apply(_unfreeze)
+        self.mod.__dict__.update(_mod.__dict__)
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        def _freeze(m: T):
+            if not m._pax.frozen:
+                m.find_and_register_submodules()
+                m._update_treedef()
+                m.__dict__["_pax"] = m._pax._replace(frozen=True)
+            return m
+
+        _mod = self.mod.apply(_freeze, check_treedef=False)
+        self.mod.__dict__.update(_mod.__dict__)
+        scan_bugs(self.mod)
 
 
 from .flatten_module import flatten_module

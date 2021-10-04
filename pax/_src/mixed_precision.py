@@ -107,7 +107,7 @@ class apply_mp_policy(Module, Generic[T]):
 
             mod = jax.tree_map(reuse_params_fn, mod, casted_mod_clone, old_mod_clone)
 
-            with ctx.mutable():
+            with ctx.mutable(self):
                 # `mod` has the same pytree structure as `self._module`,
                 # therefore, this is safe.
                 self._module = mod

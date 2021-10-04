@@ -62,12 +62,11 @@ class PaxModuleInfo(NamedTuple):
     num_leaves: int
     name_to_kind: Mapping[str, PaxFieldKind]
     treedef: Any
+    frozen: bool
 
     def __repr__(self) -> str:
         node = ", ".join([f"{k}:{v.name}" for k, v in self.name_to_kind.items()])
-        return (
-            f"PaxModuleInfo[name={self.name}, training={self.training}, nodes=[{node}]]"
-        )
+        return f"PaxModuleInfo[name={self.name}, training={self.training}, frozen={self.frozen}, nodes=[{node}]]"
 
 
 # Inspired by dm-haiku `wrap_method`.
@@ -134,8 +133,8 @@ class ModuleMetaclass(type):
         return cls
 
     def __call__(cls: Type[T], *args, **kwargs) -> T:
-        with mutable():
-            module = cls.__new__(cls, *args, **kwargs)  # type: ignore
+        module = cls.__new__(cls, *args, **kwargs)  # type: ignore
+        with mutable(module):
             cls.__init__(module, *args, **kwargs)
             module.find_and_register_submodules()
             module._update_treedef()
@@ -163,9 +162,6 @@ class Module(object, metaclass=ModuleMetaclass):
         """Initialize _name_to_kind and _training in `__new__` method to avoid
         calling `super().__init__()` in every subclass of Module."""
 
-        if not ctx_state._enable_mutability:
-            raise ValueError("Cannot create new module in immutable mode")
-
         obj = object.__new__(cls)
         obj.__dict__["_pax"] = PaxModuleInfo(
             name=None,
@@ -173,6 +169,7 @@ class Module(object, metaclass=ModuleMetaclass):
             name_to_kind=MappingProxyType(OrderedDict()),
             treedef=None,
             num_leaves=0,
+            frozen=True,
         )
 
         # scan class attributes for unregistered modules and ndarray's.
@@ -193,8 +190,8 @@ class Module(object, metaclass=ModuleMetaclass):
         return self._pax.name
 
     def _update_treedef(self):
-        if not ctx_state._enable_mutability:
-            raise ValueError("Cannot update `_treedef`  in immutable mode.")
+        if self._pax.frozen:
+            raise ValueError("Cannot update `_treedef` for a frozen module.")
 
         with enable_deepcopy_wo_treedef():
             leaves, treedef = jax.tree_flatten(self)
@@ -234,7 +231,7 @@ class Module(object, metaclass=ModuleMetaclass):
         """Update the `_name_to_kind` dictionary.
 
         Create a new dictionary and wrap it with `MappingProxyType` to avoid side effects."""
-        if not ctx_state._enable_mutability:
+        if self._pax.frozen:
             raise ValueError(
                 "Cannot update `_name_to_kind` dictionary in immutable mode."
             )
@@ -259,14 +256,14 @@ class Module(object, metaclass=ModuleMetaclass):
 
         kind = self._pax.name_to_kind.get(name, PaxFieldKind.OTHERS)
 
-        if ctx_state._enable_mutability:
+        if not self._pax.frozen:
             super().__setattr__(name, value)
         else:
             if kind == PaxFieldKind.STATE:
                 super().__setattr__(name, value)
             else:
                 raise ValueError(
-                    f"Cannot assign an attribute of kind `{kind}` in immutable mode."
+                    f"Cannot assign an attribute of kind `{kind}` of a frozen module."
                 )
 
         # If `value` contains Module's instances only, it is registered as MODULE.
@@ -285,14 +282,12 @@ class Module(object, metaclass=ModuleMetaclass):
         self._scan_fields(fields=(name,))
 
     def __delattr__(self, name: str) -> None:
-        if ctx_state._enable_mutability:
+        if not self._pax.frozen:
             if name in self._pax.name_to_kind:
                 raise ValueError("Cannot delete pytree attribute.")
             super().__delattr__(name)
         else:
-            raise ValueError(
-                "Cannot delete module's attribute {name} in immutable mode."
-            )
+            raise ValueError("Cannot delete module's attribute {name} of a frozen mod.")
 
     def register_parameter(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
@@ -337,7 +332,7 @@ class Module(object, metaclass=ModuleMetaclass):
 
         if ctx_state._enable_deepcopy_wo_treedef:
             # ignore _treedef, _num_leaves in deepcopy mode
-            aux["_pax"] = aux["_pax"]._replace(treedef=None, num_leaves=0)
+            aux["_pax"] = aux["_pax"]._replace(treedef=None, num_leaves=0, frozen=False)
             leaves, treedef = jax.tree_flatten(aux)
             # TODO: it is possible that `leaves` can change its internal states,
             # `jax.jit` will not detect the change. Fix this!
@@ -513,7 +508,7 @@ class Module(object, metaclass=ModuleMetaclass):
             self,
             is_leaf=lambda x: isinstance(x, Module) and (x in submodules),
         )
-        with mutable():
+        with mutable(new_self):
             new_self._update_treedef()
 
         # tree_map already created a copy of self,
