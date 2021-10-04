@@ -8,7 +8,18 @@ which is under MIT License.
 from collections import OrderedDict
 from enum import Enum
 from types import MappingProxyType
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import jax
 import jax.numpy as jnp
@@ -238,7 +249,7 @@ class Module(object, metaclass=ModuleMetaclass):
     register_states = register_state
     register_module = register_modules
 
-    def tree_flatten(self) -> Tuple[list, Tuple[List[str], Any]]:
+    def tree_flatten(self) -> Tuple[List[jnp.ndarray], Mapping[str, Any]]:
         """Convert a module to ``(children, treedef)``."""
 
         aux = dict(self.__dict__)
