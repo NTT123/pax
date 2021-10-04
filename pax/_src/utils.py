@@ -198,6 +198,7 @@ def assertStructureEqual(self: T, other: T):
         if isinstance(a, Module) and isinstance(b, Module):
             assertStructureEqual(a, b)
 
+    has_error = False
     try:
         jax.tree_map(
             check,
@@ -208,6 +209,9 @@ def assertStructureEqual(self: T, other: T):
             and x is not other,
         )
     except ValueError:
+        has_error = True
+
+    if has_error:
         tc = TestCase()
         tc.maxDiff = None
         tc.assertDictEqual(vars(self), vars(other))

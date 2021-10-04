@@ -124,16 +124,20 @@ class Module(object, metaclass=ModuleMetaclass):
         _origin = jax.tree_unflatten(self._treedef, [0] * self._num_leaves)
         from .utils import assertStructureEqual
 
+        error = None
         try:
             assertStructureEqual(_origin, _self)
         except AssertionError as e:
+            error = e
+
+        if error is not None:
             raise ValueError(
                 f"The module `{self}` has its treedef modified.\n"
                 f"--- {self._treedef}\n"
                 f"+++ {treedef}\n"
                 "================\n"
                 f"Differences:\n"
-                f"{e}"
+                f"{str(error)}"
             )
 
     def _update_name_to_kind_dict(self, name: str, value):

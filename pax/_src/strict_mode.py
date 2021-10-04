@@ -33,7 +33,7 @@ def _get_all_module_treedefs(v):
 def enable_strict_mode(f):
     """The strict mode includes safeguards:
 
-    - call deep_scan on input modules.
+    - call deep_scan on input & output modules.
     - enable immutable mode.
     - use copy of the inputs to prevent side effects.
     - a function must return the updated input modules.
@@ -60,7 +60,7 @@ def enable_strict_mode(f):
         @wraps(fn)
         def _fn(*u, **v):
 
-            # scan for bugs
+            # scan inputs for bugs
             if deep_scan:
                 jax.tree_map(
                     _deep_scan, (u, v), is_leaf=lambda x: isinstance(x, Module)
@@ -79,17 +79,21 @@ def enable_strict_mode(f):
 
                 out = fn(*u, **v)
 
-                if io_check:
-                    output_treedefs = _get_all_module_treedefs(out)
-                    if input_treedefs != output_treedefs:
-                        raise ValueError(
-                            f"In Pax's strict mode, a function must return the updated versions of input modules.\n"
-                            f"\n"
-                            f"Input treedefs:  {input_treedefs}\n"
-                            f"Output treedef:  {output_treedefs}\n"
-                        )
+            # scan outputs for bugs
+            if deep_scan:
+                jax.tree_map(_deep_scan, out, is_leaf=lambda x: isinstance(x, Module))
 
-                return out
+            if io_check:
+                output_treedefs = _get_all_module_treedefs(out)
+                if input_treedefs != output_treedefs:
+                    raise ValueError(
+                        f"In Pax's strict mode, a function must return the updated versions of input modules.\n"
+                        f"\n"
+                        f"Input treedefs:  {input_treedefs}\n"
+                        f"Output treedef:  {output_treedefs}\n"
+                    )
+
+            return out
 
         return f(_fn, *args, **kwargs)
 
