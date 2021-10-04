@@ -168,7 +168,7 @@ net = pax.freeze_parameters(net)
 net = pax.mutate(net, with_fn=replace_last_layer)
 ```
 
-Even though, we can modify `net` directly with ``net[-1] = pax.nn.Linear(64, 2)``. It is not recommended. We use ``pax.mutate`` transformation to ensure that our modification does not have side effects.
+We use ``pax.mutate`` transformation to turn on mutable mode and additional safeguards to ensure that our modifications do not have potential bugs.
 
 After this, ``net.parameters()`` will only return trainable parameters of the last layer.
 
