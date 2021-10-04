@@ -152,15 +152,15 @@ def test_type_optional():
 def test_train_eval():
     net = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(3, 3))
 
-    assert net._training == True
+    assert net.training == True
     net = pax.enable_eval_mode(net)
-    assert net._training == False
-    assert net.modules[0]._training == False
-    assert net.modules[1]._training == False
+    assert net.training == False
+    assert net.modules[0].training == False
+    assert net.modules[1].training == False
     net = pax.enable_train_mode(net)
-    assert net._training == True
-    assert net.modules[0]._training == True
-    assert net.modules[1]._training == True
+    assert net.training == True
+    assert net.modules[0].training == True
+    assert net.modules[1].training == True
 
 
 def test_state_of_param():
@@ -190,12 +190,12 @@ def test_state_of_param():
 
 def test_module_properties_modify():
     fc = pax.nn.Linear(3, 3)
-    assert fc._training == True
+    assert fc.training == True
     fc1 = fc.copy()
-    assert fc1._training == True
+    assert fc1.training == True
     fc = pax.enable_eval_mode(fc)
-    assert fc._training == False
-    assert fc1._training == True
+    assert fc.training == False
+    assert fc1.training == True
 
 
 def test_clone_no_side_effect():
@@ -207,10 +207,12 @@ def test_clone_no_side_effect():
         return m
 
     fc1 = pax.mutate(fc1, with_fn=add_new_module)
-    assert "new_module" in fc1._name_to_kind, "registered 'new_modules' as part of fc1"
     assert (
-        "new_module" not in fc2._name_to_kind
-    ), "fc2._name_to_kind is different from fc1._name_to_kind"
+        "new_module" in fc1._pax.name_to_kind
+    ), "registered 'new_modules' as part of fc1"
+    assert (
+        "new_module" not in fc2._pax.name_to_kind
+    ), "fc2._pax.name_to_kind is different from fc1._pax.name_to_kind"
 
 
 def test_lambda_module():
@@ -376,7 +378,7 @@ def test_delete_attribute():
         return m
 
     f = pax.mutate(f, with_fn=add_t)
-    assert "t" in f._name_to_kind
+    assert "t" in f._pax.name_to_kind
     with pytest.raises(ValueError):
         del f.t
 

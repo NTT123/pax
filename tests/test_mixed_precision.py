@@ -133,7 +133,7 @@ def test_mixed_precision_clone():
         return m
 
     f = pax.mutate(f, with_fn=add_new_fc)
-    assert "new_fc" not in ff._name_to_kind
+    assert "new_fc" not in ff._pax.name_to_kind
 
 
 def test_mixed_precision_unwrap_clone():
@@ -148,7 +148,7 @@ def test_mixed_precision_unwrap_clone():
         return m
 
     f = pax.mutate(f, with_fn=add_new_fc)
-    assert "new_fc" not in ff._name_to_kind
+    assert "new_fc" not in ff._pax.name_to_kind
 
 
 def test_mixed_precision_no_method_name():

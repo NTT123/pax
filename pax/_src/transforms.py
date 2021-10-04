@@ -38,7 +38,7 @@ def enable_train_mode(mod: T) -> T:
     """Return a module in training mode."""
 
     def _train_apply_fn(mod: T) -> T:
-        mod.__dict__["_training"] = True
+        mod.__dict__["_pax"] = mod._pax._replace(training=True)
         with ctx.mutable():
             mod._update_treedef()
         return mod
@@ -50,7 +50,7 @@ def enable_eval_mode(mod: T) -> T:
     """Return a module in evaluation mode."""
 
     def _eval_apply_fn(mod: T) -> T:
-        mod.__dict__["_training"] = False
+        mod.__dict__["_pax"] = mod._pax._replace(training=False)
         with ctx.mutable():
             mod._update_treedef()
         return mod
@@ -63,14 +63,16 @@ def freeze_parameters(mod: T) -> T:
 
     def _freeze_apply_fn(mod: T) -> T:
         new_name_to_kind = OrderedDict()
-        for k, v in mod._name_to_kind.items():
+        for k, v in mod._pax.name_to_kind.items():
             if v == PaxFieldKind.PARAMETER:
                 new_name_to_kind[k] = PaxFieldKind.STATE
             else:
                 new_name_to_kind[k] = v
 
         # use proxy to avoid any side effects
-        mod.__dict__["_name_to_kind"] = MappingProxyType(new_name_to_kind)
+        mod.__dict__["_pax"] = mod._pax._replace(
+            name_to_kind=MappingProxyType(new_name_to_kind)
+        )
         with ctx.mutable():
             mod._update_treedef()
         return mod
@@ -101,7 +103,7 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
         none_list = [PaxFieldKind.STATE]
 
     def _select_apply_fn(mod: T) -> T:
-        for k, v in mod._name_to_kind.items():
+        for k, v in mod._pax.name_to_kind.items():
             if v in none_list:
                 value = getattr(mod, k)
                 none_v = jax.tree_map(lambda _: EmptyNode(), value)

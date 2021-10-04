@@ -12,7 +12,7 @@ def test_mutate_new_module_list():
         return mod
 
     b = pax.mutate(a, with_fn=add_modules)
-    assert b._name_to_kind["lst"] == pax.PaxFieldKind.MODULE
+    assert b._pax.name_to_kind["lst"] == pax.PaxFieldKind.MODULE
 
 
 def test_mp_policy_method_name():

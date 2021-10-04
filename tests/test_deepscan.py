@@ -14,7 +14,7 @@ def test_list_of_mod():
             self.a = [pax.nn.Linear(3, 3)]
 
     m = M()
-    m._name_to_kind["a"] == pax.PaxFieldKind.MODULE
+    m._pax.name_to_kind["a"] == pax.PaxFieldKind.MODULE
 
 
 def test_assigned_field_an_array():
@@ -25,7 +25,7 @@ def test_assigned_field_an_array():
 
     # no error because we will automatically assign `a` to kind PARAMETER
     m = M()
-    assert m._name_to_kind["a"] == pax.PaxFieldKind.PARAMETER
+    assert m._pax.name_to_kind["a"] == pax.PaxFieldKind.PARAMETER
 
     class N(pax.Module):
         def __init__(self):
@@ -39,7 +39,7 @@ def test_assigned_field_an_array():
         return m
 
     n = pax.mutate(m, with_fn=add_b)
-    assert n._name_to_kind["b"] == pax.PaxFieldKind.PARAMETER
+    assert n._pax.name_to_kind["b"] == pax.PaxFieldKind.PARAMETER
 
 
 def test_assign_int_to_param():

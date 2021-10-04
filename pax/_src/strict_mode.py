@@ -5,19 +5,26 @@ from typing import Callable, TypeVar, Union
 import jax
 
 from . import ctx
-from .module import Module
 
 C = TypeVar("C", bound=Callable)
 
 
-def _deep_scan(mod):
+def _deep_scan(x):
+    from .module import Module
     from .transforms import scan_bugs
 
-    if isinstance(mod, Module):
-        scan_bugs(mod)
+    def __deep_scan(v):
+        if isinstance(v, Module):
+            return scan_bugs(v)
+        else:
+            return v
+
+    x = jax.tree_map(__deep_scan, x, is_leaf=lambda v: isinstance(v, Module))
+    return x
 
 
 def _get_all_module_treedefs(v):
+    from .module import Module
     from .utils import EmptyNode
 
     with ctx.enable_deepcopy_wo_treedef():
@@ -51,7 +58,7 @@ def enable_strict_mode(f):
         """Jax transformation with some additional arguments.
 
         Arguments:
-            deep_scan: scan inputs for bugs. Default: True
+            deep_scan: scan inputs and outputs for bugs. Default: True
             copy: copy inputs to avoid side effects. Default: True
             io_check: a function must returns the updated input modules. Default: False
         """
@@ -62,9 +69,7 @@ def enable_strict_mode(f):
 
             # scan inputs for bugs
             if deep_scan:
-                jax.tree_map(
-                    _deep_scan, (u, v), is_leaf=lambda x: isinstance(x, Module)
-                )
+                _deep_scan((u, v))
 
             # enable immutable mode
             with ctx.immutable():
@@ -81,7 +86,7 @@ def enable_strict_mode(f):
 
             # scan outputs for bugs
             if deep_scan:
-                jax.tree_map(_deep_scan, out, is_leaf=lambda x: isinstance(x, Module))
+                _deep_scan(out)
 
             if io_check:
                 output_treedefs = _get_all_module_treedefs(out)
