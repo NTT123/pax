@@ -45,15 +45,15 @@ def enable_strict_mode(f):
         *args,
         deep_scan: bool = True,
         copy: bool = True,
-        io_check: bool = True,
+        io_check: bool = False,
         **kwargs,
     ) -> Union[Callable, C]:
         """Jax transformation with some additional arguments.
 
         Arguments:
-            deep_scan: scan inputs for bugs.
-            copy: copy inputs to avoid side effects.
-            io_check: a function must returns the updated input modules.
+            deep_scan: scan inputs for bugs. Default: True
+            copy: copy inputs to avoid side effects. Default: True
+            io_check: a function must returns the updated input modules. Default: False
         """
         assert callable(fn), "Expecting a callable object as the first argument."
 

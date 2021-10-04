@@ -1,3 +1,5 @@
+from functools import partial
+
 import jax.numpy as jnp
 import pax
 import pytest
@@ -45,7 +47,7 @@ def test_loss_fn_no_return_model():
         y = model(inputs)
         return jnp.sum(y)
 
-    grad_fn = pax.grad(loss_fn)
+    grad_fn = pax.grad(loss_fn, io_check=True)
     x = jnp.zeros((3, 3))
     net = pax.nn.Linear(3, 3)
     with pytest.raises(ValueError):
@@ -63,7 +65,7 @@ def test_jit__call__():
     y = net(x)
 
     class M(pax.Module):
-        @pax.jit
+        @partial(pax.jit, io_check=True)
         def __call__(self, x):
             return x
 

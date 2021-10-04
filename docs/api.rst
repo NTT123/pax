@@ -418,11 +418,11 @@ Additional flags:
 
 - ``deep_scan``: scan input modules for potential bugs. Default: ``True``.
 - ``copy``: copy inputs to avoid side effects. Default: ``True``.
-- ``io_check``: check if a function returns the updated input modules. Default: ``True``.
+- ``io_check``: check if a function returns the updated input modules. Default: ``False``.
 
-For example, to disable ``io_check``:
+For example, to enable ``io_check``:
 
->>> grad_fn = pax.grad(loss_fn, io_check=False)
+>>> grad_fn = pax.grad(loss_fn, io_check=True)
 
 
 .. currentmodule:: pax

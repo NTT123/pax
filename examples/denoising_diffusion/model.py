@@ -399,7 +399,7 @@ class GaussianDiffusion(pax.Module):
         img, _ = pax.utils.scan(loop_fn, img, (i_s, rng_keys))
         return img
 
-    @partial(pax.jit, static_argnums=[1, 2], io_check=False)
+    @partial(pax.jit, static_argnums=[1, 2])
     def sample(self, batch_size=16, random_seed=42):
         image_size = self.image_size
         channels = self.channels
