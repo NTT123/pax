@@ -240,44 +240,33 @@ class Module(object, metaclass=ModuleMetaclass):
 
     def tree_flatten(self) -> Tuple[list, Tuple[List[str], Any]]:
         """Convert a module to ``(children, treedef)``."""
-        fields = vars(self)
 
-        children_names = []
-        children = []
-        not_tree = {}
-        name_to_kind = self._name_to_kind
-
-        for name, value in fields.items():
-            if name in name_to_kind:
-                children_names.append(name)
-                children.append(value)
-            else:
-                not_tree[name] = value
+        aux = dict(self.__dict__)
+        children = [aux.pop(name) for name in self._name_to_kind]
 
         if ctx_state._enable_deepcopy_wo_treedef:
             # ignore _treedef, _num_leaves in deepcopy mode
             try:
-                del not_tree["_treedef"]
-                del not_tree["_num_leaves"]
+                del aux["_treedef"]
+                del aux["_num_leaves"]
             except KeyError:
                 pass
-            leaves, treedef = jax.tree_flatten(not_tree)
+            leaves, treedef = jax.tree_flatten(aux)
             # TODO: it is possible that `leaves` can change its internal states,
             # `jax.jit` will not detect the change. Fix this!
-            not_tree = jax.tree_unflatten(treedef, leaves)
+            aux = jax.tree_unflatten(treedef, leaves)
 
-        return children, (children_names, not_tree)
+        return children, aux
 
     @classmethod
-    def tree_unflatten(cls, aux_data, children):
+    def tree_unflatten(cls, aux, children):
         """Recreate a module from its ``(children, treedef)``."""
         module = object.__new__(cls)
-        children_names, not_tree = aux_data
         md = module.__dict__
-        md.update(not_tree)
+        md.update(aux)
         # don't have to copy `_name_to_kind` anymore, speed thing up!
         # md["_name_to_kind"] = OrderedDict(module._name_to_kind)
-        md.update(zip(children_names, children))
+        md.update(zip(md["_name_to_kind"], children))
 
         return module
 
