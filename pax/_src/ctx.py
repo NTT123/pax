@@ -9,6 +9,7 @@ state = threading.local()
 state._rng_key = None
 state._seed = None
 state._enable_mutability = False
+state._enable_deepcopy_wo_treedef = False
 
 
 class mutable(object):
@@ -56,3 +57,18 @@ class immutable(object):
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         state._enable_mutability = self.prev
+
+
+class enable_deepcopy_wo_treedef(object):
+    r"""A context manager that turns on deepcopy mode."""
+
+    def __init__(self):
+        super().__init__()
+        self.prev = state._enable_deepcopy_wo_treedef
+
+    def __enter__(self):
+        self.prev = state._enable_deepcopy_wo_treedef
+        state._enable_deepcopy_wo_treedef = True
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        state._enable_deepcopy_wo_treedef = self.prev

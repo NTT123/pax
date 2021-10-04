@@ -1,7 +1,7 @@
 """Transform a module to a new one."""
 from collections import OrderedDict
 from types import MappingProxyType
-from typing import Any, Callable, Generic, List, Optional, Tuple, TypeVar
+from typing import Any, Callable, Optional, Tuple, TypeVar
 
 import jax
 import jax.numpy as jnp
@@ -39,6 +39,8 @@ def enable_train_mode(mod: T) -> T:
 
     def _train_apply_fn(mod: T) -> T:
         mod.__dict__["_training"] = True
+        with ctx.mutable():
+            mod._update_treedef()
         return mod
 
     return mod.apply(_train_apply_fn)
@@ -49,6 +51,8 @@ def enable_eval_mode(mod: T) -> T:
 
     def _eval_apply_fn(mod: T) -> T:
         mod.__dict__["_training"] = False
+        with ctx.mutable():
+            mod._update_treedef()
         return mod
 
     return mod.apply(_eval_apply_fn)
@@ -67,6 +71,8 @@ def freeze_parameters(mod: T) -> T:
 
         # use proxy to avoid any side effects
         mod.__dict__["_name_to_kind"] = MappingProxyType(new_name_to_kind)
+        with ctx.mutable():
+            mod._update_treedef()
         return mod
 
     return mod.apply(_freeze_apply_fn)
@@ -101,6 +107,8 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
                 none_v = jax.tree_map(lambda _: EmptyNode(), value)
                 with ctx.mutable():
                     setattr(mod, k, none_v)
+        with ctx.mutable():
+            mod._update_treedef()
         return mod
 
     return mod.apply(_select_apply_fn)
@@ -118,6 +126,8 @@ def select_states(mod: T) -> T:
 
 def scan_bugs(mod: T) -> T:
     """Scan the module for potential bugs."""
+
+    mod.check_treedef()
 
     def _scan_apply_fn(mod: T) -> T:
         assert isinstance(mod, Module)
@@ -200,11 +210,15 @@ def update_pytree(mod: T, *, other: T) -> T:
         else:
             return y
 
-    return jax.tree_map(
-        _select_fn,
-        mod,
-        other,
-    )
+    with ctx.enable_deepcopy_wo_treedef():
+        new_mod = jax.tree_map(
+            _select_fn,
+            mod,
+            other,
+        )
+
+    new_mod = jax.tree_unflatten(jax.tree_structure(mod), jax.tree_leaves(new_mod))
+    return new_mod
 
 
 def update_parameters(mod: T, *, params: T) -> T:
@@ -225,6 +239,12 @@ def mutate(mod: T, *, with_fn: Callable[[T], K]) -> K:
     with ctx.mutable():
         new_mod = with_fn(mod)
         new_mod.find_and_register_submodules()
+
+        def _update_treedef(m):
+            m._update_treedef()
+            return m
+
+        new_mod = new_mod.apply(_update_treedef, check_treedef=False)
     new_mod = scan_bugs(new_mod)
     return new_mod
 

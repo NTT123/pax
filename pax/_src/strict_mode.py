@@ -20,16 +20,18 @@ def _deep_scan(mod):
 def _get_all_module_treedefs(v):
     from .utils import EmptyNode
 
-    leaves = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
-    mods = [x for x in leaves if isinstance(x, Module)]
-    tree_defs = [
-        jax.tree_flatten(x, is_leaf=lambda x: isinstance(x, EmptyNode))[1] for x in mods
-    ]
-    return set(tree_defs)
+    with ctx.enable_deepcopy_wo_treedef():
+        leaves = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
+        mods = [x for x in leaves if isinstance(x, Module)]
+        tree_defs = [
+            jax.tree_flatten(x, is_leaf=lambda x: isinstance(x, EmptyNode))[1]
+            for x in mods
+        ]
+        return set(tree_defs)
 
 
 def enable_strict_mode(f):
-    """The strict mode includes four safeguards:
+    """The strict mode includes safeguards:
 
     - call deep_scan on input modules.
     - enable immutable mode.
@@ -89,19 +91,7 @@ def enable_strict_mode(f):
 
                 return out
 
-        _f = f(_fn, *args, **kwargs)
-
-        if f == jax.grad:
-            return _f
-
-        # enable mutable mode for speed.
-        @wraps(_f)
-        def __f(*u, **v):
-            with ctx.mutable():
-                out = _f(*u, **v)
-            return out
-
-        return __f
+        return f(_fn, *args, **kwargs)
 
     return wrapper
 

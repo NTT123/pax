@@ -198,22 +198,16 @@ def assertStructureEqual(self: T, other: T):
         if isinstance(a, Module) and isinstance(b, Module):
             assertStructureEqual(a, b)
 
-    tc = TestCase()
-    tc.maxDiff = None
-
-    def filter_out_module(d):
-        return {
-            k: ((v.shape, v.dtype) if isinstance(v, jnp.ndarray) else v)
-            for (k, v) in d.items()
-            if (k not in self._name_to_kind)
-            or (self._name_to_kind[k] != PaxFieldKind.MODULE)
-        }
-
-    tc.assertDictEqual(filter_out_module(vars(self)), filter_out_module(vars(other)))
-
-    jax.tree_map(
-        check,
-        self,
-        other,
-        is_leaf=lambda x: isinstance(x, Module) and x is not self and x is not other,
-    )
+    try:
+        jax.tree_map(
+            check,
+            self,
+            other,
+            is_leaf=lambda x: isinstance(x, Module)
+            and x is not self
+            and x is not other,
+        )
+    except ValueError:
+        tc = TestCase()
+        tc.maxDiff = None
+        tc.assertDictEqual(vars(self), vars(other))

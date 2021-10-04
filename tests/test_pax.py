@@ -276,6 +276,7 @@ def test_assign_empty_list_dict():
     fc = pax.mutate(fc, with_fn=add_a)
     fc.a.append(1)
     assert fc.a == [1]
+    del fc.a[0]
 
     def add_b(m):
         m.b = {}
@@ -393,3 +394,10 @@ def test_module_list_contains_int():
 
     with pytest.raises(ValueError):
         m = M()
+
+
+def test_append_module_list():
+    n = pax.nn.Sequential(pax.nn.Linear(3, 3))
+    n.modules.append(pax.nn.Linear(4, 4))
+    with pytest.raises(ValueError):
+        pax.scan_bugs(n)

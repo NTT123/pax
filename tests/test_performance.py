@@ -15,39 +15,30 @@ def test_perf_transformer_flatten_unflatten():
 
     f = MyTransformer(16)
 
-    # this is a hack
-    def timing(f):
-        start = time.perf_counter()
-        n_iters = 10_000
-        for i in range(n_iters):
-            leaves, treedef = jax.tree_flatten(f)
-            f = jax.tree_unflatten(treedef, leaves)
-        end = time.perf_counter()
-        iters_per_second = n_iters / (end - start)
-        print(iters_per_second, "iters/second")
-        assert iters_per_second > 2500
-        return f
-
-    f = pax.mutate(f, with_fn=timing)
+    start = time.perf_counter()
+    n_iters = 10_000
+    for i in range(n_iters):
+        leaves, treedef = jax.tree_flatten(f)
+        f = jax.tree_unflatten(treedef, leaves)
+    end = time.perf_counter()
+    iters_per_second = n_iters / (end - start)
+    print(iters_per_second, "iters/second")
+    assert iters_per_second > 2500
 
 
 def test_perf_resnet200_flatten_unflatten():
 
     f = pax.nets.ResNet200(3, 100)
 
-    def timing(f):
-        start = time.perf_counter()
-        n_iters = 1000
-        for i in range(n_iters):
-            leaves, treedef = jax.tree_flatten(f)
-            f = jax.tree_unflatten(treedef, leaves)
-        end = time.perf_counter()
-        iters_per_second = n_iters / (end - start)
-        print(iters_per_second, "iters/second")
-        assert iters_per_second > 100
-        return f
-
-    f = pax.mutate(f, with_fn=timing)
+    start = time.perf_counter()
+    n_iters = 1000
+    for i in range(n_iters):
+        leaves, treedef = jax.tree_flatten(f)
+        f = jax.tree_unflatten(treedef, leaves)
+    end = time.perf_counter()
+    iters_per_second = n_iters / (end - start)
+    print(iters_per_second, "iters/second")
+    assert iters_per_second > 100
 
 
 def test_perf_flattenmodule_resnet200_flatten_unflatten():
@@ -60,16 +51,12 @@ def test_perf_flattenmodule_resnet200_flatten_unflatten():
 
     np.testing.assert_array_equal(y, y1)
 
-    def timing(f):
-        start = time.perf_counter()
-        n_iters = 1000
-        for i in range(n_iters):
-            leaves, treedef = jax.tree_flatten(f)
-            f = jax.tree_unflatten(treedef, leaves)
-        end = time.perf_counter()
-        iters_per_second = n_iters / (end - start)
-        print(iters_per_second, "iters/second")
-        assert iters_per_second > 100
-        return f
-
-    f = pax.mutate(f, with_fn=timing)
+    start = time.perf_counter()
+    n_iters = 1000
+    for i in range(n_iters):
+        leaves, treedef = jax.tree_flatten(f)
+        f = jax.tree_unflatten(treedef, leaves)
+    end = time.perf_counter()
+    iters_per_second = n_iters / (end - start)
+    print(iters_per_second, "iters/second")
+    assert iters_per_second > 100

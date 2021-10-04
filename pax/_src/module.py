@@ -16,10 +16,11 @@ import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
 
-from .ctx import mutable
+from .ctx import enable_deepcopy_wo_treedef, mutable
 from .ctx import state as ctx_state
 
 T = TypeVar("T", bound="Module")
+TreeDef = Any
 
 
 class PaxFieldKind(Enum):
@@ -47,6 +48,7 @@ class ModuleMetaclass(type):
             module = cls.__new__(cls, *args, **kwargs)
             cls.__init__(module, *args, **kwargs)
             module.find_and_register_submodules()
+            module._update_treedef()
 
         # scan module after initialization for potential bugs
         module._scan_fields(module.__dict__)
@@ -69,6 +71,8 @@ class Module(object, metaclass=ModuleMetaclass):
     _name_to_kind: Dict[str, PaxFieldKind]
     _training: bool
     _name: Optional[str]
+    _treedef: TreeDef
+    _num_leaves: int
 
     def __new__(cls: Type[T], *args, **kwargs) -> T:
         """Initialize _name_to_kind and _training in `__new__` method to avoid
@@ -99,6 +103,39 @@ class Module(object, metaclass=ModuleMetaclass):
     def name(self) -> Optional[str]:
         return self._name
 
+    def _update_treedef(self):
+        if not ctx_state._enable_mutability:
+            raise ValueError("Cannot update `_treedef`  in immutable mode.")
+
+        with enable_deepcopy_wo_treedef():
+            leaves, treedef = jax.tree_flatten(self)
+            super().__setattr__("_treedef", treedef)
+            super().__setattr__("_num_leaves", len(leaves))
+
+    def check_treedef(self):
+        """Check if module's treedef is modified."""
+        with enable_deepcopy_wo_treedef():
+            leaves, treedef = jax.tree_flatten(self)
+
+        if treedef == self._treedef:
+            return
+
+        _self = jax.tree_unflatten(treedef, [0] * len(leaves))
+        _origin = jax.tree_unflatten(self._treedef, [0] * self._num_leaves)
+        from .utils import assertStructureEqual
+
+        try:
+            assertStructureEqual(_origin, _self)
+        except AssertionError as e:
+            raise ValueError(
+                f"The module `{self}` has its treedef modified.\n"
+                f"--- {self._treedef}\n"
+                f"+++ {treedef}\n"
+                "================\n"
+                f"Differences:\n"
+                f"{e}"
+            )
+
     def _update_name_to_kind_dict(self, name: str, value):
         """Update the `_name_to_kind` dictionary.
 
@@ -120,7 +157,7 @@ class Module(object, metaclass=ModuleMetaclass):
         - If `value` is a pytree of modules and `name` is not in `_name_to_kind`, its kind will be `PaxFieldKind.MODULE`.
         """
 
-        if name in ["_name_to_kind", "_training", "_name"]:
+        if name in ["_name_to_kind", "_training", "_name", "_treedef", "_num_leaves"]:
             raise ValueError(
                 f"{name} is a reserved attribute for Pax internal mechanisms."
             )
@@ -213,7 +250,13 @@ class Module(object, metaclass=ModuleMetaclass):
             else:
                 not_tree[name] = value
 
-        if not ctx_state._enable_mutability:
+        if ctx_state._enable_deepcopy_wo_treedef:
+            # ignore _treedef, _num_leaves in deepcopy mode
+            try:
+                del not_tree["_treedef"]
+                del not_tree["_num_leaves"]
+            except KeyError:
+                pass
             leaves, treedef = jax.tree_flatten(not_tree)
             # TODO: it is possible that `leaves` can change its internal states,
             # `jax.jit` will not detect the change. Fix this!
@@ -365,18 +408,22 @@ class Module(object, metaclass=ModuleMetaclass):
                             f"SHOULD NOT contains a pax.Module instance {mod}."
                         )
 
-    def apply(self: T, apply_fn) -> T:
+    def apply(self: T, apply_fn, check_treedef: bool = True) -> T:
         """Apply a function to all submodules.
 
         **Note**: this function returns a transformed copy of the module.
 
         Arguments:
             apply_fn: a function which inputs a module and outputs a transformed module.
+            check_treedef: check treedef before applying the function.
         """
+
+        if check_treedef:
+            self.check_treedef()
 
         def rec_fn(x):
             if isinstance(x, Module):
-                return x.apply(apply_fn)
+                return x.apply(apply_fn, check_treedef=False)
             else:
                 return x
 
@@ -386,6 +433,9 @@ class Module(object, metaclass=ModuleMetaclass):
             self,
             is_leaf=lambda x: isinstance(x, Module) and (x in submodules),
         )
+        with mutable():
+            new_self._update_treedef()
+
         # tree_map already created a copy of self,
         # hence `apply_fn` is guaranteed to have no side effects.
         return apply_fn(new_self)

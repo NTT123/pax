@@ -863,7 +863,7 @@ def test_sequential_get_set_item():
     assert a[0] == fc1
 
 
-def test_apply_no_side_effect():
+def test_apply_mutate_no_side_effect():
     a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(4, 4))
 
     def f(mod):
