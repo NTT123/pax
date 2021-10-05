@@ -233,12 +233,31 @@ def update_states(mod: T, *, states: T) -> T:
 
 
 class mutate(object):
+    """``pax.mutate`` is a context manager that unfreezes a module with
+    additional safeguards to prevent having unregistered modules and `ndarray`'s.
+
+    Example:
+
+    >>> net = pax.nn.Sequential(pax.nn.Linear(3, 3), jax.nn.relu)
+    >>> print(net.summary())
+    Sequential
+    ├── Linear[in_dim=3, out_dim=3, with_bias=True]
+    └── x => relu(x)
+    >>> with pax.mutate(net):
+    ...    net[-1] = pax.nn.Linear(3, 4)
+    >>> print(net.summary())
+    Sequential
+    ├── Linear[in_dim=3, out_dim=3, with_bias=True]
+    └── Linear[in_dim=3, out_dim=4, with_bias=True]
+    """
+
     def __init__(self, mod: T):
         super().__init__()
         self.mod = mod
-        scan_bugs(self.mod)
 
     def __enter__(self):
+        scan_bugs(self.mod)
+
         def _unfreeze(m: T):
             m.__dict__["_pax"] = m._pax._replace(frozen=False)
             return m

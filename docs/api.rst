@@ -259,7 +259,7 @@ A module transformation is a pure function that inputs Pax's modules and outputs
 mutate
 -------
 
-.. autofunction:: mutate
+.. autoclass:: mutate
 
 
 update_parameters
