@@ -27,14 +27,12 @@ def _get_all_module_treedefs(v):
     from .module import Module
     from .utils import EmptyNode
 
-    with ctx.enable_deepcopy_wo_treedef():
-        leaves = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
-        mods = [x for x in leaves if isinstance(x, Module)]
-        tree_defs = [
-            jax.tree_flatten(x, is_leaf=lambda x: isinstance(x, EmptyNode))[1]
-            for x in mods
-        ]
-        return set(tree_defs)
+    leaves = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
+    mods = [x for x in leaves if isinstance(x, Module)]
+    tree_defs = [
+        jax.tree_flatten(x, is_leaf=lambda x: isinstance(x, EmptyNode))[1] for x in mods
+    ]
+    return set(tree_defs)
 
 
 def enable_strict_mode(f):
@@ -51,7 +49,7 @@ def enable_strict_mode(f):
         fn: C,
         *args,
         deep_scan: bool = True,
-        copy: bool = True,
+        copy: bool = False,
         io_check: bool = False,
         **kwargs,
     ) -> Union[Callable, C]:

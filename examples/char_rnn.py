@@ -114,12 +114,12 @@ def loss_fn(model: LM, batch: jnp.ndarray):
     log_pr = jax.nn.log_softmax(logits, axis=-1)
     targets = jax.nn.one_hot(targets, num_classes=model.vocab_size)
     loss = -jnp.mean(jnp.sum(targets * log_pr, axis=-1))
-    return loss, (loss, model)
+    return loss
 
 
 def update_step(model_and_optimizer: Tuple[LM, pax.Module], batch: jnp.ndarray):
     model, optimizer = model_and_optimizer
-    grads, (loss, model) = pax.grad_parameters(loss_fn)(model, batch)
+    loss, grads = jax.value_and_grad(loss_fn)(model, batch)
     grads = jax.lax.pmean(grads, axis_name="i")
     model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
     return (model, optimizer), loss

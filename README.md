@@ -140,7 +140,6 @@ A Pax program can be seen as a series of module transformations.
 
 Pax provides several module transformations:
 
-- `pax.mutate`: modify a module without side effects.
 - `pax.select_{parameters,states}`: select parameter/state leaves.
 - `pax.apply_gradients`: update model & optimizer using gradients.
 - `pax.update_{parameters,states}`: updates module's parameters/states.
@@ -161,12 +160,8 @@ net = pax.nn.Sequential(
 )
 
 net = pax.freeze_parameters(net) 
-
-with pax.mutate(net):
-    net[-1] = pax.nn.Linear(64, 2)
+net[-1] = pax.nn.Linear(64, 2)
 ```
-
-We use ``pax.mutate`` turn on mutable mode and additional safeguards to ensure that our modifications do not have potential bugs.
 
 After this, ``net.parameters()`` will only return trainable parameters of the last layer.
 

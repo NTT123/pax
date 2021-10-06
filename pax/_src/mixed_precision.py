@@ -92,7 +92,7 @@ class apply_mp_policy(Module, Generic[T]):
 
             # task 3
             if jax.tree_structure(mod) != jax.tree_structure(old_mod_clone):
-                raise RuntimeError(
+                raise ValueError(
                     f"The module `{self._module.__class__.__name__}` has its treedef modified during the forward pass. "
                     f"This is currently not supported for a mixed-precision module!"
                 )
@@ -107,10 +107,9 @@ class apply_mp_policy(Module, Generic[T]):
 
             mod = jax.tree_map(reuse_params_fn, mod, casted_mod_clone, old_mod_clone)
 
-            with ctx.mutable(self):
-                # `mod` has the same pytree structure as `self._module`,
-                # therefore, this is safe.
-                self._module = mod
+            # `mod` has the same pytree structure as `self._module`,
+            # therefore, this is safe.
+            self._module = mod
 
             # task 4
             output = self.mp_policy.cast_to_output(output)

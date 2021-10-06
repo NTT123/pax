@@ -5,10 +5,7 @@ import pytest
 
 def test_immutability():
     f = pax.nn.Linear(3, 3)
-
-    with pytest.raises(ValueError):
-        f.c = 123
-
+    f.c = 123
     g = pax.freeze_parameters(f)
     k = pax.unfreeze_parameters(g, origin=f)
 

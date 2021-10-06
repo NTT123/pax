@@ -36,10 +36,9 @@ def test_finetune():
 
     x = jax.random.normal(pax.next_rng_key(), (1, 10))
 
-    with pax.mutate(net):
-        # make all layers non-trainable except the last layer.
-        for i in range(len(net.layers) - 1):
-            net.layers[i] = pax.freeze_parameters(net.layers[i])
+    # make all layers non-trainable except the last layer.
+    for i in range(len(net.layers) - 1):
+        net.layers[i] = pax.freeze_parameters(net.layers[i])
 
     # net.layers[-1] = pax.nn.Linear(2, 10)
     optimizer = opax.adam(1e-2)(net.parameters())

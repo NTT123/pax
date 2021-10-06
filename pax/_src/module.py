@@ -30,9 +30,6 @@ import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
 
-from .ctx import enable_deepcopy_wo_treedef, mutable
-from .ctx import state as ctx_state
-
 T = TypeVar("T", bound="Module")
 TreeDef = Any
 
@@ -59,28 +56,11 @@ class PaxModuleInfo(NamedTuple):
 
     name: Optional[str]
     training: bool
-    num_leaves: int
     name_to_kind: Mapping[str, PaxFieldKind]
-    treedef: Any
-    frozen: bool
 
     def __repr__(self) -> str:
-        node = ", ".join([f"{k}:{v.name}" for k, v in self.name_to_kind.items()])
-        return f"PaxModuleInfo[name={self.name}, training={self.training}, frozen={self.frozen}, nodes=[{node}]]"
-
-
-# Inspired by dm-haiku `wrap_method`.
-def wrap_method(unbound_method):
-    @functools.wraps(unbound_method)
-    def wrapped(self: T, *args, **kwargs):
-        # check input and output modules for any illegal modification.
-        self.check_treedef()
-        f = functools.partial(unbound_method, self)
-        out = f(*args, **kwargs)
-        self.check_treedef()
-        return out
-
-    return wrapped
+        nodes = ", ".join([f"{k}:{v.name}" for k, v in self.name_to_kind.items()])
+        return f"PaxModuleInfo[name={self.name}, training={self.training}, nodes=[{nodes}]]"
 
 
 M = TypeVar("M")
@@ -89,55 +69,10 @@ M = TypeVar("M")
 class ModuleMetaclass(type):
     """Metaclass for `Module`."""
 
-    def __new__(  # pylint: disable=bad-classmethod-argument
-        mcs: Type[Type[M]],
-        name: str,
-        bases: Tuple[Type[Any], ...],
-        clsdict: Dict[str, Any],
-    ) -> Type[M]:
-
-        method_names = []
-
-        for key, value in clsdict.items():
-            if key in [
-                "_scan_fields",
-                "_update_name_to_kind_dict",
-                "_update_treedef",
-                "apply",
-                "check_treedef",
-                "find_and_register_submodules",
-                "register_module",
-                "register_modules",
-                "register_parameter",
-                "register_parameters",
-                "register_state",
-                "register_states",
-                "submodules",
-                "tree_flatten",
-                "tree_unflatten",
-            ]:
-                continue
-            elif key.startswith("__") and key != "__call__":
-                continue
-            elif isinstance(value, property):
-                continue
-            elif inspect.isfunction(value):
-                method_names.append(key)
-
-        cls = super(ModuleMetaclass, mcs).__new__(mcs, name, bases, clsdict)
-
-        for method_name in method_names:
-            method = getattr(cls, method_name)
-            method = wrap_method(method)
-            setattr(cls, method_name, method)
-        return cls
-
     def __call__(cls: Type[T], *args, **kwargs) -> T:
         module = cls.__new__(cls, *args, **kwargs)  # type: ignore
-        with mutable(module):
-            cls.__init__(module, *args, **kwargs)
-            module.find_and_register_submodules()
-            module._update_treedef()
+        cls.__init__(module, *args, **kwargs)
+        module.find_and_register_submodules()
 
         # scan module after initialization for potential bugs
         module._scan_fields(module.__dict__)
@@ -167,9 +102,6 @@ class Module(object, metaclass=ModuleMetaclass):
             name=None,
             training=True,
             name_to_kind=MappingProxyType(OrderedDict()),
-            treedef=None,
-            num_leaves=0,
-            frozen=True,
         )
 
         # scan class attributes for unregistered modules and ndarray's.
@@ -189,53 +121,10 @@ class Module(object, metaclass=ModuleMetaclass):
     def name(self) -> Optional[str]:
         return self._pax.name
 
-    def _update_treedef(self):
-        if self._pax.frozen:
-            raise ValueError("Cannot update `_treedef` for a frozen module.")
-
-        with enable_deepcopy_wo_treedef():
-            leaves, treedef = jax.tree_flatten(self)
-            new_info = self._pax._replace(treedef=treedef, num_leaves=len(leaves))
-            super().__setattr__("_pax", new_info)
-
-    def check_treedef(self):
-        """Check if module's treedef is modified."""
-        with enable_deepcopy_wo_treedef():
-            leaves, treedef = jax.tree_flatten(self)
-
-        if treedef == self._pax.treedef:
-            return
-
-        _self = jax.tree_unflatten(treedef, [0] * len(leaves))
-        _origin = jax.tree_unflatten(self._pax.treedef, [0] * self._pax.num_leaves)
-
-        error = None
-        try:
-            from .utils import assertStructureEqual
-
-            assertStructureEqual(_origin, _self)
-        except AssertionError as e:
-            error = e
-
-        if error is not None:
-            raise ValueError(
-                f"The module `{self}` has its treedef modified.\n"
-                f"--- {self._pax.treedef}\n"
-                f"+++ {treedef}\n"
-                "================\n"
-                f"Differences:\n"
-                f"{str(error)}"
-            )
-
     def _update_name_to_kind_dict(self, name: str, value):
         """Update the `_name_to_kind` dictionary.
 
         Create a new dictionary and wrap it with `MappingProxyType` to avoid side effects."""
-        if self._pax.frozen:
-            raise ValueError(
-                "Cannot update `_name_to_kind` dictionary in immutable mode."
-            )
-
         new_dict = OrderedDict(self._pax.name_to_kind)
         new_dict[name] = value
         new_info = self._pax._replace(name_to_kind=MappingProxyType(new_dict))
@@ -256,15 +145,7 @@ class Module(object, metaclass=ModuleMetaclass):
 
         kind = self._pax.name_to_kind.get(name, PaxFieldKind.OTHERS)
 
-        if not self._pax.frozen:
-            super().__setattr__(name, value)
-        else:
-            if kind == PaxFieldKind.STATE:
-                super().__setattr__(name, value)
-            else:
-                raise ValueError(
-                    f"Cannot assign an attribute of kind `{kind}` of a frozen module."
-                )
+        super().__setattr__(name, value)
 
         # If `value` contains Module's instances only, it is registered as MODULE.
         module_leaves, _ = jax.tree_flatten(
@@ -282,12 +163,9 @@ class Module(object, metaclass=ModuleMetaclass):
         self._scan_fields(fields=(name,))
 
     def __delattr__(self, name: str) -> None:
-        if not self._pax.frozen:
-            if name in self._pax.name_to_kind:
-                raise ValueError("Cannot delete pytree attribute.")
-            super().__delattr__(name)
-        else:
-            raise ValueError("Cannot delete module's attribute {name} of a frozen mod.")
+        if name in self._pax.name_to_kind:
+            raise ValueError("Cannot delete pytree attribute.")
+        super().__delattr__(name)
 
     def register_parameter(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
@@ -329,14 +207,6 @@ class Module(object, metaclass=ModuleMetaclass):
 
         aux = dict(self.__dict__)
         children = [aux.pop(name) for name in self._pax.name_to_kind]
-
-        if ctx_state._enable_deepcopy_wo_treedef:
-            # ignore _treedef, _num_leaves in deepcopy mode
-            aux["_pax"] = aux["_pax"]._replace(treedef=None, num_leaves=0, frozen=False)
-            leaves, treedef = jax.tree_flatten(aux)
-            # TODO: it is possible that `leaves` can change its internal states,
-            # `jax.jit` will not detect the change. Fix this!
-            aux = jax.tree_unflatten(treedef, leaves)
 
         return children, aux
 
@@ -483,7 +353,7 @@ class Module(object, metaclass=ModuleMetaclass):
                             f"SHOULD NOT contains a pax.Module instance {mod}."
                         )
 
-    def apply(self: T, apply_fn, check_treedef: bool = True) -> T:
+    def apply(self: T, apply_fn) -> T:
         """Apply a function to all submodules.
 
         **Note**: this function returns a transformed copy of the module.
@@ -493,12 +363,9 @@ class Module(object, metaclass=ModuleMetaclass):
             check_treedef: check treedef before applying the function.
         """
 
-        if check_treedef:
-            self.check_treedef()
-
         def rec_fn(x):
             if isinstance(x, Module):
-                return x.apply(apply_fn, check_treedef=False)
+                return x.apply(apply_fn)
             else:
                 return x
 
@@ -508,8 +375,6 @@ class Module(object, metaclass=ModuleMetaclass):
             self,
             is_leaf=lambda x: isinstance(x, Module) and (x in submodules),
         )
-        with mutable(new_self):
-            new_self._update_treedef()
 
         # tree_map already created a copy of self,
         # hence `apply_fn` is guaranteed to have no side effects.
@@ -566,9 +431,16 @@ class Module(object, metaclass=ModuleMetaclass):
         return forward(self, *args, params=params, **kwargs)
 
     def update_parameters(self: T, params: T) -> T:
+        """Return a new module with updated parameters."""
         from .transforms import update_parameters
 
         return update_parameters(self, params=params)
+
+    def update_parameters_(self: T, params: T) -> T:
+        """In-place update parameters of module."""
+        new_self = self.update_parameters(params)
+        self.__dict__.update(new_self.__dict__)
+        return self
 
     def find_and_register_submodules(self):
         """Find unregistered submodules and register it with MODULE kind."""

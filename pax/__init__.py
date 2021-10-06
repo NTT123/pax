@@ -1,5 +1,6 @@
 from pax._src.module import Module, PaxFieldKind
 from pax._src.rng import next_rng_key, seed_rng_key
+from pax._src.side_effects import jit_, pmap_, vmap_
 from pax._src.strict_mode import grad, jit, pmap, vmap
 from pax._src.transforms import (
     apply_gradients,
@@ -10,7 +11,6 @@ from pax._src.transforms import (
     flatten_module,
     forward,
     freeze_parameters,
-    mutate,
     scan_bugs,
     select_kind,
     select_parameters,
@@ -38,12 +38,13 @@ __all__ = [
     "grad",
     "initializers",
     "jit",
+    "jit_",
     "Module",
-    "mutate",
     "nets",
     "next_rng_key",
     "nn",
     "pmap",
+    "pmap_",
     "scan_bugs",
     "scan",
     "seed_rng_key",
@@ -56,6 +57,7 @@ __all__ = [
     "update_states",
     "utils",
     "vmap",
+    "vmap_",
     "PaxFieldKind",
 ]
 

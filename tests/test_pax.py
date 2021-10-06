@@ -202,8 +202,7 @@ def test_clone_no_side_effect():
     fc1 = pax.nn.Linear(3, 3)
     fc2 = fc1.copy()
 
-    with pax.mutate(fc1):
-        fc1.new_module = pax.nn.Linear(5, 5)
+    fc1.new_module = pax.nn.Linear(5, 5)
 
     assert (
         "new_module" in fc1._pax.name_to_kind
@@ -269,15 +268,13 @@ def test_class_attribute_copy():
 def test_assign_empty_list_dict():
     fc = pax.nn.Linear(3, 3)
 
-    with pax.mutate(fc):
-        fc.a = []
+    fc.a = []
 
     fc.a.append(1)
     assert fc.a == [1]
     del fc.a[0]
 
-    with pax.mutate(fc):
-        fc.b = {}
+    fc.b = {}
     fc.b[1] = 2
 
 
@@ -353,8 +350,7 @@ def test_hash_module():
 def test_deepcopy_pytreedef():
     f = pax.nn.Linear(3, 3)
 
-    with pax.mutate(f):
-        f.de = jax.tree_structure(f)
+    f.de = jax.tree_structure(f)
 
     g = f.copy()
 
@@ -364,8 +360,7 @@ def test_deepcopy_pytreedef():
 def test_delete_attribute():
     f = pax.nn.Linear(3, 3)
 
-    with pax.mutate(f):
-        f.t = pax.nn.Linear(1, 1)
+    f.t = pax.nn.Linear(1, 1)
 
     assert "t" in f._pax.name_to_kind
     with pytest.raises(ValueError):
@@ -390,5 +385,4 @@ def test_module_list_contains_int():
 def test_append_module_list():
     n = pax.nn.Sequential(pax.nn.Linear(3, 3))
     n.modules.append(pax.nn.Linear(4, 4))
-    with pytest.raises(ValueError):
-        pax.scan_bugs(n)
+    pax.scan_bugs(n)

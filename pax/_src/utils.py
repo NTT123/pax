@@ -37,7 +37,9 @@ def grad_parameters(
         Callable[[T, Any, Any], Tuple[jnp.ndarray, C]],
         Callable[[T, Any, Any, Any], Tuple[jnp.ndarray, C]],
         Callable[..., Tuple[jnp.ndarray, C]],
-    ]
+    ],
+    *,
+    has_aux: bool = False
 ) -> Callable[..., Tuple[T, C]]:
     """Compute gradient with respect to trainable parameters of the first argument.
 
@@ -59,7 +61,7 @@ def grad_parameters(
         out = fun(mod, *args, **kwargs)
         return out
 
-    _grad_fn = grad(_fun, has_aux=True, allow_int=False, io_check=True, copy=True)
+    _grad_fn = grad(_fun, has_aux=has_aux, allow_int=False, io_check=False, copy=False)
 
     def grad_fn(mod: T, *args, **kwargs) -> Tuple[T, C]:
         if not isinstance(mod, Module):
@@ -122,10 +124,11 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
         assert isinstance(optimizer, Module)
 
         model_treedef = jax.tree_structure(model)
-        grads, (aux, model) = grad_parameters(loss_fn)(model, *inputs, **kwinputs)
-        assert (
-            jax.tree_structure(model) == model_treedef
-        ), "Expecting an updated model in the auxiliary output."
+        grads, (aux, model) = grad_parameters(loss_fn, has_aux=True)(
+            model, *inputs, **kwinputs
+        )
+        if jax.tree_structure(model) != model_treedef:
+            raise ValueError("Expecting an updated model in the auxiliary output.")
 
         params = select_parameters(model)
         updates, optimizer = transform_gradients(grads, optimizer, params=params)

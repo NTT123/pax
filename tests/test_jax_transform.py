@@ -17,8 +17,7 @@ def test_jit_immutability():
 
     m = M()
     x = jnp.zeros((1, 1))
-    with pytest.raises(ValueError):
-        y = pax.jit(lambda y: m(y))(x)
+    y = pax.jit(lambda y: m(y))(x)
 
 
 def test_grad_deepscan():

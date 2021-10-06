@@ -238,8 +238,8 @@ A module transformation is a pure function that inputs Pax's modules and outputs
 
 .. autosummary::
 
-   mutate
    update_parameters
+   update_parameters_
    update_states
    enable_train_mode
    enable_eval_mode
@@ -254,12 +254,6 @@ A module transformation is a pure function that inputs Pax's modules and outputs
    scan_bugs
    flatten_module
    apply_mp_policy
-
-
-mutate
--------
-
-.. autoclass:: mutate
 
 
 update_parameters

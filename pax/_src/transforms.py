@@ -39,8 +39,6 @@ def enable_train_mode(mod: T) -> T:
 
     def _train_apply_fn(mod: T) -> T:
         mod.__dict__["_pax"] = mod._pax._replace(training=True)
-        with ctx.mutable(mod):
-            mod._update_treedef()
         return mod
 
     return mod.apply(_train_apply_fn)
@@ -51,8 +49,6 @@ def enable_eval_mode(mod: T) -> T:
 
     def _eval_apply_fn(mod: T) -> T:
         mod.__dict__["_pax"] = mod._pax._replace(training=False)
-        with ctx.mutable(mod):
-            mod._update_treedef()
         return mod
 
     return mod.apply(_eval_apply_fn)
@@ -73,8 +69,6 @@ def freeze_parameters(mod: T) -> T:
         mod.__dict__["_pax"] = mod._pax._replace(
             name_to_kind=MappingProxyType(new_name_to_kind)
         )
-        with ctx.mutable(mod):
-            mod._update_treedef()
         return mod
 
     return mod.apply(_freeze_apply_fn)
@@ -107,10 +101,7 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
             if v in none_list:
                 value = getattr(mod, k)
                 none_v = jax.tree_map(lambda _: EmptyNode(), value)
-                with ctx.mutable(mod):
-                    setattr(mod, k, none_v)
-        with ctx.mutable(mod):
-            mod._update_treedef()
+                setattr(mod, k, none_v)
         return mod
 
     return mod.apply(_select_apply_fn)
@@ -131,7 +122,6 @@ def scan_bugs(mod: T) -> T:
 
     def _scan_apply_fn(mod: T) -> T:
         assert isinstance(mod, Module)
-        mod.check_treedef()
         mod._scan_fields(mod.__class__.__dict__)
         mod._scan_fields(mod.__dict__)
         return mod
@@ -211,13 +201,7 @@ def update_pytree(mod: T, *, other: T) -> T:
         else:
             return y
 
-    with ctx.enable_deepcopy_wo_treedef():
-        new_mod = jax.tree_map(
-            _select_fn,
-            mod,
-            other,
-        )
-
+    new_mod = jax.tree_map(_select_fn, mod, other)
     new_mod = jax.tree_unflatten(jax.tree_structure(mod), jax.tree_leaves(new_mod))
     return new_mod
 
@@ -230,52 +214,6 @@ def update_parameters(mod: T, *, params: T) -> T:
 def update_states(mod: T, *, states: T) -> T:
     """Return a module which uses non-trainable states in `states`."""
     return update_pytree(mod, other=select_states(states))
-
-
-class mutate(object):
-    """``pax.mutate`` is a context manager that unfreezes a module with
-    additional safeguards to prevent having unregistered modules and `ndarray`'s.
-
-    Example:
-
-    >>> net = pax.nn.Sequential(pax.nn.Linear(3, 3), jax.nn.relu)
-    >>> print(net.summary())
-    Sequential
-    ├── Linear[in_dim=3, out_dim=3, with_bias=True]
-    └── x => relu(x)
-    >>> with pax.mutate(net):
-    ...    net[-1] = pax.nn.Linear(3, 4)
-    >>> print(net.summary())
-    Sequential
-    ├── Linear[in_dim=3, out_dim=3, with_bias=True]
-    └── Linear[in_dim=3, out_dim=4, with_bias=True]
-    """
-
-    def __init__(self, mod: T):
-        super().__init__()
-        self.mod = mod
-
-    def __enter__(self):
-        scan_bugs(self.mod)
-
-        def _unfreeze(m: T):
-            m.__dict__["_pax"] = m._pax._replace(frozen=False)
-            return m
-
-        _mod = self.mod.apply(_unfreeze)
-        self.mod.__dict__.update(_mod.__dict__)
-
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
-        def _freeze(m: T):
-            if not m._pax.frozen:
-                m.find_and_register_submodules()
-                m._update_treedef()
-                m.__dict__["_pax"] = m._pax._replace(frozen=True)
-            return m
-
-        _mod = self.mod.apply(_freeze, check_treedef=False)
-        self.mod.__dict__.update(_mod.__dict__)
-        scan_bugs(self.mod)
 
 
 from .flatten_module import flatten_module
