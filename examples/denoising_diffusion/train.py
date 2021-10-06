@@ -71,7 +71,7 @@ def train(
         return loss, (loss, model)
 
     update_fn = pax.utils.build_update_fn(loss_fn)
-    fast_update_fn = pax.jit(update_fn)
+    fast_update_fn = jax.jit(update_fn)
 
     optimizer = opax.adam(learning_rate)(diffusion.parameters())
 

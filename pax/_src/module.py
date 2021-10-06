@@ -134,7 +134,6 @@ class Module(object, metaclass=ModuleMetaclass):
         """Whenever a user sets an attribute, we will check the assignment:
 
         - Setting `_name_to_kind` and `_training` are forbidden.
-        - In immutable mode, only STATE attributes are allowed to be set. In mutable mode, all kinds are allowed to be set.
         - If `value` is a pytree of modules and `name` is not in `_name_to_kind`, its kind will be `PaxFieldKind.MODULE`.
         """
 
@@ -296,8 +295,8 @@ class Module(object, metaclass=ModuleMetaclass):
                 for mod in mods:
                     if not isinstance(mod, Module):
                         raise ValueError(
-                            f"Field `{self}.{name}` ({kind}) contains a non-module leaf "
-                            f"(type={type(leaf)}, value={leaf})."
+                            f"Field `{self}.{name}` (kind={kind}, value={value}) contains a non-module leaf "
+                            f"(type={type(mod)}, value={mod})."
                         )
 
             # Check if a pytree attribute contains non-ndarray values.
@@ -430,17 +429,20 @@ class Module(object, metaclass=ModuleMetaclass):
 
         return forward(self, *args, params=params, **kwargs)
 
+    def update_(self: T, other: T):
+        """(In-place) update module."""
+        self.__dict__.update(other.__dict__)
+
     def update_parameters(self: T, params: T) -> T:
         """Return a new module with updated parameters."""
         from .transforms import update_parameters
 
         return update_parameters(self, params=params)
 
-    def update_parameters_(self: T, params: T) -> T:
-        """In-place update parameters of module."""
+    def update_parameters_(self: T, params: T):
+        """(In-place) update parameters of module."""
         new_self = self.update_parameters(params)
         self.__dict__.update(new_self.__dict__)
-        return self
 
     def find_and_register_submodules(self):
         """Find unregistered submodules and register it with MODULE kind."""

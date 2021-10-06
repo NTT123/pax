@@ -1,14 +1,14 @@
 """Useful functions."""
 
+import functools
 from typing import Any, Callable, Tuple, TypeVar, Union
 from unittest import TestCase
 
 import jax
 import jax.numpy as jnp
 
-from .module import Module, PaxFieldKind
+from .module import Module
 from .rng import KeyArray
-from .strict_mode import grad
 
 GradientTransformation = Module
 T = TypeVar("T", bound=Module)
@@ -31,6 +31,7 @@ class EmptyNode(Tuple):
         return EmptyNode()
 
 
+@functools.wraps(jax.grad)
 def grad_parameters(
     fun: Union[
         Callable[[T, Any], Tuple[jnp.ndarray, C]],
@@ -38,8 +39,8 @@ def grad_parameters(
         Callable[[T, Any, Any, Any], Tuple[jnp.ndarray, C]],
         Callable[..., Tuple[jnp.ndarray, C]],
     ],
-    *,
-    has_aux: bool = False
+    *args,
+    **kwargs
 ) -> Callable[..., Tuple[T, C]]:
     """Compute gradient with respect to trainable parameters of the first argument.
 
@@ -61,7 +62,7 @@ def grad_parameters(
         out = fun(mod, *args, **kwargs)
         return out
 
-    _grad_fn = grad(_fun, has_aux=has_aux, allow_int=False, io_check=False, copy=False)
+    _grad_fn = jax.grad(_fun, *args, **kwargs)
 
     def grad_fn(mod: T, *args, **kwargs) -> Tuple[T, C]:
         if not isinstance(mod, Module):

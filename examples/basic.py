@@ -29,17 +29,16 @@ class Linear(pax.Module):
 
 def loss_fn(model, x, y):
     y_hat = model(x)
-    return jnp.mean(jnp.square(y_hat - y))
+    loss = jnp.mean(jnp.square(y_hat - y))
+    return loss, (loss, model)
 
 
-# jit with side effects
+# jit with side effects supported
 @pax.jit_
 def train_step(model: Linear, optimizer: GradientTransformation, x, y):
-    loss, grads = jax.value_and_grad(loss_fn)(model, x, y)
-    updates = optimizer(grads, model.parameters())
-    new_params = pax.apply_updates(model.parameters(), updates=updates)
-    model.update_parameters_(new_params)
-    return loss
+    grads, (loss, model) = pax.grad_parameters(loss_fn, has_aux=True)(model, x, y)
+    model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
+    return model, optimizer, loss
 
 
 net = Linear()
@@ -48,5 +47,5 @@ opt = opax.adam(1e-1)(net.parameters())
 
 
 for step in range(10):
-    loss = train_step(net, opt, x, y)
+    net, opt, loss = train_step(net, opt, x, y)
     print(f"step {step} loss {loss:.3f}")

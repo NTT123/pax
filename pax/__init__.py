@@ -1,9 +1,9 @@
 from pax._src.module import Module, PaxFieldKind
 from pax._src.rng import next_rng_key, seed_rng_key
 from pax._src.side_effects import jit_, pmap_, vmap_
-from pax._src.strict_mode import grad, jit, pmap, vmap
 from pax._src.transforms import (
     apply_gradients,
+    apply_gradients_,
     apply_mp_policy,
     apply_updates,
     enable_eval_mode,
@@ -16,6 +16,7 @@ from pax._src.transforms import (
     select_parameters,
     select_states,
     transform_gradients,
+    transform_gradients_,
     unfreeze_parameters,
     update_parameters,
     update_states,
@@ -25,6 +26,7 @@ from pax._src.utils import dropout, grad_parameters, scan
 from . import initializers, nets, nn, utils
 
 __all__ = [
+    "apply_gradients_",
     "apply_gradients",
     "apply_mp_policy",
     "apply_updates",
@@ -37,13 +39,12 @@ __all__ = [
     "grad_parameters",
     "grad",
     "initializers",
-    "jit",
     "jit_",
     "Module",
     "nets",
     "next_rng_key",
     "nn",
-    "pmap",
+    "PaxFieldKind",
     "pmap_",
     "scan_bugs",
     "scan",
@@ -51,14 +52,13 @@ __all__ = [
     "select_kind",
     "select_parameters",
     "select_states",
+    "transform_gradients_",
     "transform_gradients",
     "unfreeze_parameters",
     "update_parameters",
     "update_states",
     "utils",
-    "vmap",
     "vmap_",
-    "PaxFieldKind",
 ]
 
 try:

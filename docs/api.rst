@@ -239,7 +239,6 @@ A module transformation is a pure function that inputs Pax's modules and outputs
 .. autosummary::
 
    update_parameters
-   update_parameters_
    update_states
    enable_train_mode
    enable_eval_mode
@@ -249,8 +248,10 @@ A module transformation is a pure function that inputs Pax's modules and outputs
    freeze_parameters
    unfreeze_parameters
    transform_gradients
+   transform_gradients_
    apply_updates
    apply_gradients
+   apply_gradients_
    scan_bugs
    flatten_module
    apply_mp_policy
@@ -316,6 +317,12 @@ transform_gradients
 .. autofunction:: transform_gradients
 
 
+transform_gradients\_
+---------------------
+
+.. autofunction:: transform_gradients_
+
+
 apply_updates
 -------------
 
@@ -326,6 +333,12 @@ apply_gradients
 ---------------
 
 .. autofunction:: apply_gradients
+
+
+apply_gradients\_
+-----------------
+
+.. autofunction:: apply_gradients_
 
 
 scan_bugs
@@ -401,46 +414,40 @@ variance_scaling
 .. autofunction:: variance_scaling
 
 
-Function Transformations
-========================
+JIT with Side-effects
+=====================
 
-Pax's function transformations are thin wrappers of Jax transformations. 
+Jax's JIT functions prevents side effects to happen. However, we usually want modifications of our modules to be available outside of a jitted function.
+There are two ways to achieve this:
 
-These wrappers enable additional checking to prevent potential bugs.
+1. We can return the updated modules as outputs of the jitted function.
+2. We can use thin wrappers of jax transformations that support side-effects.
 
-Additional flags:
+Pax provides thin wrappers of jax transformations to support inputs modules with side-effects.
 
-- ``deep_scan``: scan input modules for potential bugs. Default: ``True``.
-- ``copy``: copy inputs to avoid side effects. Default: ``True``.
-- ``io_check``: check if a function returns the updated input modules. Default: ``False``.
 
-For example, to enable ``io_check``:
+Example:
 
->>> grad_fn = pax.grad(loss_fn, io_check=True)
+>>> fast_loss_fn = pax.jit_(loss_fn) # as an alternative to jax.jit(loss_fn)
 
 
 .. currentmodule:: pax
 
 
-pax.jit
--------
+pax.jit\_
+---------
 
-.. autofunction:: jit
+.. autofunction:: jit_
 
-pax.grad
---------
+pax.vmap\_
+----------
 
-.. autofunction:: grad
+.. autofunction:: vmap_
 
-pax.vmap
---------
+pax.pmap\_
+----------
 
-.. autofunction:: vmap
-
-pax.pmap
---------
-
-.. autofunction:: pmap
+.. autofunction:: pmap_
 
 
 Utilities

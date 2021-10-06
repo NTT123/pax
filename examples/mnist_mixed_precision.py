@@ -58,13 +58,13 @@ def loss_fn(model: ConvNet, batch: Batch):
     return loss, (loss, model)
 
 
-@pax.jit
+@jax.jit
 def test_loss_fn(model: ConvNet, batch: Batch):
     model = model.eval()
     return loss_fn(model, batch)[0]
 
 
-@pax.jit
+@jax.jit
 def update_fn(model: ConvNet, optimizer: GradientTransformation, batch: Batch):
     grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(model, batch)
     model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)

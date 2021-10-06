@@ -43,10 +43,10 @@ def test_finetune():
     # net.layers[-1] = pax.nn.Linear(2, 10)
     optimizer = opax.adam(1e-2)(net.parameters())
 
-    @pax.jit
+    @jax.jit
     def update_fn(model, optimizer, x):
         params = model.parameters()
-        grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(params, model, x)
+        grads, (loss, model) = jax.grad(loss_fn, has_aux=True)(params, model, x)
         model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
         return model, optimizer, loss
 

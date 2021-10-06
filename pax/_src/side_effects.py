@@ -14,7 +14,13 @@ def keep_side_effects(f):
         @functools.wraps(fn)
         def _fn(*args, **kwargs):
             modules = get_modules((args, kwargs))
+            from .transforms import scan_bugs
+
+            [scan_bugs(mod) for mod in modules]
             out = fn(*args, **kwargs)
+            [scan_bugs(mod) for mod in modules]
+            out_modules = get_modules(out)
+            [scan_bugs(mod) for mod in out_modules]
             return out, modules
 
         __fn = f(_fn, *u, **v)

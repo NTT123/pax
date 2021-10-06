@@ -1,3 +1,4 @@
+import jax
 import jax.numpy as jnp
 import numpy as np
 import opax
@@ -12,19 +13,20 @@ def test_grad_parameters():
         loss = jnp.mean(jnp.square(y - target))
         return loss, (loss, model)
 
-    @pax.jit
+    @jax.jit
     def update_fn(model, optimizer, inputs):
         grads, (loss, model) = pax.grad_parameters(loss_fn, has_aux=True)(model, inputs)
         model, optimizer = pax.apply_gradients(model, opt, grads=grads)
         return model, optimizer, loss
 
     net = pax.nn.Linear(2, 1)
-    opt = opax.adamw(learning_rate=1e-1)(net.parameters())
+    opt = opax.adamw(learning_rate=1e-2)(net.parameters())
     x = np.random.normal(size=(32, 2))
     y = np.random.normal(size=(32, 1))
+    print()
     for step in range(5):
         net, opt, loss = update_fn(net, opt, (x, y))
-        print(step, loss)
+        print(f"step {step}  loss {loss:.3f}")
 
 
 def test_util_update_fn():
@@ -35,12 +37,13 @@ def test_util_update_fn():
 
     net = pax.nn.Linear(2, 1)
     opt = opax.adamw(learning_rate=1e-1)(net.parameters())
-    update_fn = pax.jit(pax.utils.build_update_fn(loss_fn, scan_mode=True))
+    update_fn = jax.jit(pax.utils.build_update_fn(loss_fn, scan_mode=True))
     x = np.random.normal(size=(32, 2))
     y = np.random.normal(size=(32, 1))
+    print()
     for step in range(3):
         (net, opt), loss = update_fn((net, opt), x, y)
-    print(step, loss)
+    print(f"step {step}  loss {loss:.3f}")
 
 
 def test_Rng_Seq():

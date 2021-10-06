@@ -1,8 +1,6 @@
-from functools import partial
-
+import jax
 import jax.numpy as jnp
 import pax
-import pytest
 
 
 def test_jit_immutability():
@@ -17,7 +15,7 @@ def test_jit_immutability():
 
     m = M()
     x = jnp.zeros((1, 1))
-    y = pax.jit(lambda y: m(y))(x)
+    y = jax.jit(lambda y: m(y))(x)
 
 
 def test_grad_deepscan():
@@ -36,8 +34,7 @@ def test_grad_deepscan():
     m = M()
     x = jnp.zeros((1, 2))
     m.__dict__["fc1"] = pax.nn.Linear(2, 2)
-    with pytest.raises(ValueError):
-        y = pax.grad(loss_fn, has_aux=True)(pax.select_parameters(m), m, x)
+    y = jax.grad(loss_fn, has_aux=True)(pax.select_parameters(m), m, x)
 
 
 def test_loss_fn_no_return_model():
@@ -46,16 +43,15 @@ def test_loss_fn_no_return_model():
         y = model(inputs)
         return jnp.sum(y)
 
-    grad_fn = pax.grad(loss_fn, io_check=True)
+    grad_fn = jax.grad(loss_fn)
     x = jnp.zeros((3, 3))
     net = pax.nn.Linear(3, 3)
-    with pytest.raises(ValueError):
-        y = grad_fn(net.parameters(), net, x)
+    y = grad_fn(net.parameters(), net, x)
 
 
 def test_jit__call__():
     class M(pax.Module):
-        @pax.jit
+        @jax.jit
         def __call__(self, x):
             return x, self
 
@@ -64,10 +60,9 @@ def test_jit__call__():
     y = net(x)
 
     class M(pax.Module):
-        @partial(pax.jit, io_check=True)
+        @jax.jit
         def __call__(self, x):
             return x
 
     net = M()
-    with pytest.raises(ValueError):
-        y = net(x)
+    y = net(x)
