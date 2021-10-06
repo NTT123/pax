@@ -7,14 +7,14 @@ import jax.numpy as jnp
 import numpy as np
 import pax
 import pytest
-from pax.module import Module
+from pax import Module
 
 
 def test_pax_next_rng_key():
     # seed 42
     pax.seed_rng_key(42)
-    assert pax.rng.state._rng_key is None
-    assert pax.rng.state._seed == 42
+    # assert pax.rng.state._rng_key is None
+    # assert pax.rng.state._seed == 42
     expected_rng = jnp.array([0, 42], dtype=jnp.uint32)
     rng1 = pax.next_rng_key()
     expected_rng_1, rng_internal = jax.random.split(expected_rng)
@@ -30,7 +30,7 @@ def test_type_union():
 
         def __init__(self):
             super().__init__()
-            self.register_states("count", [0])
+            self.register_state("count", [0])
 
     with pytest.raises(ValueError):
         counter = Counter()
@@ -57,7 +57,7 @@ def test_type_sequence():
 
         def __init__(self):
             super().__init__()
-            self.register_parameters("count", jnp.array([0.0]))
+            self.register_parameter("count", jnp.array([0.0]))
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -84,7 +84,7 @@ def test_type_dict_dict1():
 
         def __init__(self):
             super().__init__()
-            self.register_states(
+            self.register_state(
                 "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
@@ -100,7 +100,7 @@ def test_type_dict_dict_optional():
 
         def __init__(self):
             super().__init__()
-            self.register_states(
+            self.register_state(
                 "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
@@ -142,7 +142,7 @@ def test_type_optional():
 
         def __init__(self):
             super().__init__()
-            self.register_states("count", jnp.array(0))
+            self.register_state("count", jnp.array(0))
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -152,22 +152,22 @@ def test_type_optional():
 def test_train_eval():
     net = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(3, 3))
 
-    assert net._training == True
+    assert net.training == True
     net = pax.enable_eval_mode(net)
-    assert net._training == False
-    assert net.modules[0]._training == False
-    assert net.modules[1]._training == False
+    assert net.training == False
+    assert net.modules[0].training == False
+    assert net.modules[1].training == False
     net = pax.enable_train_mode(net)
-    assert net._training == True
-    assert net.modules[0]._training == True
-    assert net.modules[1]._training == True
+    assert net.training == True
+    assert net.modules[0].training == True
+    assert net.modules[1].training == True
 
 
 def test_state_of_param():
     class M1(pax.Module):
         def __init__(self):
             super().__init__()
-            self.register_parameters("p1", jnp.array(0.0, dtype=jnp.float32))
+            self.register_parameter("p1", jnp.array(0.0, dtype=jnp.float32))
 
     m1 = M1()
 
@@ -190,22 +190,26 @@ def test_state_of_param():
 
 def test_module_properties_modify():
     fc = pax.nn.Linear(3, 3)
-    assert fc._training == True
+    assert fc.training == True
     fc1 = fc.copy()
-    assert fc1._training == True
+    assert fc1.training == True
     fc = pax.enable_eval_mode(fc)
-    assert fc._training == False
-    assert fc1._training == True
+    assert fc.training == False
+    assert fc1.training == True
 
 
 def test_clone_no_side_effect():
     fc1 = pax.nn.Linear(3, 3)
     fc2 = fc1.copy()
+
     fc1.new_module = pax.nn.Linear(5, 5)
-    assert "new_module" in fc1._name_to_kind, "registered 'new_modules' as part of fc1"
+
     assert (
-        "new_module" not in fc2._name_to_kind
-    ), "fc2._name_to_kind is different from fc1._name_to_kind"
+        "new_module" in fc1._pax.name_to_kind
+    ), "registered 'new_modules' as part of fc1"
+    assert (
+        "new_module" not in fc2._pax.name_to_kind
+    ), "fc2._pax.name_to_kind is different from fc1._pax.name_to_kind"
 
 
 def test_lambda_module():
@@ -243,8 +247,7 @@ def test_not_tree_clone():
         pax.nn.Linear(4, 2),
         jax.nn.one_hot,
     )
-    with pax.ctx.immutable():
-        net = net.copy()
+    net = net.copy()
 
 
 def test_class_attribute_copy():
@@ -264,25 +267,39 @@ def test_class_attribute_copy():
 
 def test_assign_empty_list_dict():
     fc = pax.nn.Linear(3, 3)
+
     fc.a = []
+
     fc.a.append(1)
     assert fc.a == [1]
+    del fc.a[0]
+
     fc.b = {}
     fc.b[1] = 2
 
 
-def test_assign_empty_list_1():
+def test_automatic_assign_module_list_1():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            # self.register_modules("fc", [])
             self.fc = []
             for i in range(5):
                 self.fc.append(pax.nn.Linear(3, 3))
 
-    with pytest.raises(ValueError):
-        m = M()
-        m = pax.scan_bugs(m)
+    m = M()
+    m = pax.scan_bugs(m)
+
+
+def test_automatic_assign_module_dict_1():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc = {}
+            for i in range(5):
+                self.fc[i] = pax.nn.Linear(3, 3)
+
+    m = M()
+    m = pax.scan_bugs(m)
 
 
 def test_assign_empty_list_2():
@@ -332,17 +349,20 @@ def test_hash_module():
 
 def test_deepcopy_pytreedef():
     f = pax.nn.Linear(3, 3)
+
     f.de = jax.tree_structure(f)
-    with pax.immutable():
-        g = f.copy()
+
+    g = f.copy()
 
     assert jax.tree_structure(g) == jax.tree_structure(f)
 
 
 def test_delete_attribute():
     f = pax.nn.Linear(3, 3)
+
     f.t = pax.nn.Linear(1, 1)
-    assert "t" in f._name_to_kind
+
+    assert "t" in f._pax.name_to_kind
     with pytest.raises(ValueError):
         del f.t
 
@@ -358,6 +378,11 @@ def test_module_list_contains_int():
             self.lst.append(pax.nn.Linear(3, 3))
             self.lst.append(0)  # type: ignore
 
-    m = M()
     with pytest.raises(ValueError):
-        pax.scan_bugs(m)
+        m = M()
+
+
+def test_append_module_list():
+    n = pax.nn.Sequential(pax.nn.Linear(3, 3))
+    n.modules.append(pax.nn.Linear(4, 4))
+    pax.scan_bugs(n)

@@ -48,8 +48,8 @@ import pax
 class Counter(pax.Module):
     def __init__(self, start_value: int = 0):
         super().__init__()
-        self.register_parameters("bias", jnp.array(0.0))
-        self.register_states("counter", jnp.array(start_value))
+        self.register_parameter("bias", jnp.array(0.0))
+        self.register_state("counter", jnp.array(start_value))
 
 
     def __call__(self, x):
@@ -61,7 +61,7 @@ def loss_fn(model: Counter, x: jnp.ndarray):
     loss = jnp.mean(jnp.square(x - y))
     return loss, (loss, model)
 
-grad_fn = pax.grad(loss_fn, has_aux=True, allow_int=True)
+grad_fn = jax.grad(loss_fn, has_aux=True, allow_int=True)
 
 net = Counter(3)
 x = jnp.array(10.)
@@ -72,18 +72,16 @@ print(grads.bias) # 60.0
 
 There are a few important things in the above example:
 
-* ``bias`` is registered as a trainable parameter using ``register_parameters`` method.
-* ``counter`` is registered as a non-trainable state using ``register_states`` method.
+* ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
+* ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``loss_fn`` returns the updated `model` in its output.
-* ``pax.grad`` is a thin wrapper of `jax.grad`. It returns the gradient transformation of `loss_fn`. It also enables immutable mode and other safeguards to prevent potential bugs.
 * ``allow_int=True`` to compute gradients with respect to ``model`` which contains integer ``ndarray`` leaves.
 
 ## Pax and other libraries <a id="paxandfriends"></a>
 
 Pax module has several methods that are similar to Pytorch. 
 
-- ``self.register_parameters(name, value)`` registers ``name`` as a trainable parameter.
-- ``self.register_modules(name, mod)`` registers ``mod`` as a submodule of ``self``.
+- ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameter.
 - ``self.apply(func)`` applies ``func`` on all modules of ``self`` recursively.
 - ``self.train()`` and ``self.eval()`` returns a new module in ``train/eval`` mode.
 - ``self.training`` returns if ``self`` is in training mode.
@@ -141,7 +139,6 @@ A Pax program can be seen as a series of module transformations.
 
 Pax provides several module transformations:
 
-- `pax.mutate`: modify a module without side effects.
 - `pax.select_{parameters,states}`: select parameter/state leaves.
 - `pax.apply_gradients`: update model & optimizer using gradients.
 - `pax.update_{parameters,states}`: updates module's parameters/states.
@@ -161,15 +158,9 @@ net = pax.nn.Sequential(
     pax.nn.Linear(64, 10),
 )
 
-def replace_last_layer(mod):
-    mod[-1] = pax.nn.Linear(64, 2)
-    return mod
-
 net = pax.freeze_parameters(net) 
-net = pax.mutate(net, with_fn=replace_last_layer)
+net[-1] = pax.nn.Linear(64, 2)
 ```
-
-Even though, we can modify `net` directly with ``net[-1] = pax.nn.Linear(64, 2)``. It is not recommended. We use ``pax.mutate`` transformation to ensure that our modification does not have side effects.
 
 After this, ``net.parameters()`` will only return trainable parameters of the last layer.
 

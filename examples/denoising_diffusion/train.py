@@ -57,7 +57,8 @@ def train(
     dataset = load_celeb_a()
 
     dataloader = (
-        dataset.cache()
+        dataset
+        # .cache()  # TODO: memory leak?
         .repeat()
         .shuffle(batch_size * 100)
         .batch(batch_size)
@@ -65,12 +66,12 @@ def train(
         .prefetch(tf.data.AUTOTUNE)
     )
 
-    def loss_fn(model, inputs) -> pax.LossFnOutput:
+    def loss_fn(model, inputs):
         loss = model(inputs)
         return loss, (loss, model)
 
     update_fn = pax.utils.build_update_fn(loss_fn)
-    fast_update_fn = pax.jit(update_fn)
+    fast_update_fn = jax.jit(update_fn)
 
     optimizer = opax.adam(learning_rate)(diffusion.parameters())
 

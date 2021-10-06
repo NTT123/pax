@@ -3,7 +3,8 @@ Pax Basics
 
 Pax's Module
 ------------
-.. currentmodule:: pax.module
+
+.. currentmodule:: pax
 
 .. autoclass:: Module
    :members:
@@ -15,8 +16,6 @@ Pax's Module
    .. autoattribute:: PARAMETER
    .. autoattribute:: MODULE
    .. autoattribute:: OTHERS
-
-.. currentmodule:: pax
 
 
 Random Number Generator
@@ -239,7 +238,6 @@ A module transformation is a pure function that inputs Pax's modules and outputs
 
 .. autosummary::
 
-   mutate
    update_parameters
    update_states
    enable_train_mode
@@ -250,17 +248,13 @@ A module transformation is a pure function that inputs Pax's modules and outputs
    freeze_parameters
    unfreeze_parameters
    transform_gradients
+   transform_gradients_
    apply_updates
    apply_gradients
+   apply_gradients_
    scan_bugs
    flatten_module
    apply_mp_policy
-
-
-mutate
--------
-
-.. autofunction:: mutate
 
 
 update_parameters
@@ -323,6 +317,12 @@ transform_gradients
 .. autofunction:: transform_gradients
 
 
+transform_gradients\_
+---------------------
+
+.. autofunction:: transform_gradients_
+
+
 apply_updates
 -------------
 
@@ -333,6 +333,12 @@ apply_gradients
 ---------------
 
 .. autofunction:: apply_gradients
+
+
+apply_gradients\_
+-----------------
+
+.. autofunction:: apply_gradients_
 
 
 scan_bugs
@@ -408,62 +414,53 @@ variance_scaling
 .. autofunction:: variance_scaling
 
 
-Context Managers
-================
+Side-effects
+============
 
-.. currentmodule:: pax.ctx
+Jax's transformations prevent side effects to happen. However, we usually want modifications of our modules to be available outside of a transformed function.
+There are two ways to achieve this:
 
-.. autosummary::
-    mutable
-    immutable
+1. We can return the updated modules as outputs of the transformed function (**recommended**).
+2. We can use thin wrappers of jax transformations that support side-effects.
 
-mutable
--------
-
-.. autoclass:: mutable
+Pax provides thin wrappers of jax transformations to support inputs modules with side-effects.
 
 
+Example:
 
-immutable
----------
-
-.. autoclass:: immutable
-
-
-Function Transformations
-========================
-
-Pax's function transformations are thin wrappers of Jax transformations. 
-
-These wrappers enable immutable mode and additional checking to prevent potential bugs.
+>>> grad_fn = pax.grad_(loss_fn) # as an alternative to jax.grad(loss_fn)
 
 
 .. currentmodule:: pax
 
 
-pax.jit
--------
+pax.jit\_
+---------
 
-``pax.jit`` is a wrapper of ``jax.jit``. 
-
-
-pax.grad
---------
-
-``pax.grad`` is a wrapper of ``jax.grad``. 
+.. autofunction:: jit_
 
 
-pax.vmap
---------
+pax.grad\_
+----------
 
-``pax.vmap`` is a wrapper of ``jax.vmap``. 
+.. autofunction:: grad_
 
 
-pax.pmap
---------
+pax.value\_and_grad\_
+---------------------
 
-``pax.pmap`` is a wrapper of ``jax.pmap``. 
+.. autofunction:: value_and_grad_
 
+
+pax.vmap\_
+----------
+
+.. autofunction:: vmap_
+
+pax.pmap\_
+----------
+
+.. autofunction:: pmap_
 
 
 Utilities
@@ -473,9 +470,16 @@ Utilities
 
 
 .. autosummary::
+    grad_parameters
     scan
     build_update_fn
     dropout
+
+
+grad_parameters
+---------------
+
+.. autofunction:: grad_parameters
 
 
 scan

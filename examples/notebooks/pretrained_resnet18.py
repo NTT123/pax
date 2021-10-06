@@ -93,9 +93,8 @@ def convert_linear(linear):
 
 
 def load_pretrained_resnet18():
-    resnet18_pt = torchvision.models.resnet18(pretrained=True).eval()
     resnet18 = pax.nets.ResNet18(3, 1000)
-
+    resnet18_pt = torchvision.models.resnet18(pretrained=True).eval()
     pax_resnet = [
         convert_conv(resnet18_pt.conv1),
         convert_bn(resnet18_pt.bn1),
@@ -120,6 +119,7 @@ def load_pretrained_resnet18():
                 b.proj_batchnorm = mods[1][1]
 
     resnet18.logits = pax_resnet[-1]
+
     # make sure we are in `eval` mode when doing evaluation.
     resnet18 = resnet18.eval()
     return resnet18

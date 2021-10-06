@@ -3,7 +3,6 @@ import jax.numpy as jnp
 import opax
 import pax
 import pytest
-from pax.utils import LossFnOutput
 
 
 def test_optim_model_update_state():
@@ -25,7 +24,7 @@ def test_optim_model_update_state():
 
     net = MyModule()
 
-    def loss_fn(model: MyModule, inputs) -> LossFnOutput:
+    def loss_fn(model: MyModule, x):
         y = model(x)
         loss = jnp.mean(jnp.square(x - y))
         return loss, (loss, model)

@@ -9,7 +9,7 @@ def test_flatten_module():
     g = pax.flatten_module(f)
     k = pax.select_parameters(g)
     assert jax.tree_structure(g) == jax.tree_structure(k)
-    h = g.update(k)
+    h = g.update_parameters(k)
 
 
 def test_none_state():

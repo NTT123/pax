@@ -3,6 +3,7 @@ import jax.numpy as jnp
 import jmp
 import pax
 import pytest
+from pax import apply_mp_policy
 
 half = jmp.half_dtype()
 full = jnp.float32
@@ -56,7 +57,7 @@ def test_change_internal_state():
 
         def __init__(self):
             super().__init__()
-            self.register_states("counter", jnp.array(0))
+            self.register_state("counter", jnp.array(0))
 
         def __call__(self, x):
             self.counter = self.counter + 1
@@ -83,7 +84,7 @@ def test_change_tree_def():
 
         def __init__(self):
             super().__init__()
-            self.register_states("counter", jnp.array(0))
+            self.register_state("counter", jnp.array(0))
             self.count = 0
 
         def __call__(self, x):
@@ -100,9 +101,9 @@ def test_change_tree_def():
     )
     x = jnp.array(0.0)
     assert mm._module.counter.item() == 0  # type: ignore
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         y = mm(x)
-    assert mm._module.counter.item() == 1  # type: ignore
+    assert mm._module.counter.item() == 0  # type: ignore
     assert m.counter.item() == 0
 
 
@@ -126,8 +127,10 @@ def test_mixed_precision_clone():
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
+
     f.new_fc = pax.nn.Linear(1, 1)
-    assert "new_fc" not in ff._name_to_kind
+
+    assert "new_fc" not in ff._pax.name_to_kind
 
 
 def test_mixed_precision_unwrap_clone():
@@ -136,8 +139,10 @@ def test_mixed_precision_unwrap_clone():
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
     f = ff.unwrap_mixed_precision()
+
     f.new_fc = pax.nn.Linear(1, 1)
-    assert "new_fc" not in ff._name_to_kind
+
+    assert "new_fc" not in ff._pax.name_to_kind
 
 
 def test_mixed_precision_no_method_name():
@@ -146,3 +151,58 @@ def test_mixed_precision_no_method_name():
 
     # with pytest.raises(TypeError):
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
+
+
+def test_mp_call_classmethod():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(3, 3)
+
+        @classmethod
+        def t(x, y):
+            return y
+
+    m = M()
+    x = jnp.zeros((3, 3))
+    y = m.t(x)
+    my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
+    m = apply_mp_policy(m, mp_policy=my_policy)
+    with pytest.raises(ValueError):
+        y = m.t(x)
+
+
+def test_mp_call_staticmethod():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(3, 3)
+
+        @staticmethod
+        def t(x, y):
+            return y
+
+    m = M()
+    x = jnp.zeros((3, 3))
+    y = m.t(x, x)
+    my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
+    m = apply_mp_policy(m, mp_policy=my_policy)
+    with pytest.raises(ValueError):
+        y = m.t(x)
+
+
+def test_mp_call_function():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(3, 3)
+
+    m = M()
+    x = jnp.zeros((3, 3))
+
+    m.q = lambda x: x
+
+    my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
+    m = apply_mp_policy(m, mp_policy=my_policy)
+    with pytest.raises(ValueError):
+        m.q(x)

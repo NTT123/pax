@@ -66,13 +66,13 @@ def loss_fn(model: LM, batch: jnp.ndarray):
 
 def update_step(prev, batch: jnp.ndarray):
     model, optimizer = prev
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True, allow_int=True)(model, batch)
+    grads, (loss, model) = jax.grad(loss_fn, has_aux=True, allow_int=True)(model, batch)
     grads = jax.lax.pmean(grads.parameters(), axis_name="i")
     model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
     return (model, optimizer), loss
 
 
-@partial(pax.pmap, axis_name="i")
+@partial(jax.pmap, axis_name="i")
 def update_fn(model: LM, optimizer: GradientTransformation, multi_batch: jnp.ndarray):
     (model, optimizer), losses = pax.utils.scan(
         update_step, (model, optimizer), multi_batch
@@ -164,7 +164,7 @@ def train():
     tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")
     for step in tr:
         batch = next(tfdata)
-        # (num_devices,) is for pax.pmap, (steps_per_update,) is for pax.utils.scan
+        # (num_devices,) is for jax.pmap, (steps_per_update,) is for pax.utils.scan
         net, optimizer, loss = update_fn(net, optimizer, batch)
         total_losses = total_losses + loss
         if step % 1000 == 0:

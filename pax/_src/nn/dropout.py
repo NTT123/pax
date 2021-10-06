@@ -27,7 +27,7 @@ class Dropout(Module):
         assert 0 <= dropout_rate < 1.0
 
         self.dropout_rate = dropout_rate
-        self.register_states("rng_key", next_rng_key())
+        self.register_state("rng_key", next_rng_key())
 
     def __call__(self, x):
         """Dropout `x` randomly.

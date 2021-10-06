@@ -10,8 +10,8 @@ def test_freeze_really_working():
         pax.nn.Linear(5, 5),
     )
     b = pax.freeze_parameters(a)
-    assert b[0]._name_to_kind["weight"] == pax.module.PaxFieldKind.STATE
-    assert a[0]._name_to_kind["weight"] == pax.module.PaxFieldKind.PARAMETER
+    assert b[0]._pax.name_to_kind["weight"] == pax.PaxFieldKind.STATE
+    assert a[0]._pax.name_to_kind["weight"] == pax.PaxFieldKind.PARAMETER
 
 
 def test_freeze_mapping_proxy():
@@ -20,7 +20,7 @@ def test_freeze_mapping_proxy():
         pax.nn.Linear(5, 5),
     )
     b = pax.freeze_parameters(a)
-    assert isinstance(b._name_to_kind, MappingProxyType), "expecting a proxy map"
+    assert isinstance(b._pax.name_to_kind, MappingProxyType), "expecting a proxy map"
 
 
 def test_freeze_twice():
@@ -39,7 +39,7 @@ def test_freeze_unfreeze():
 
     b = pax.freeze_parameters(a)
     c = pax.unfreeze_parameters(b, origin=a)
-    assert a[0]._name_to_kind is c[0]._name_to_kind
+    assert a[0]._pax.name_to_kind is c[0]._pax.name_to_kind
 
 
 def test_copy():

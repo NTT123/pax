@@ -1,4 +1,4 @@
-name: pytest
+name: Tests
 
 on:
   pull_request:
@@ -10,11 +10,11 @@ on:
 
 jobs:
   test-ubuntu:
-    name: "pytest on ${{ matrix.python-version }} on ${{ matrix.os }}"
+    name: "Test on ${{ matrix.python-version }} on ${{ matrix.os }}"
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
         os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v2

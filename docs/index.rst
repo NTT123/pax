@@ -51,7 +51,6 @@ To install the latest version::
    notebooks/basics
    notebooks/training
    notebooks/understanding
-   notebooks/immutability
    notebooks/limitations
    notebooks/performance
 

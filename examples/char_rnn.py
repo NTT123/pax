@@ -3,7 +3,7 @@
 import inspect
 import os
 from functools import partial
-from typing import List
+from typing import List, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -89,7 +89,7 @@ class LM(pax.Module):
 
         out = [x]
 
-        @pax.jit
+        @jax.jit
         def step(x, hx):
             x = self.embed(x)
             hx, x = self.lstm(hx, x)
@@ -114,18 +114,18 @@ def loss_fn(model: LM, batch: jnp.ndarray):
     log_pr = jax.nn.log_softmax(logits, axis=-1)
     targets = jax.nn.one_hot(targets, num_classes=model.vocab_size)
     loss = -jnp.mean(jnp.sum(targets * log_pr, axis=-1))
-    return loss, (loss, model)
+    return loss
 
 
-def update_step(model_and_optimizer, batch: jnp.ndarray):
+def update_step(model_and_optimizer: Tuple[LM, pax.Module], batch: jnp.ndarray):
     model, optimizer = model_and_optimizer
-    grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(model, batch)
+    loss, grads = jax.value_and_grad(loss_fn)(model, batch)
     grads = jax.lax.pmean(grads, axis_name="i")
     model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
     return (model, optimizer), loss
 
 
-@partial(pax.pmap, axis_name="i")
+@partial(jax.pmap, axis_name="i")
 def update_fn(model, optimizer, multi_batch: jnp.ndarray):
     (model, optimizer), losses = pax.utils.scan(
         update_step, (model, optimizer), multi_batch
@@ -134,6 +134,7 @@ def update_fn(model, optimizer, multi_batch: jnp.ndarray):
 
 
 net = LM(vocab_size=vocab_size, hidden_dim=hidden_dim)
+
 optimizer = opax.chain(
     opax.clip_by_global_norm(1.0),
     opax.adam(1e-4),
@@ -175,7 +176,7 @@ losses = 0.0
 tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")
 for step in tr:
     batch = next(tfdata)
-    # (num_devices,) is for pax.pmap, (steps_per_update,) is for pax.utils.scan
+    # (num_devices,) is for jax.pmap, (steps_per_update,) is for pax.utils.scan
     batch = jnp.reshape(batch, (num_devices, steps_per_update, -1) + batch.shape[1:])
     net, optimizer, loss = update_fn(net, optimizer, batch)
     losses = losses + loss

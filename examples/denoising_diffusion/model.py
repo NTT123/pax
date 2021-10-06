@@ -177,8 +177,8 @@ class UNet(pax.Module):
             time_dim = None
             self.time_mlp = None
 
-        self.register_modules("downs", [])
-        self.register_modules("ups", [])
+        self.downs = []
+        self.ups = []
         num_resolutions = len(in_out)
 
         for ind, (dim_in, dim_out) in enumerate(in_out):
@@ -298,20 +298,20 @@ class GaussianDiffusion(pax.Module):
         self.num_timesteps = int(timesteps)
         self.loss_type = loss_type
 
-        self.register_states("betas", betas)
-        self.register_states("alphas_cumprod", alphas_cumprod)
-        self.register_states("alphas_cumprod_prev", alphas_cumprod_prev)
+        self.register_state("betas", betas)
+        self.register_state("alphas_cumprod", alphas_cumprod)
+        self.register_state("alphas_cumprod_prev", alphas_cumprod_prev)
 
         # calculations for diffusion q(x_t | x_{t-1}) and others
-        self.register_states("sqrt_alphas_cumprod", np.sqrt(alphas_cumprod))
-        self.register_states(
+        self.register_state("sqrt_alphas_cumprod", np.sqrt(alphas_cumprod))
+        self.register_state(
             "sqrt_one_minus_alphas_cumprod", np.sqrt(1.0 - alphas_cumprod)
         )
-        self.register_states(
+        self.register_state(
             "log_one_minus_alphas_cumprod", np.log(1.0 - alphas_cumprod)
         )
-        self.register_states("sqrt_recip_alphas_cumprod", np.sqrt(1.0 / alphas_cumprod))
-        self.register_states(
+        self.register_state("sqrt_recip_alphas_cumprod", np.sqrt(1.0 / alphas_cumprod))
+        self.register_state(
             "sqrt_recipm1_alphas_cumprod", np.sqrt(1.0 / alphas_cumprod - 1)
         )
 
@@ -320,17 +320,17 @@ class GaussianDiffusion(pax.Module):
             betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
         )
         # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
-        self.register_states("posterior_variance", posterior_variance)
+        self.register_state("posterior_variance", posterior_variance)
         # below: log calculation clipped because the posterior variance is 0 at the beginning of the diffusion chain
-        self.register_states(
+        self.register_state(
             "posterior_log_variance_clipped",
             np.log(np.maximum(posterior_variance, 1e-20)),
         )
-        self.register_states(
+        self.register_state(
             "posterior_mean_coef1",
             betas * np.sqrt(alphas_cumprod_prev) / (1.0 - alphas_cumprod),
         )
-        self.register_states(
+        self.register_state(
             "posterior_mean_coef2",
             (1.0 - alphas_cumprod_prev) * np.sqrt(alphas) / (1.0 - alphas_cumprod),
         )
@@ -369,7 +369,6 @@ class GaussianDiffusion(pax.Module):
         )
         return model_mean, posterior_variance, posterior_log_variance
 
-    @partial(pax.jit, io_check=False)
     def p_sample(self, x, t, rng_key, clip_denoised=True, repeat_noise=False):
         b = x.shape[0]
         model_mean, _, model_log_variance = self.p_mean_variance(
@@ -389,12 +388,18 @@ class GaussianDiffusion(pax.Module):
         rng_key_, rng_key = jax.random.split(rng_key)
         img = jax.random.normal(rng_key_, shape)
 
-        for i in reversed(range(0, self.num_timesteps)):
-            rng_key_, rng_key = jax.random.split(rng_key)
-            img = self.p_sample(img, jnp.full((b,), i, dtype=jnp.int32), rng_key_)
+        i_s = jnp.flip(jnp.arange(0, self.num_timesteps, dtype=jnp.int32))
+        rng_keys = jax.random.split(rng_key, self.num_timesteps)
 
+        def loop_fn(img, inputs):
+            i, rng_key = inputs
+            img = self.p_sample(img, jnp.full((b,), i, dtype=jnp.int32), rng_key)
+            return img, None
+
+        img, _ = pax.utils.scan(loop_fn, img, (i_s, rng_keys))
         return img
 
+    @partial(jax.jit, static_argnums=[1, 2])
     def sample(self, batch_size=16, random_seed=42):
         image_size = self.image_size
         channels = self.channels
