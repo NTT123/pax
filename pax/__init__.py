@@ -1,6 +1,6 @@
 from pax._src.module import Module, PaxFieldKind
 from pax._src.rng import next_rng_key, seed_rng_key
-from pax._src.side_effects import jit_, pmap_, vmap_
+from pax._src.side_effects import grad_, jit_, pmap_, value_and_grad_, vmap_
 from pax._src.transforms import (
     apply_gradients,
     apply_gradients_,
@@ -36,8 +36,8 @@ __all__ = [
     "flatten_module",
     "forward",
     "freeze_parameters",
+    "grad_",
     "grad_parameters",
-    "grad",
     "initializers",
     "jit_",
     "Module",
@@ -58,6 +58,7 @@ __all__ = [
     "update_parameters",
     "update_states",
     "utils",
+    "value_and_grad_",
     "vmap_",
 ]
 

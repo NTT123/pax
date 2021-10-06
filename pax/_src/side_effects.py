@@ -1,11 +1,15 @@
-import jax
-from .module import Module
 import functools
+
+import jax
+
+from .module import Module
 
 
 def keep_side_effects(f):
     @functools.wraps(f)
-    def _f(fn, *u, **v):
+    def _f(fn, **v):
+        has_aux = v.get("has_aux", False)
+
         def get_modules(v):
             modules = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
             modules = [m for m in modules if isinstance(m, Module)]
@@ -21,14 +25,34 @@ def keep_side_effects(f):
             [scan_bugs(mod) for mod in modules]
             out_modules = get_modules(out)
             [scan_bugs(mod) for mod in out_modules]
-            return out, modules
+            if f in [jax.value_and_grad, jax.grad] and has_aux:
+                out, aux = out
+                return out, (aux, *modules)
+            else:
+                return out, modules
 
-        __fn = f(_fn, *u, **v)
+        if f in [jax.value_and_grad, jax.grad]:
+            v["has_aux"] = True
+
+        __fn = f(_fn, **v)
 
         @functools.wraps(__fn)
         def ___fn(*x, **y):
             modules = get_modules((x, y))
-            out, updated_modules = __fn(*x, *y)
+            out = __fn(*x, *y)
+
+            if f == jax.grad and has_aux:
+                out, (aux, *updated_modules) = out
+                out = (out, aux)
+            elif f == jax.value_and_grad and has_aux:
+                (out, (aux, *updated_modules)), grads = out
+                out = ((out, aux), grads)
+            elif f == jax.value_and_grad and not has_aux:
+                (out, updated_modules), grads = out
+                out = (out, grads)
+            else:
+                out, updated_modules = out
+
             assert len(modules) == len(updated_modules)
             for m, um in zip(modules, updated_modules):
                 assert type(m) == type(um)
@@ -44,3 +68,5 @@ def keep_side_effects(f):
 jit_ = keep_side_effects(jax.jit)
 vmap_ = keep_side_effects(jax.vmap)
 pmap_ = keep_side_effects(jax.pmap)
+grad_ = keep_side_effects(jax.grad)
+value_and_grad_ = keep_side_effects(jax.value_and_grad)

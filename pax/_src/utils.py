@@ -218,4 +218,7 @@ def assertStructureEqual(self: T, other: T):
     if has_error:
         tc = TestCase()
         tc.maxDiff = None
-        tc.assertDictEqual(vars(self), vars(other))
+        # do not compare weights
+        u = jax.tree_map(lambda x: None, self)
+        v = jax.tree_map(lambda y: None, other)
+        tc.assertDictEqual(vars(u), vars(v))
