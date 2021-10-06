@@ -75,7 +75,6 @@ There are a few important things in the above example:
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``loss_fn`` returns the updated `model` in its output.
-* ``pax.grad`` is a thin wrapper of `jax.grad`. It returns the gradient transformation of `loss_fn`. It also enables immutable mode and other safeguards to prevent potential bugs.
 * ``allow_int=True`` to compute gradients with respect to ``model`` which contains integer ``ndarray`` leaves.
 
 ## Pax and other libraries <a id="paxandfriends"></a>
