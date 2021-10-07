@@ -222,3 +222,17 @@ def assertStructureEqual(self: T, other: T):
         u = jax.tree_map(lambda x: None, self)
         v = jax.tree_map(lambda y: None, other)
         tc.assertDictEqual(vars(u), vars(v))
+
+
+def no_side_effects(f):
+    """Make sure the input modules to the function will not have any side effect."""
+    from .ctx import enable_deep_copy
+
+    @functools.wraps(f)
+    def _f(*args, **kwargs):
+        with enable_deep_copy():
+            leaves, treedef = jax.tree_flatten((args, kwargs))
+        args, kwargs = jax.tree_unflatten(treedef, leaves)
+        return f(*args, **kwargs)
+
+    return _f

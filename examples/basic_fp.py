@@ -31,6 +31,7 @@ class Linear(pax.Module):
         return x
 
 
+@pax.no_side_effects
 def loss_fn(model, x, y):
     y_hat = model(x)
     loss = jnp.mean(jnp.square(y_hat - y))

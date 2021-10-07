@@ -66,6 +66,7 @@ def train(
         .prefetch(tf.data.AUTOTUNE)
     )
 
+    @pax.no_side_effects
     def loss_fn(model, inputs):
         loss = model(inputs)
         return loss, (loss, model)

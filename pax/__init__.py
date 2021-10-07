@@ -21,7 +21,13 @@ from pax._src.transforms import (
     update_parameters,
     update_states,
 )
-from pax._src.utils import dropout, grad_parameters, scan
+from pax._src.utils import (
+    build_update_fn,
+    dropout,
+    grad_parameters,
+    no_side_effects,
+    scan,
+)
 
 from . import initializers, nets, nn, utils
 
@@ -30,6 +36,7 @@ __all__ = [
     "apply_gradients",
     "apply_mp_policy",
     "apply_updates",
+    "build_update_fn",
     "dropout",
     "enable_eval_mode",
     "enable_train_mode",
@@ -44,6 +51,7 @@ __all__ = [
     "nets",
     "next_rng_key",
     "nn",
+    "no_side_effects",
     "PaxFieldKind",
     "pmap_",
     "scan_bugs",

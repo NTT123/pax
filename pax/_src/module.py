@@ -7,6 +7,7 @@ which is under MIT License.
 
 import functools
 import inspect
+from copy import deepcopy
 from collections import OrderedDict
 from enum import Enum
 from types import MappingProxyType
@@ -29,6 +30,8 @@ import jax.numpy as jnp
 import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
+
+from .ctx import state as ctx_state
 
 T = TypeVar("T", bound="Module")
 TreeDef = Any
@@ -206,6 +209,21 @@ class Module(object, metaclass=ModuleMetaclass):
 
         aux = dict(self.__dict__)
         children = [aux.pop(name) for name in self._pax.name_to_kind]
+
+        if ctx_state._enable_deep_copy:
+            leaves, treedef = jax.tree_flatten(aux)
+            new_leaves = []
+            for leaf in leaves:
+                try:
+                    new_leaf = deepcopy(leaf)
+                    if new_leaf == leaf:
+                        new_leaves.append(new_leaf)
+                    else:
+                        new_leaves.append(leaf)
+                except:
+                    new_leaves.append(leaf)
+
+            aux = jax.tree_unflatten(treedef, leaves)
 
         return children, aux
 

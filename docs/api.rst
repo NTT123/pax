@@ -466,14 +466,21 @@ pax.pmap\_
 Utilities
 =========
 
-.. currentmodule:: pax.utils
+.. currentmodule:: pax
 
 
 .. autosummary::
+    no_side_effects
     grad_parameters
     scan
     build_update_fn
     dropout
+
+
+no\_side\_effects
+-----------------
+
+.. autofunction:: no_side_effects
 
 
 grad_parameters
