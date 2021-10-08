@@ -1,13 +1,12 @@
 """Transform a module to a new one."""
 from collections import OrderedDict
 from types import MappingProxyType
-from typing import Any, Callable, Optional, Tuple, TypeVar
+from typing import Any, Optional, Tuple, TypeVar
 
 import jax
 import jax.numpy as jnp
 import jmp
 
-from . import ctx
 from .module import Module, PaxFieldKind
 from .utils import EmptyNode
 

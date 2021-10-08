@@ -84,7 +84,6 @@ Pax module has several methods that are similar to Pytorch.
 - ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameter.
 - ``self.apply(func)`` applies ``func`` on all modules of ``self`` recursively.
 - ``self.train()`` and ``self.eval()`` returns a new module in ``train/eval`` mode.
-- ``self.training`` returns if ``self`` is in training mode.
 
 Pax learns a lot from other libraries too:
 - Pax borrows the idea that _a module is also a pytree_ from [treex] and [equinox]. 

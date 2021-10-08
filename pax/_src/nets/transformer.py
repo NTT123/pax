@@ -91,7 +91,7 @@ class Transformer(Module):
           Array of shape [B, T, H].
         """
 
-        dropout_rate = self._dropout_rate if self.training else 0.0
+        dropout_rate = self._dropout_rate if self.is_training() else 0.0
         if mask is not None:
             mask = mask[:, None, None, :]
 

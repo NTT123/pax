@@ -152,15 +152,15 @@ def test_type_optional():
 def test_train_eval():
     net = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(3, 3))
 
-    assert net.training == True
+    assert net.is_training() == True
     net = pax.enable_eval_mode(net)
-    assert net.training == False
-    assert net.modules[0].training == False
-    assert net.modules[1].training == False
+    assert net.is_training() == False
+    assert net.modules[0].is_training() == False
+    assert net.modules[1].is_training() == False
     net = pax.enable_train_mode(net)
-    assert net.training == True
-    assert net.modules[0].training == True
-    assert net.modules[1].training == True
+    assert net.is_training() == True
+    assert net.modules[0].is_training() == True
+    assert net.modules[1].is_training() == True
 
 
 def test_state_of_param():
@@ -190,12 +190,12 @@ def test_state_of_param():
 
 def test_module_properties_modify():
     fc = pax.nn.Linear(3, 3)
-    assert fc.training == True
+    assert fc.is_training() == True
     fc1 = fc.copy()
-    assert fc1.training == True
+    assert fc1.is_training() == True
     fc = pax.enable_eval_mode(fc)
-    assert fc.training == False
-    assert fc1.training == True
+    assert fc.is_training() == False
+    assert fc1.is_training() == True
 
 
 def test_clone_no_side_effect():
@@ -334,11 +334,11 @@ def test_apply_inside_state_subtree():
             self.register_states("m2", {"m1": m11})
 
     m2 = M2(pax.nn.Linear(2, 2))
-    assert m2.training == True
-    assert m2.m2["m1"].training == True
+    assert m2.is_training() == True
+    assert m2.m2["m1"].is_training() == True
     m2 = pax.enable_eval_mode(m2)
-    assert m2.training == False
-    assert m2.m2["m1"].training == True
+    assert m2.is_training() == False
+    assert m2.m2["m1"].is_training() == True
 
 
 def test_hash_module():

@@ -63,7 +63,31 @@ class PaxModuleInfo(NamedTuple):
 
     def __repr__(self) -> str:
         nodes = ", ".join([f"{k}:{v.name}" for k, v in self.name_to_kind.items()])
-        return f"PaxModuleInfo[name={self.name}, training={self.training}, nodes=[{nodes}]]"
+        return f"PaxModuleInfo[name={self.name}, training={self.training}, nodes={{{nodes}}}]"
+
+
+M = TypeVar("M")
+
+# Inspired by dm-haiku `wrap_method`.
+def wrap_method(method_name, unbound_method):
+    from .ctx import enable_deep_copy
+
+    @functools.wraps(unbound_method)
+    def wrapped(self: T, *args, return_self: bool = False, **kwargs):
+        if return_self == False:
+            f = functools.partial(unbound_method, self)
+            out = f(*args, **kwargs)
+            return out
+        else:
+            with enable_deep_copy():
+                mod = self.copy()
+            f = functools.partial(unbound_method, mod)
+            out = f(*args, **kwargs)
+            with enable_deep_copy():
+                mod = mod.copy()
+            return mod, out
+
+    return wrapped
 
 
 M = TypeVar("M")
@@ -72,11 +96,52 @@ M = TypeVar("M")
 class ModuleMetaclass(type):
     """Metaclass for `Module`."""
 
+    def __new__(  # pylint: disable=bad-classmethod-argument
+        mcs: Type[Type[M]],
+        name: str,
+        bases: Tuple[Type[Any], ...],
+        clsdict: Dict[str, Any],
+    ) -> Type[M]:
+
+        method_names = []
+
+        for key, value in clsdict.items():
+            if key in [
+                "apply",
+                "copy",
+                "eval",
+                "find_and_register_submodules",
+                "frozen",
+                "parameters",
+                "submodules",
+                "summary",
+                "train",
+                "tree_flatten",
+                "tree_unflatten",
+                "unfrozen",
+                "update_parameters",
+            ]:
+                continue
+            if key.startswith("__") and key != "__call__":
+                continue
+            elif isinstance(value, property):
+                print(key)
+                raise ValueError("Properties are not supported by Pax's Module.")
+            elif inspect.isfunction(value):
+                method_names.append(key)
+
+        cls = super(ModuleMetaclass, mcs).__new__(mcs, name, bases, clsdict)
+
+        for method_name in method_names:
+            method = getattr(cls, method_name)
+            method = wrap_method(method_name, method)
+            setattr(cls, method_name, method)
+        return cls
+
     def __call__(cls: Type[T], *args, **kwargs) -> T:
         module = cls.__new__(cls, *args, **kwargs)  # type: ignore
         cls.__init__(module, *args, **kwargs)
         module.find_and_register_submodules()
-
         # scan module after initialization for potential bugs
         module._scan_fields(module.__dict__)
         return module
@@ -116,11 +181,9 @@ class Module(object, metaclass=ModuleMetaclass):
         """Initialize module's name."""
         super().__setattr__("_pax", self._pax._replace(name=name))
 
-    @property
-    def training(self) -> bool:
+    def is_training(self) -> bool:
         return self._pax.training
 
-    @property
     def name(self) -> Optional[str]:
         return self._pax.name
 
@@ -441,11 +504,6 @@ class Module(object, metaclass=ModuleMetaclass):
         from .transforms import select_parameters
 
         return select_parameters(self)
-
-    def forward(self, *args, params=None, **kwargs):
-        from .transforms import forward
-
-        return forward(self, *args, params=params, **kwargs)
 
     def update_(self: T, other: T):
         """(In-place) update module."""

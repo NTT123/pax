@@ -77,7 +77,7 @@ class BatchNorm(Module):
         self.ema_var = EMA(jnp.zeros_like(self.offset), decay_rate, debias=True)
 
     def __call__(self, x):
-        if self.training:
+        if self.is_training():
             batch_mean = jnp.mean(x, axis=self.reduced_axes, keepdims=True)
             batch_mean_of_squares = jnp.mean(
                 jnp.square(x), axis=self.reduced_axes, keepdims=True
