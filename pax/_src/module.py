@@ -5,8 +5,6 @@ https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda807690385362
 which is under MIT License.
 """
 
-import functools
-import inspect
 from collections import OrderedDict
 from copy import deepcopy
 from enum import Enum
@@ -452,22 +450,11 @@ class Module(object, metaclass=ModuleMetaclass):
 
         return select_parameters(self)
 
-    def update_(self: T, other: T):
-        """(In-place) update module."""
-        self._assert_mutability()
-        self.__dict__.update(other.__dict__)
-
     def update_parameters(self: T, params: T) -> T:
         """Return a new module with updated parameters."""
         from .transforms import update_parameters
 
         return update_parameters(self, params=params)
-
-    def update_parameters_(self: T, params: T):
-        """(In-place) update parameters of module."""
-        self._assert_mutability()
-        new_self = self.update_parameters(params)
-        self.__dict__.update(new_self.__dict__)
 
     def find_and_register_submodules(self):
         """Find unregistered submodules and register it with MODULE kind."""

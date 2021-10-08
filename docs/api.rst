@@ -279,10 +279,8 @@ A module transformation is a pure function that inputs Pax's modules and outputs
    freeze_parameters
    unfreeze_parameters
    transform_gradients
-   transform_gradients_
    apply_updates
    apply_gradients
-   apply_gradients_
    scan_bugs
    flatten_module
    apply_mp_policy
@@ -348,12 +346,6 @@ transform_gradients
 .. autofunction:: transform_gradients
 
 
-transform_gradients\_
----------------------
-
-.. autofunction:: transform_gradients_
-
-
 apply_updates
 -------------
 
@@ -364,12 +356,6 @@ apply_gradients
 ---------------
 
 .. autofunction:: apply_gradients
-
-
-apply_gradients\_
------------------
-
-.. autofunction:: apply_gradients_
 
 
 scan_bugs
@@ -444,54 +430,6 @@ variance_scaling
 
 .. autofunction:: variance_scaling
 
-
-Side-effects
-============
-
-Jax's transformations prevent side effects to happen. However, we usually want modifications of our modules to be available outside of a transformed function.
-There are two ways to achieve this:
-
-1. We can return the updated modules as outputs of the transformed function (**recommended**).
-2. We can use thin wrappers of jax transformations that support side-effects.
-
-Pax provides thin wrappers of jax transformations to support inputs modules with side-effects.
-
-
-Example:
-
->>> grad_fn = pax.grad_(loss_fn) # as an alternative to jax.grad(loss_fn)
-
-
-.. currentmodule:: pax
-
-
-pax.jit\_
----------
-
-.. autofunction:: jit_
-
-
-pax.grad\_
-----------
-
-.. autofunction:: grad_
-
-
-pax.value\_and_grad\_
----------------------
-
-.. autofunction:: value_and_grad_
-
-
-pax.vmap\_
-----------
-
-.. autofunction:: vmap_
-
-pax.pmap\_
-----------
-
-.. autofunction:: pmap_
 
 
 Utilities
