@@ -46,8 +46,8 @@ def test_util_update_fn():
     print(f"step {step}  loss {loss:.3f}")
 
 
+@pax.pure
 def test_Rng_Seq():
-
     rng_seq = RngSeq(seed=42)
     assert rng_seq._rng_key.tolist() == [0, 42]
     r1 = rng_seq.next_rng_key()
@@ -67,6 +67,7 @@ def test_Rng_Seq():
     assert h2.tolist() == h3.tolist(), "o update internal state in `eval` mode"
 
 
+@pax.pure
 def test_ema_debias():
     ema = EMA(jnp.array(1.0), 0.9, True)
     assert ema.debias.item() == False
@@ -78,6 +79,7 @@ def test_ema_debias():
     np.testing.assert_almost_equal(ema.averages.item(), 0.9 * 2.0 + 0.1 * 1.0)
 
 
+@pax.pure
 def test_ema_bias():
     ema = EMA(jnp.array(1.0), 0.9, False)
     assert ema.debias is None

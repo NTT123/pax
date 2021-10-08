@@ -109,7 +109,8 @@ class apply_mp_policy(Module, Generic[T]):
 
             # `mod` has the same pytree structure as `self._module`,
             # therefore, this is safe.
-            self._module = mod
+            with ctx.enable_mutability():
+                self._module = mod
 
             # task 4
             output = self.mp_policy.cast_to_output(output)

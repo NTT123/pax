@@ -53,7 +53,7 @@ else:
     num_layers = 2
 
 
-@pax.no_side_effects
+@pax.pure
 def loss_fn(model: LM, batch: jnp.ndarray):
     inputs = batch[:, :-1]
     targets = batch[:, 1:]

@@ -7,6 +7,7 @@ from unittest import TestCase
 import jax
 import jax.numpy as jnp
 
+from .ctx import enable_mutability
 from .module import Module
 from .rng import KeyArray
 
@@ -224,7 +225,7 @@ def assertStructureEqual(self: T, other: T):
         tc.assertDictEqual(vars(u), vars(v))
 
 
-def no_side_effects(f):
+def pure(f):
     """Make sure the input modules to the function will not have any side effect."""
     from .ctx import enable_deep_copy
 
@@ -233,6 +234,17 @@ def no_side_effects(f):
         with enable_deep_copy():
             leaves, treedef = jax.tree_flatten((args, kwargs))
         args, kwargs = jax.tree_unflatten(treedef, leaves)
-        return f(*args, **kwargs)
+        with enable_mutability():
+            out = f(*args, **kwargs)
+
+        def get_modules(v):
+            modules = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
+            modules = [m for m in modules if isinstance(m, Module)]
+            return modules
+
+        from .transforms import scan_bugs
+
+        [scan_bugs(m) for m in get_modules(out)]
+        return out
 
     return _f

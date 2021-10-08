@@ -3,6 +3,7 @@ import jmp
 import pax
 
 
+@pax.pure
 def test_mutate_new_module_list():
     a = pax.nn.Linear(3, 3)
 

@@ -24,6 +24,7 @@ def test_wrap_unwrap_mixed_precision():
     assert fff(x).dtype == full  # type: ignore
 
 
+@pax.pure
 def test_sequential_mixed_precision():
     f = pax.nn.Sequential(
         pax.nn.Linear(3, 3),
@@ -51,6 +52,7 @@ def test_sequential_mixed_precision():
     assert y.dtype == half
 
 
+@pax.pure
 def test_change_internal_state():
     class M(pax.Module):
         counter: jnp.ndarray
@@ -122,6 +124,7 @@ def test_wrap_wrap_mixed_precision():
         f = pax.apply_mp_policy(f, mp_policy=my_policy)
 
 
+@pax.pure
 def test_mixed_precision_clone():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
@@ -133,6 +136,7 @@ def test_mixed_precision_clone():
     assert "new_fc" not in ff._pax.name_to_kind
 
 
+@pax.pure
 def test_mixed_precision_unwrap_clone():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
@@ -191,6 +195,7 @@ def test_mp_call_staticmethod():
         y = m.t(x)
 
 
+@pax.pure
 def test_mp_call_function():
     class M(pax.Module):
         def __init__(self):

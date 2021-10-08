@@ -7,8 +7,8 @@ which is under MIT License.
 
 import functools
 import inspect
-from copy import deepcopy
 from collections import OrderedDict
+from copy import deepcopy
 from enum import Enum
 from types import MappingProxyType
 from typing import (
@@ -31,6 +31,7 @@ import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
 
+from .ctx import enable_mutability
 from .ctx import state as ctx_state
 
 T = TypeVar("T", bound="Module")
@@ -73,12 +74,13 @@ class ModuleMetaclass(type):
     """Metaclass for `Module`."""
 
     def __call__(cls: Type[T], *args, **kwargs) -> T:
-        module = cls.__new__(cls, *args, **kwargs)  # type: ignore
-        cls.__init__(module, *args, **kwargs)
-        module.find_and_register_submodules()
-        # scan module after initialization for potential bugs
-        module._scan_fields(module.__dict__)
-        return module
+        with enable_mutability():
+            module = cls.__new__(cls, *args, **kwargs)  # type: ignore
+            cls.__init__(module, *args, **kwargs)
+            module.find_and_register_submodules()
+            # scan module after initialization for potential bugs
+            module._scan_fields(module.__dict__)
+            return module
 
 
 class Module(object, metaclass=ModuleMetaclass):
@@ -121,10 +123,19 @@ class Module(object, metaclass=ModuleMetaclass):
     def name(self) -> Optional[str]:
         return self._pax.name
 
+    def _assert_mutability(self):
+        if not ctx_state._enable_mutability:
+            raise ValueError(
+                "Cannot modify a module in immutable mode. "
+                "Please do this computation inside a @pax.pure function."
+            )
+
     def _update_name_to_kind_dict(self, name: str, value):
         """Update the `_name_to_kind` dictionary.
 
         Create a new dictionary and wrap it with `MappingProxyType` to avoid side effects."""
+        self._assert_mutability()
+
         new_dict = OrderedDict(self._pax.name_to_kind)
         new_dict[name] = value
         new_info = self._pax._replace(name_to_kind=MappingProxyType(new_dict))
@@ -136,6 +147,7 @@ class Module(object, metaclass=ModuleMetaclass):
         - Setting `_name_to_kind` and `_training` are forbidden.
         - If `value` is a pytree of modules and `name` is not in `_name_to_kind`, its kind will be `PaxFieldKind.MODULE`.
         """
+        self._assert_mutability()
 
         if name == "_pax":
             raise ValueError(
@@ -162,6 +174,7 @@ class Module(object, metaclass=ModuleMetaclass):
         self._scan_fields(fields=(name,))
 
     def __delattr__(self, name: str) -> None:
+        self._assert_mutability()
         if name in self._pax.name_to_kind:
             raise ValueError("Cannot delete pytree attribute.")
         super().__delattr__(name)
@@ -441,6 +454,7 @@ class Module(object, metaclass=ModuleMetaclass):
 
     def update_(self: T, other: T):
         """(In-place) update module."""
+        self._assert_mutability()
         self.__dict__.update(other.__dict__)
 
     def update_parameters(self: T, params: T) -> T:
@@ -451,6 +465,7 @@ class Module(object, metaclass=ModuleMetaclass):
 
     def update_parameters_(self: T, params: T):
         """(In-place) update parameters of module."""
+        self._assert_mutability()
         new_self = self.update_parameters(params)
         self.__dict__.update(new_self.__dict__)
 

@@ -14,6 +14,7 @@ def test_list_of_mod():
     m._pax.name_to_kind["a"] == pax.PaxFieldKind.MODULE
 
 
+@pax.pure
 def test_assigned_field_an_array():
     class M(pax.Module):
         def __init__(self):

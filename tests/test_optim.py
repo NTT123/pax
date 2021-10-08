@@ -37,6 +37,7 @@ def test_optim_model_update_state():
         net, optimizer, loss = update_fn(net, optimizer, x)
 
 
+@pax.pure
 def test_sgd():
     class SGD(pax.Module):
         velocity: pax.Module

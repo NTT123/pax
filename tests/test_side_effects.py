@@ -3,6 +3,7 @@ import jax.numpy as jnp
 import pax
 
 
+@pax.pure
 def test_jit_side_effect():
     class M(pax.Module):
         def __init__(self):
@@ -33,6 +34,7 @@ def test_jit_side_effect():
     assert m.counter == 2
 
 
+@pax.pure
 def test_grad_side_effect():
     class M(pax.Module):
         def __init__(self):
@@ -66,6 +68,7 @@ def test_grad_side_effect():
     assert aux == 1
 
 
+@pax.pure
 def test_value_and_grad_side_effect():
     class M(pax.Module):
         def __init__(self):

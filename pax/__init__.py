@@ -25,7 +25,7 @@ from pax._src.utils import (
     build_update_fn,
     dropout,
     grad_parameters,
-    no_side_effects,
+    pure,
     scan,
 )
 
@@ -51,9 +51,9 @@ __all__ = [
     "nets",
     "next_rng_key",
     "nn",
-    "no_side_effects",
     "PaxFieldKind",
     "pmap_",
+    "pure",
     "scan_bugs",
     "scan",
     "seed_rng_key",

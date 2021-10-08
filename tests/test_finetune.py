@@ -28,6 +28,7 @@ def test_finetune():
 
     net = MLP([10, 2, 2, 2, 10])
 
+    @pax.pure
     def loss_fn(params: MLP, model: MLP, x):
         model = pax.update_parameters(model, params=params)
         y = model(x)

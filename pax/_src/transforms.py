@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import jmp
 
 from .module import Module, PaxFieldKind
-from .utils import EmptyNode
+from .utils import EmptyNode, pure
 
 TreeDef = Any
 
@@ -33,6 +33,7 @@ def forward(mod: T, *inputs, params=None, **kwinputs) -> Tuple[T, Any]:
     return mod, output
 
 
+@pure
 def enable_train_mode(mod: T) -> T:
     """Return a module in training mode."""
 
@@ -43,6 +44,7 @@ def enable_train_mode(mod: T) -> T:
     return mod.apply(_train_apply_fn)
 
 
+@pure
 def enable_eval_mode(mod: T) -> T:
     """Return a module in evaluation mode."""
 
@@ -82,6 +84,7 @@ def unfreeze_parameters(mod: T, *, origin: T) -> T:
     return jax.tree_unflatten(tree_def, leaves)
 
 
+@pure
 def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
     """Select leaves of kind ``kind`` while setting all other leaves to ``None``.
 
@@ -128,6 +131,7 @@ def scan_bugs(mod: T) -> T:
     return mod.apply(_scan_apply_fn)
 
 
+@pure
 def transform_gradients(grads: T, optimizer: O, *, params: T) -> Tuple[T, O]:
     """Transform gradients to updates using an optimizer.
 

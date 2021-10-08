@@ -41,6 +41,7 @@ def test_perf_resnet200_flatten_unflatten():
     assert iters_per_second > 100
 
 
+@pax.pure
 def test_perf_flattenmodule_resnet200_flatten_unflatten():
 
     x = jax.random.normal(jax.random.PRNGKey(42), (1, 3, 64, 64))

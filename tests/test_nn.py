@@ -21,6 +21,7 @@ import pytest
 #     assert y.shape == (1, 10, 3)
 
 
+@pax.pure
 def test_batchnorm1D_train():
     bn = pax.nn.BatchNorm1D(3, True, True, 0.9)
     bn = pax.enable_train_mode(bn)
@@ -33,6 +34,7 @@ def test_batchnorm1D_train():
     assert y.shape == (1, 10, 3)
 
 
+@pax.pure
 def test_batchnorm2D_train():
     bn = pax.nn.BatchNorm2D(3, True, True, 0.9)
     bn = pax.enable_train_mode(bn)
@@ -770,6 +772,7 @@ def test_native_conv1d_transpose_4():
     np.testing.assert_allclose(y, hk_y)
 
 
+@pax.pure
 def test_dropout():
     drop = pax.nn.Dropout(0.9)
     rng_key = jax.random.PRNGKey(42)
@@ -863,6 +866,7 @@ def test_sequential_get_set_item():
     assert a[0] == fc1
 
 
+@pax.pure
 def test_apply_mutate_no_side_effect():
     a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(4, 4))
 
@@ -875,7 +879,7 @@ def test_apply_mutate_no_side_effect():
     assert hasattr(b[0], "test__")
 
 
-def test_new_method_no_side_effects():
+def test_new_method_mutate():
     init_fn = pax.nn.Linear.__init__
     a = pax.nn.Linear(1, 1)
     b = pax.nn.Linear(2, 2)
