@@ -4,6 +4,7 @@ import jax.numpy as jnp
 import opax
 import pax
 from opax import GradientTransformation
+from pax import no_side_effects
 
 pax.seed_rng_key(42)
 
@@ -31,8 +32,9 @@ class Linear(pax.Module):
         return x
 
 
+@no_side_effects
 def loss_fn(model, x, y):
-    model, y_hat = model(x, return_self=True)
+    y_hat = model(x)
     loss = jnp.mean(jnp.square(y_hat - y))
     return loss, (loss, model)
 
@@ -40,9 +42,7 @@ def loss_fn(model, x, y):
 @jax.jit
 def train_step(model: Linear, optimizer: GradientTransformation, x, y):
     grads, (loss, model) = jax.grad(loss_fn, has_aux=True, allow_int=True)(model, x, y)
-    optimizer, updates = optimizer(
-        grads.parameters(), model.parameters(), return_self=True
-    )
+    updates = optimizer(grads.parameters(), model.parameters())
     new_params = pax.apply_updates(model.parameters(), updates=updates)
     print(new_params._pax)
     model = model.update_parameters(new_params)

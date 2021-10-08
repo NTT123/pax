@@ -68,75 +68,9 @@ class PaxModuleInfo(NamedTuple):
 
 M = TypeVar("M")
 
-# Inspired by dm-haiku `wrap_method`.
-def wrap_method(method_name, unbound_method):
-    from .ctx import enable_deep_copy
-
-    @functools.wraps(unbound_method)
-    def wrapped(self: T, *args, return_self: bool = False, **kwargs):
-        if return_self == False:
-            f = functools.partial(unbound_method, self)
-            out = f(*args, **kwargs)
-            return out
-        else:
-            with enable_deep_copy():
-                mod = self.copy()
-            f = functools.partial(unbound_method, mod)
-            out = f(*args, **kwargs)
-            with enable_deep_copy():
-                mod = mod.copy()
-            return mod, out
-
-    return wrapped
-
-
-M = TypeVar("M")
-
 
 class ModuleMetaclass(type):
     """Metaclass for `Module`."""
-
-    def __new__(  # pylint: disable=bad-classmethod-argument
-        mcs: Type[Type[M]],
-        name: str,
-        bases: Tuple[Type[Any], ...],
-        clsdict: Dict[str, Any],
-    ) -> Type[M]:
-
-        method_names = []
-
-        for key, value in clsdict.items():
-            if key in [
-                "apply",
-                "copy",
-                "eval",
-                "find_and_register_submodules",
-                "frozen",
-                "parameters",
-                "submodules",
-                "summary",
-                "train",
-                "tree_flatten",
-                "tree_unflatten",
-                "unfrozen",
-                "update_parameters",
-            ]:
-                continue
-            if key.startswith("__") and key != "__call__":
-                continue
-            elif isinstance(value, property):
-                print(key)
-                raise ValueError("Properties are not supported by Pax's Module.")
-            elif inspect.isfunction(value):
-                method_names.append(key)
-
-        cls = super(ModuleMetaclass, mcs).__new__(mcs, name, bases, clsdict)
-
-        for method_name in method_names:
-            method = getattr(cls, method_name)
-            method = wrap_method(method_name, method)
-            setattr(cls, method_name, method)
-        return cls
 
     def __call__(cls: Type[T], *args, **kwargs) -> T:
         module = cls.__new__(cls, *args, **kwargs)  # type: ignore
