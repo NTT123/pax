@@ -1,4 +1,4 @@
-"""Pax module.
+"""PAX module.
 
 Note: This file is originated from 
 https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
@@ -54,7 +54,7 @@ class PaxFieldKind(Enum):
 
 
 class PaxModuleInfo(NamedTuple):
-    """Pax Internal Data Structure."""
+    """PAX Internal Data Structure."""
 
     name: Optional[str]
     training: bool
@@ -125,7 +125,7 @@ class Module(object, metaclass=ModuleMetaclass):
         if not ctx_state._enable_mutability:
             raise ValueError(
                 "Cannot modify a module in immutable mode. "
-                "Please do this computation inside a @pax.pure function."
+                "Please do this computation inside a function decorated by `pax.pure`."
             )
 
     def _update_name_to_kind_dict(self, name: str, value):
@@ -149,7 +149,7 @@ class Module(object, metaclass=ModuleMetaclass):
 
         if name == "_pax":
             raise ValueError(
-                f"{name} is a reserved attribute for Pax internal mechanisms."
+                f"{name} is a reserved attribute for PAX internal mechanisms."
             )
 
         kind = self._pax.name_to_kind.get(name, PaxFieldKind.OTHERS)

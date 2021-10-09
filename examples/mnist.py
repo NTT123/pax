@@ -47,6 +47,7 @@ class ConvNet(pax.Module):
         return jnp.squeeze(x, (1, 2))
 
 
+@pax.pure
 def loss_fn(model: ConvNet, batch: Batch):
     x = batch["image"].astype(jnp.float32) / 255
     target = batch["label"]

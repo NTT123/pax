@@ -12,6 +12,7 @@ from data_loader import data_loader
 from model import WaveGRU
 
 
+@pax.pure
 def loss_fn(model: WaveGRU, inputs):
     logmel, wav = inputs
     input_wav = wav[:, :-1]

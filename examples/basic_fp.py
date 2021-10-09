@@ -1,4 +1,4 @@
-"""Pax and functional programming."""
+"""PAX and functional programming."""
 import jax
 import jax.numpy as jnp
 import opax

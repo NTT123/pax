@@ -1,7 +1,7 @@
-Pax Basics
+PAX Basics
 ==========
 
-Pax's Module
+PAX's Module
 ------------
 
 .. currentmodule:: pax
@@ -27,7 +27,7 @@ Make a function pure by cloning its inputs.
 This guarantees that any modifications on the clone inputs does not affect
 the original inputs.
 
-Only functions that wrapped by `pax.pure` are allowed to modify Pax's Modules.
+Only functions that wrapped by `pax.pure` are allowed to modify PAX's Modules.
 
 Example:
 
@@ -265,7 +265,7 @@ Module Transformations
 
 .. currentmodule:: pax
 
-A module transformation is a pure function that inputs Pax's modules and outputs Pax's modules.
+A module transformation is a pure function that inputs PAX's modules and outputs PAX's modules.
 
 .. autosummary::
 

@@ -47,7 +47,8 @@ def grad_parameters(
 
     Example:
 
-    >>> def loss_fn(model: pax.nn.Linear, x, y):
+    >>> @pax.pure
+    ... def loss_fn(model: pax.nn.Linear, x, y):
     ...     y_hat = model(x)
     ...     loss = jnp.mean(jnp.square(y - y_hat))
     ...     return loss, (loss, model)
@@ -67,7 +68,7 @@ def grad_parameters(
 
     def grad_fn(mod: T, *args, **kwargs) -> Tuple[T, C]:
         if not isinstance(mod, Module):
-            raise ValueError("Expecting a Pax's Module at the first argument.")
+            raise ValueError("Expecting a PAX's Module at the first argument.")
 
         out = _grad_fn(mod.parameters(), mod, *args, **kwargs)
         return out

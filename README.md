@@ -4,7 +4,8 @@
 
 [**Introduction**](#introduction)
 | [**Getting started**](#gettingstarted)
-| [**Pax and others**](#paxandfriends)
+| [**Functional programming**](#functional)
+| [**PAX and others**](#paxandfriends)
 | [**Examples**](https://github.com/ntt123/pax/tree/main/examples/)
 | [**Modules**](#modules)
 | [**Optimizers**](#optimizers)
@@ -18,7 +19,7 @@
 
 ## Introduction<a id="introduction"></a>
 
-``Pax`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The central object of `Pax` is a `pax.Module`.
+``PAX`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The central object of `PAX` is a `pax.Module`.
 
 A  `pax.Module` has two sides:
 
@@ -56,6 +57,7 @@ class Counter(pax.Module):
         self.counter = self.counter + 1
         return self.counter * x + self.bias
 
+@pax.pure
 def loss_fn(model: Counter, x: jnp.ndarray):
     y = model(x)
     loss = jnp.mean(jnp.square(x - y))
@@ -74,28 +76,77 @@ There are a few important things in the above example:
 
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
+* ``loss_fn`` is decorated by `pax.pure`.
 * ``loss_fn`` returns the updated `model` in its output.
 * ``allow_int=True`` to compute gradients with respect to ``model`` which contains integer ``ndarray`` leaves.
 
-## Pax and other libraries <a id="paxandfriends"></a>
+## PAX functional programming<a id="functional"></a>
 
-Pax module has several methods that are similar to Pytorch. 
+First, let's call a function, PAX function, if its inputs or its outputs contains PAX modules.
+
+> It is a good practice to make sure PAX functions have no side effects. This adheres to JAX functional programming style.
+
+Even though PAX modules are stateful objects, the modifications of PAX module's internal states are restricted. 
+Only functions decorated by `pax.pure` are allowed to modify PAX modules.
+
+```python
+net = Counter(3)
+net.counter += 1
+# ...
+# ValueError: Cannot modify a module in immutable mode. Please do this computation inside a function decorated by `pax.pure`.
+```
+
+Furthermore, to guaratee no side effects, a function decorated by `pax.pure` will use  inputs instead of its original inputs. Any modification on the cloned inputs will not affect the original inputs.
+
+
+```python
+@pax.pure
+def update_counter_wo_return(m: Counter):
+    m.counter += 1
+
+print(net.counter)
+# 3
+update_counter_wo_return(net)
+print(net.counter) # the same counter
+# 3
+```
+   
+As a consequence, the only way to *update* input modules is to return the updated modules
+in the output.
+
+```python
+@pax.pure
+def update_counter(m: Counter):
+    m.counter += 1
+    return m
+
+print(net.counter)
+# 3
+net = update_counter(net)
+print(net.counter) # increase by 1
+# 4
+```
+
+
+## PAX and other libraries <a id="paxandfriends"></a>
+
+PAX module has several methods that are similar to Pytorch. 
 
 - ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameter.
 - ``self.apply(func)`` applies ``func`` on all modules of ``self`` recursively.
 - ``self.train()`` and ``self.eval()`` returns a new module in ``train/eval`` mode.
 
-Pax learns a lot from other libraries too:
-- Pax borrows the idea that _a module is also a pytree_ from [treex] and [equinox]. 
-- Pax uses the concept of _trainable parameters_ and _non-trainable states_ from [dm-haiku].
-- Pax uses [objax]'s approach to implement optimizers as modules. 
-- Pax uses [jmp] library for supporting mixed precision. 
-- And of course, Pax is heavily influenced by [jax] functional programming approach.
+PAX learns a lot from other libraries too:
+- PAX borrows the idea that _a module is also a pytree_ from [treex] and [equinox]. 
+- PAX uses the concept of _trainable parameters_ and _non-trainable states_ from [dm-haiku].
+- PAX uses [objax]'s approach to implement optimizers as modules. 
+- PAX uses [jmp] library for supporting mixed precision. 
+- And of course, PAX is heavily influenced by [jax] functional programming approach.
 
 
 ## Examples<a id="examples"></a>
 
-A good way to learn about ``Pax`` is to see examples in the [examples/](./examples) directory:
+A good way to learn about ``PAX`` is to see examples in the [examples/](./examples) directory:
 
 
 | Path     |      Description      |
@@ -115,7 +166,7 @@ A good way to learn about ``Pax`` is to see examples in the [examples/](./exampl
 
 ## Modules<a id="modules"></a>
 
-At the moment, Pax includes: 
+At the moment, PAX includes: 
 
 * ``pax.nn.Embed``,
 * ``pax.nn.Linear``, 
@@ -128,15 +179,15 @@ We intent to add new modules in the near future.
 
 ## Optimizers<a id="optimizers"></a>
 
-Pax has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's github repository for more information. 
+PAX has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's github repository for more information. 
 
 
 ## Module transformations<a id="transformations"></a>
 
-A module transformation is a pure function that inputs Pax's modules and outputs Pax's modules.
-A Pax program can be seen as a series of module transformations.
+A module transformation is a pure function that inputs PAX's modules and outputs PAX's modules.
+A PAX program can be seen as a series of module transformations.
 
-Pax provides several module transformations:
+PAX provides several module transformations:
 
 - `pax.select_{parameters,states}`: select parameter/state leaves.
 - `pax.apply_gradients`: update model & optimizer using gradients.
@@ -148,7 +199,7 @@ Pax provides several module transformations:
 
 ## Fine-tunning models<a id="finetune"></a>
 
-Pax's Module provides the ``pax.freeze_parameters`` transformation to convert all trainable parameters to non-trainable states.
+PAX's Module provides the ``pax.freeze_parameters`` transformation to convert all trainable parameters to non-trainable states.
 
 ```python
 net = pax.nn.Sequential(
