@@ -388,5 +388,5 @@ def test_module_list_contains_int():
 
 def test_append_module_list():
     n = pax.nn.Sequential(pax.nn.Linear(3, 3))
-    n.modules.append(pax.nn.Linear(4, 4))
+    n.replace(modules=n.modules + (pax.nn.Linear(4, 4),))
     pax.scan_bugs(n)

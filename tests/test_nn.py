@@ -861,7 +861,7 @@ def test_sequential_get_set_item():
     fc3 = pax.nn.Linear(2, 1)
     a = pax.nn.Sequential(fc1, jax.nn.relu, fc2)
     assert a[-1] == fc2
-    a[-1] = fc3
+    a = a.set(-1, fc3)
     assert a[-1] == fc3
     assert a[0] == fc1
 

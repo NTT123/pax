@@ -467,3 +467,11 @@ class Module(object, metaclass=ModuleMetaclass):
             if name not in self._pax.name_to_kind:
                 if all_module_leaves(value):
                     self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
+
+    def replace(self: T, **kwargs) -> T:
+        mod = self
+        for name, value in kwargs.items():
+            mod = mod.copy()
+            assert hasattr(mod, name)
+            mod.__dict__[name] = value
+        return mod

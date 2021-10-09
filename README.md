@@ -87,7 +87,7 @@ Only PAX functions decorated by `pax.pure` are allowed to modify PAX modules.
 
 ```python
 net = Counter(3)
-net.counter += 1
+net(0)
 # ...
 # ValueError: Cannot modify a module in immutable mode.
 # Please do this computation inside a function decorated by `pax.pure`.
@@ -99,7 +99,7 @@ Furthermore, a decorated function can only access the copy of its of inputs. Any
 ```python
 @pax.pure
 def update_counter_wo_return(m: Counter):
-    m.counter += 1
+    m(0)
 
 print(net.counter)
 # 3
@@ -113,7 +113,7 @@ As a consequence, the only way to *update* an input module is to return it in th
 ```python
 @pax.pure
 def update_counter(m: Counter):
-    m.counter += 1
+    m(0)
     return m
 
 print(net.counter)
@@ -205,7 +205,7 @@ net = pax.nn.Sequential(
 )
 
 net = pax.freeze_parameters(net) 
-net[-1] = pax.nn.Linear(64, 2)
+net = net.set(-1, pax.nn.Linear(64, 2))
 ```
 
 After this, ``net.parameters()`` will only return trainable parameters of the last layer.
