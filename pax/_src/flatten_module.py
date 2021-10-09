@@ -5,6 +5,7 @@ import jax
 import jax.numpy as jnp
 
 from .module import Module
+from .pure import pure
 
 TreeDef = Any
 
@@ -61,7 +62,13 @@ class flatten_module(Module, Generic[T]):
         """Recreate the original module, then call it."""
         module = self.unflatten()
         assert callable(module), "Expecting a callable module." ""
-        out = module(*args, **kwargs)
+
+        @pure
+        def _run(module):
+            out = module(*args, **kwargs)
+            return module, out
+
+        module, out = _run(module)
 
         states_leaves, _ = jax.tree_flatten(select_states(module))
         self.states_leaves = states_leaves
@@ -70,3 +77,9 @@ class flatten_module(Module, Generic[T]):
     def __repr__(self) -> str:
         s = self.unflatten().__repr__()
         return f"Flatten({s})"
+
+    def eval(self: T) -> T:
+        raise RuntimeError("Not supported for a flatten module.")
+
+    def train(self: T) -> T:
+        raise RuntimeError("Not supported for a flatten module.")

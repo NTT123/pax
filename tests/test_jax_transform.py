@@ -36,8 +36,7 @@ def test_grad_deepscan():
     m = M()
     x = jnp.zeros((1, 2))
     m.__dict__["fc1"] = pax.nn.Linear(2, 2)
-    with pytest.raises(ValueError):
-        y = jax.grad(loss_fn, has_aux=True)(pax.select_parameters(m), m, x)
+    y = jax.grad(loss_fn, has_aux=True)(pax.select_parameters(m), m, x)
 
 
 def test_loss_fn_no_return_model():

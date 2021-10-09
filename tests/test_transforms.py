@@ -3,14 +3,19 @@ import jmp
 import pax
 
 
-@pax.pure
 def test_mutate_new_module_list():
     a = pax.nn.Linear(3, 3)
 
     b = a.copy()
-    b.lst = []
-    b.lst.append(pax.nn.Linear(4, 4))
-    b.find_and_register_submodules()
+
+    @pax.pure
+    def _mutate(b):
+        b.lst = []
+        b.lst.append(pax.nn.Linear(4, 4))
+        b.find_and_register_submodules()
+        return b
+
+    b = _mutate(b)
 
     assert b._pax.name_to_kind["lst"] == pax.PaxFieldKind.MODULE
 

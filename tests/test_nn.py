@@ -21,26 +21,34 @@ import pytest
 #     assert y.shape == (1, 10, 3)
 
 
-@pax.pure
 def test_batchnorm1D_train():
     bn = pax.nn.BatchNorm1D(3, True, True, 0.9)
     bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 3))
     old_state = bn.ema_mean.averages
-    y = bn(x)
+
+    @pax.pure
+    def _run(bn):
+        return bn(x)
+
+    y = _run(bn)
     new_state = bn.ema_mean.averages
     chex.assert_tree_all_equal_shapes(old_state, new_state)
     chex.assert_tree_all_finite(new_state)
     assert y.shape == (1, 10, 3)
 
 
-@pax.pure
 def test_batchnorm2D_train():
     bn = pax.nn.BatchNorm2D(3, True, True, 0.9)
     bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 8, 3))
     old_state = bn.scale
-    y = bn(x)
+
+    @pax.pure
+    def _run(bn):
+        return bn(x)
+
+    y = _run(bn)
     new_state = bn.scale
     chex.assert_tree_all_equal_shapes(old_state, new_state)
     chex.assert_tree_all_finite(new_state)
@@ -772,7 +780,6 @@ def test_native_conv1d_transpose_4():
     np.testing.assert_allclose(y, hk_y)
 
 
-@pax.pure
 def test_dropout():
     drop = pax.nn.Dropout(0.9)
     rng_key = jax.random.PRNGKey(42)
@@ -781,11 +788,21 @@ def test_dropout():
     y = drop(x)
     assert y is x
     drop = pax.enable_train_mode(drop)
-    y = drop(x)
+
+    @pax.pure
+    def _run(drop):
+        return drop(x)
+
+    y = _run(drop)
     assert jnp.sum(y == 0).item() > 80
 
     x = jnp.ones_like(x)
-    y = drop(x)
+
+    @pax.pure
+    def _run(drop):
+        return drop(x)
+
+    y = _run(drop)
     assert jnp.max(y).item() == 10.0
 
     with pytest.raises(AssertionError):
@@ -866,10 +883,10 @@ def test_sequential_get_set_item():
     assert a[0] == fc1
 
 
-@pax.pure
 def test_apply_mutate_no_side_effect():
     a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(4, 4))
 
+    @pax.pure
     def f(mod):
         mod.test__ = 123
         return mod

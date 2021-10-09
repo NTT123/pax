@@ -7,6 +7,7 @@ import jax.numpy as jnp
 import jmp
 
 from . import ctx
+from .pure import pure
 from .module import Module
 
 TreeDef = Any
@@ -88,7 +89,12 @@ class apply_mp_policy(Module, Generic[T]):
 
             casted_mod_clone = mod.copy()
             # task 2
-            output = f(mod, *casted_args, **casted_kwargs)
+            @pure
+            def _run(mod):
+                output = f(mod, *casted_args, **casted_kwargs)
+                return mod, output
+
+            mod, output = _run(mod)
 
             # task 3
             if jax.tree_structure(mod) != jax.tree_structure(old_mod_clone):
@@ -109,7 +115,7 @@ class apply_mp_policy(Module, Generic[T]):
 
             # `mod` has the same pytree structure as `self._module`,
             # therefore, this is safe.
-            with ctx.enable_mutability():
+            with ctx.allow_mutation(self):
                 self._module = mod
 
             # task 4

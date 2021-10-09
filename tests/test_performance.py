@@ -41,14 +41,18 @@ def test_perf_resnet200_flatten_unflatten():
     assert iters_per_second > 100
 
 
-@pax.pure
 def test_perf_flattenmodule_resnet200_flatten_unflatten():
 
     x = jax.random.normal(jax.random.PRNGKey(42), (1, 3, 64, 64))
     f = pax.nets.ResNet200(3, 100)
-    y = f(x)
-    f = pax.flatten_module(f)
-    y1 = f(x)
+    y = f.eval()(x)
+    f = pax.flatten_module(f.eval())
+
+    @pax.pure
+    def _run(f):
+        return f(x)
+
+    y1 = _run(f)
 
     np.testing.assert_array_equal(y, y1)
 

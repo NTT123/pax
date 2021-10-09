@@ -24,7 +24,6 @@ def test_wrap_unwrap_mixed_precision():
     assert fff(x).dtype == full  # type: ignore
 
 
-@pax.pure
 def test_sequential_mixed_precision():
     f = pax.nn.Sequential(
         pax.nn.Linear(3, 3),
@@ -48,11 +47,15 @@ def test_sequential_mixed_precision():
 
     f_mp = f.apply(policy_fn)
     x = jnp.zeros((32, 5, 5, 3))
-    y = f_mp(x)
+
+    @pax.pure
+    def run(f_mp):
+        return f_mp(x)
+
+    y = run(f_mp)
     assert y.dtype == half
 
 
-@pax.pure
 def test_change_internal_state():
     class M(pax.Module):
         counter: jnp.ndarray
@@ -124,19 +127,22 @@ def test_wrap_wrap_mixed_precision():
         f = pax.apply_mp_policy(f, mp_policy=my_policy)
 
 
-@pax.pure
 def test_mixed_precision_clone():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
 
-    f.new_fc = pax.nn.Linear(1, 1)
+    @pax.pure
+    def _mutate(f):
+        f.new_fc = pax.nn.Linear(1, 1)
+        return f
+
+    f = _mutate(f)
 
     assert "new_fc" not in ff._pax.name_to_kind
 
 
-@pax.pure
 def test_mixed_precision_unwrap_clone():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
@@ -144,7 +150,11 @@ def test_mixed_precision_unwrap_clone():
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
     f = ff.unwrap_mixed_precision()
 
-    f.new_fc = pax.nn.Linear(1, 1)
+    @pax.pure
+    def _mutate(f):
+        f.new_fc = pax.nn.Linear(1, 1)
+
+    f = _mutate(f)
 
     assert "new_fc" not in ff._pax.name_to_kind
 
@@ -195,7 +205,6 @@ def test_mp_call_staticmethod():
         y = m.t(x)
 
 
-@pax.pure
 def test_mp_call_function():
     class M(pax.Module):
         def __init__(self):
@@ -205,7 +214,12 @@ def test_mp_call_function():
     m = M()
     x = jnp.zeros((3, 3))
 
-    m.q = lambda x: x
+    @pax.pure
+    def _mutate(m):
+        m = m.q = lambda x: x
+        return m
+
+    m = _mutate(m)
 
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
     m = apply_mp_policy(m, mp_policy=my_policy)

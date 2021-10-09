@@ -29,7 +29,7 @@ import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
 
-from .ctx import enable_mutability
+from .ctx import allow_mutation
 from .ctx import state as ctx_state
 
 T = TypeVar("T", bound="Module")
@@ -72,8 +72,8 @@ class ModuleMetaclass(type):
     """Metaclass for `Module`."""
 
     def __call__(cls: Type[T], *args, **kwargs) -> T:
-        with enable_mutability():
-            module = cls.__new__(cls, *args, **kwargs)  # type: ignore
+        module = cls.__new__(cls, *args, **kwargs)  # type: ignore
+        with allow_mutation(module):
             cls.__init__(module, *args, **kwargs)
             module.find_and_register_submodules()
             # scan module after initialization for potential bugs
@@ -122,7 +122,7 @@ class Module(object, metaclass=ModuleMetaclass):
         return self._pax.name
 
     def _assert_mutability(self):
-        if not ctx_state._enable_mutability:
+        if id(self) not in [id(x) for x in ctx_state._mutable_module_list]:
             raise ValueError(
                 "Cannot modify a module in immutable mode.\n"
                 "Please do this computation inside a function decorated by `pax.pure`."
@@ -152,8 +152,6 @@ class Module(object, metaclass=ModuleMetaclass):
                 f"{name} is a reserved attribute for PAX internal mechanisms."
             )
 
-        kind = self._pax.name_to_kind.get(name, PaxFieldKind.OTHERS)
-
         super().__setattr__(name, value)
 
         # If `value` contains Module's instances only, it is registered as MODULE.
@@ -169,12 +167,13 @@ class Module(object, metaclass=ModuleMetaclass):
         ):
             self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
 
+        # scan the new field for bugs.
         self._scan_fields(fields=(name,))
 
     def __delattr__(self, name: str) -> None:
         self._assert_mutability()
         if name in self._pax.name_to_kind:
-            raise ValueError("Cannot delete pytree attribute.")
+            raise ValueError("Cannot delete a pytree attribute.")
         super().__delattr__(name)
 
     def register_parameter(self, name: str, value: Any):
@@ -253,7 +252,8 @@ class Module(object, metaclass=ModuleMetaclass):
 
     def copy(self: T) -> T:
         """Return a copy of current module."""
-        return jax.tree_map(lambda x: x, self)
+        leaves, treedef = jax.tree_flatten(self)
+        return jax.tree_unflatten(treedef, leaves)
 
     def submodules(self) -> List["Module"]:
         """Return a list of submodules."""
@@ -263,26 +263,24 @@ class Module(object, metaclass=ModuleMetaclass):
             if kind == PaxFieldKind.MODULE
         ]
 
-        submods, _ = jax.tree_flatten(
-            module_subtrees, is_leaf=lambda x: isinstance(x, Module)
-        )
-        return [module for module in submods if isinstance(module, Module)]
+        is_module = lambda x: isinstance(x, Module)
+        submods, _ = jax.tree_flatten(module_subtrees, is_leaf=is_module)
+        return [v for v in submods if is_module(v)]
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         """This is the default summary method.
-
-        A module can customize its summary by overriding this method.
 
         Arguments:
             return_list: return a list of lines instead of a joined string.
 
 
         Example:
-            >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
-            Sequential
-            ├── Linear[in_dim=2, out_dim=3, with_bias=True]
-            ├── x => relu(x)
-            └── Linear[in_dim=3, out_dim=4, with_bias=True]
+
+        >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
+        Sequential
+        ├── Linear[in_dim=2, out_dim=3, with_bias=True]
+        ├── x => relu(x)
+        └── Linear[in_dim=3, out_dim=4, with_bias=True]
         """
 
         output = [self.__repr__()]
@@ -417,6 +415,10 @@ class Module(object, metaclass=ModuleMetaclass):
 
     def __eq__(self, o: object) -> bool:
         """Compare two modules."""
+        if id(self) == id(o):
+            return True
+        if type(self) != type(o):
+            return False
         self_leaves, self_treedef = jax.tree_flatten(self)
         o_leaves, o_treedef = jax.tree_flatten(o)
         if len(self_leaves) != len(o_leaves):

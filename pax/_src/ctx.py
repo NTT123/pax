@@ -9,7 +9,7 @@ state = threading.local()
 state._rng_key = None
 state._seed = None
 state._enable_deep_copy = False
-state._enable_mutability = False
+state._mutable_module_list = ()
 
 
 class enable_deep_copy(object):
@@ -27,16 +27,20 @@ class enable_deep_copy(object):
         state._enable_deep_copy = self.prev
 
 
-class enable_mutability(object):
+class allow_mutation(object):
     r"""A context manager that turns on mutability."""
 
-    def __init__(self):
+    def __init__(self, modules):
+        from .module import Module
+
         super().__init__()
-        self.prev = state._enable_mutability
+        if isinstance(modules, Module):
+            modules = (modules,)
+        self.mods = tuple(modules)
 
     def __enter__(self):
-        self.prev = state._enable_mutability
-        state._enable_mutability = True
+        self.prev = state._mutable_module_list
+        state._mutable_module_list = self.mods + state._mutable_module_list
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
-        state._enable_mutability = self.prev
+        state._mutable_module_list = self.prev

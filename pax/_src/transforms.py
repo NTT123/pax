@@ -8,7 +8,8 @@ import jax.numpy as jnp
 import jmp
 
 from .module import Module, PaxFieldKind
-from .utils import EmptyNode, pure
+from .pure import pure
+from .utils import EmptyNode
 
 TreeDef = Any
 
@@ -17,23 +18,6 @@ K = TypeVar("K", bound=Module)
 O = TypeVar("O", bound=Module)
 
 
-def forward(mod: T, *inputs, params=None, **kwinputs) -> Tuple[T, Any]:
-    """Execute the forward pass and return the updated module.
-
-    Arguments:
-        mod: The module to be executed.
-        params: Use parameters in `params` if not ``None``.
-    """
-    assert callable(mod), "Expecting a callable module." ""
-    mod = mod.copy()
-    if params is not None:
-        mod = update_parameters(mod, params=params)
-
-    output = mod(*inputs, **kwinputs)
-    return mod, output
-
-
-@pure
 def enable_train_mode(mod: T) -> T:
     """Return a module in training mode."""
 
@@ -44,7 +28,6 @@ def enable_train_mode(mod: T) -> T:
     return mod.apply(_train_apply_fn)
 
 
-@pure
 def enable_eval_mode(mod: T) -> T:
     """Return a module in evaluation mode."""
 
@@ -84,7 +67,6 @@ def unfreeze_parameters(mod: T, *, origin: T) -> T:
     return jax.tree_unflatten(tree_def, leaves)
 
 
-@pure
 def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
     """Select leaves of kind ``kind`` while setting all other leaves to ``None``.
 
@@ -103,7 +85,7 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
             if v in none_list:
                 value = getattr(mod, k)
                 none_v = jax.tree_map(lambda _: EmptyNode(), value)
-                setattr(mod, k, none_v)
+                mod.__dict__[k] = none_v
         return mod
 
     return mod.apply(_select_apply_fn)
@@ -128,7 +110,8 @@ def scan_bugs(mod: T) -> T:
         mod._scan_fields(mod.__dict__)
         return mod
 
-    return mod.apply(_scan_apply_fn)
+    mod.apply(_scan_apply_fn)
+    return mod
 
 
 @pure
@@ -147,7 +130,6 @@ def transform_gradients(grads: T, optimizer: O, *, params: T) -> Tuple[T, O]:
         - **optimizer** : The *updated* optimizer.
     """
     assert callable(optimizer), "Expecting a callable optimizer." ""
-    optimizer = optimizer.copy()
     updates = optimizer(grads.parameters(), params=params)
     return updates, optimizer
 

@@ -23,29 +23,6 @@ Purify a function
 
 .. currentmodule:: pax
 
-Make a function pure by cloning its inputs. 
-This guarantees that any modifications on the clone inputs does not affect
-the original inputs.
-
-Only functions that wrapped by `pax.pure` are allowed to modify PAX's Modules.
-
-Example:
-
->>> f = pax.nn.Linear(3,3)
->>> f.a_list = []
-[...]
-ValueError: Cannot modify a module in immutable mode. Please do this computation inside a @pax.pure function.
->>> 
->>> @pax.pure
-... def add_list(m):
-...     m.a_list = []
-...     return m
-... 
->>> f = add_list(f)
->>> print(f.a_list)
-[]
-
-
 .. autofunction:: pure
 
 
