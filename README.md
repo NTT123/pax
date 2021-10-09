@@ -78,7 +78,7 @@ There are a few important things in the above example:
 
 ## PAX functional programming<a id="functional"></a>
 
-Let's call a function "PAX function" if its inputs contain PAX modules.
+Let "PAX function" mean functions whose inputs contain PAX modules.
 
 > It is a good practice to make sure PAX functions have no side effects. This adheres to JAX functional programming style.
 
