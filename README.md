@@ -5,11 +5,8 @@
 [**Introduction**](#introduction)
 | [**Getting started**](#gettingstarted)
 | [**Functional programming**](#functional)
-| [**PAX and others**](#paxandfriends)
 | [**Examples**](https://github.com/ntt123/pax/tree/main/examples/)
 | [**Modules**](#modules)
-| [**Optimizers**](#optimizers)
-| [**Transformations**](#transformations)
 | [**Fine-tuning**](#finetune)
 
 ![pytest](https://github.com/ntt123/pax/workflows/pytest/badge.svg)
@@ -96,7 +93,7 @@ net.counter += 1
 # Please do this computation inside a function decorated by `pax.pure`.
 ```
 
-Furthermore, to guaratee no side effects, a function decorated by `pax.pure` can only use copies of inputs instead of the original inputs. 
+Furthermore, to guarantee no side effects, a function decorated by `pax.pure` can only use copies of inputs instead of the original inputs. 
 Any modification on the copies will not affect the original inputs.
 
 
