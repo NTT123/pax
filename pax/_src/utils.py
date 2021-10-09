@@ -225,26 +225,37 @@ def assertStructureEqual(self: T, other: T):
         tc.assertDictEqual(vars(u), vars(v))
 
 
+def get_modules(v):
+    "Return a list of modules in the pytree `v`."
+    modules = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
+    modules = [m for m in modules if isinstance(m, Module)]
+    return modules
+
+
 def pure(f):
-    """Make sure the input modules to the function will not have any side effect."""
+    """Make sure the input modules to the function will not have any side effect.
+
+    1. Deep copy the inputs.
+    2. Return the updated modules in the outputs.
+    3. Scan for any potential bugs.
+    """
     from .ctx import enable_deep_copy
 
     @functools.wraps(f)
     def _f(*args, **kwargs):
+        from .transforms import scan_bugs
+
+        [scan_bugs(m) for m in get_modules((args, kwargs))]
+
         with enable_deep_copy():
             leaves, treedef = jax.tree_flatten((args, kwargs))
         args, kwargs = jax.tree_unflatten(treedef, leaves)
+
         with enable_mutability():
             out = f(*args, **kwargs)
 
-        def get_modules(v):
-            modules = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
-            modules = [m for m in modules if isinstance(m, Module)]
-            return modules
-
-        from .transforms import scan_bugs
-
         [scan_bugs(m) for m in get_modules(out)]
+
         return out
 
     return _f

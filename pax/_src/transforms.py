@@ -211,30 +211,6 @@ def apply_gradients(
     return new_model, new_optimizer
 
 
-def apply_gradients_(
-    model: T, optimizer: K, *, grads: T, all_finite: Optional[jnp.ndarray] = None
-):
-    """(In-place) update model and optimizer with gradients `grads`.
-
-    Arguments:
-        model: the model which contains trainable parameters.
-        optimizer: the gradient transformation.
-        grads: the gradients w.r.t to trainable parameters of `model`.
-        all_finite: True if gradients are finite. Default: `None`.
-    """
-    params = model.parameters()
-    updates, new_optimizer = transform_gradients(grads, optimizer, params=params)
-    new_params = apply_updates(params, updates=updates)
-
-    if all_finite is not None:
-        new_params, new_optimizer = jmp.select_tree(
-            all_finite, (new_params, new_optimizer), (params, optimizer)
-        )
-
-    model.update_parameters_(new_params)
-    optimizer.update_(new_optimizer)
-
-
 def update_pytree(mod: T, *, other: T) -> T:
     """Use non-EmptyNode leaves from others"""
 
