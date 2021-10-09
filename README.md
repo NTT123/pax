@@ -78,12 +78,12 @@ There are a few important things in the above example:
 
 ## PAX functional programming<a id="functional"></a>
 
-First, let's call a function, PAX function, if its inputs or its outputs contains PAX modules.
+Let's call a function "PAX function" if its inputs contain PAX modules.
 
 > It is a good practice to make sure PAX functions have no side effects. This adheres to JAX functional programming style.
 
 Even though PAX modules are stateful objects, the modifications of PAX module's internal states are restricted. 
-Only functions decorated by `pax.pure` are allowed to modify PAX modules.
+Only PAX functions decorated by `pax.pure` are allowed to modify PAX modules.
 
 ```python
 net = Counter(3)
@@ -93,8 +93,7 @@ net.counter += 1
 # Please do this computation inside a function decorated by `pax.pure`.
 ```
 
-Furthermore, to guarantee no side effects, a function decorated by `pax.pure` can only use copies of inputs instead of the original inputs. 
-Any modification on the copies will not affect the original inputs.
+Furthermore, a decorated function can only access the copy of its of inputs. Therfore, any modification on the copy will not affect the original inputs.
 
 
 ```python
