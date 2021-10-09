@@ -124,7 +124,7 @@ class Module(object, metaclass=ModuleMetaclass):
     def _assert_mutability(self):
         if not ctx_state._enable_mutability:
             raise ValueError(
-                "Cannot modify a module in immutable mode. "
+                "Cannot modify a module in immutable mode.\n"
                 "Please do this computation inside a function decorated by `pax.pure`."
             )
 

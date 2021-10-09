@@ -76,8 +76,7 @@ There are a few important things in the above example:
 
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
-* ``loss_fn`` is decorated by `pax.pure`.
-* ``loss_fn`` returns the updated `model` in its output.
+* ``loss_fn`` is decorated by `pax.pure` and it returns the updated `model` in the output.
 * ``allow_int=True`` to compute gradients with respect to ``model`` which contains integer ``ndarray`` leaves.
 
 ## PAX functional programming<a id="functional"></a>
@@ -93,10 +92,12 @@ Only functions decorated by `pax.pure` are allowed to modify PAX modules.
 net = Counter(3)
 net.counter += 1
 # ...
-# ValueError: Cannot modify a module in immutable mode. Please do this computation inside a function decorated by `pax.pure`.
+# ValueError: Cannot modify a module in immutable mode.
+# Please do this computation inside a function decorated by `pax.pure`.
 ```
 
-Furthermore, to guaratee no side effects, a function decorated by `pax.pure` will use  inputs instead of its original inputs. Any modification on the cloned inputs will not affect the original inputs.
+Furthermore, to guaratee no side effects, a function decorated by `pax.pure` can only use copies of inputs instead of the original inputs. 
+Any modification on the copies will not affect the original inputs.
 
 
 ```python
