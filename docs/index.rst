@@ -51,7 +51,6 @@ To install the latest version::
    notebooks/basics
    notebooks/training
    notebooks/understanding
-   notebooks/side_effects
    notebooks/limitations
    notebooks/performance
 
