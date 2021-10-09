@@ -108,8 +108,7 @@ print(net.counter) # the same counter
 # 3
 ```
    
-As a consequence, the only way to *update* input modules is to return the updated modules
-in the output.
+As a consequence, the only way to *update* an input module is to return it in the output.
 
 ```python
 @pax.pure
@@ -120,7 +119,7 @@ def update_counter(m: Counter):
 print(net.counter)
 # 3
 net = update_counter(net)
-print(net.counter) # increase by 1
+print(net.counter) # increased by 1
 # 4
 ```
 
