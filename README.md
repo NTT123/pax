@@ -93,7 +93,7 @@ net.counter += 1
 # Please do this computation inside a function decorated by `pax.pure`.
 ```
 
-Furthermore, a decorated function can only access the copy of its of inputs. Therfore, any modification on the copy will not affect the original inputs.
+Furthermore, a decorated function can only access the copy of its of inputs. Any modification on the copy will not affect the original inputs.
 
 
 ```python
