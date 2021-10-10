@@ -1,5 +1,5 @@
 <div align="left">
-<img src="./images/pax_logo.png" alt="logo" width="94px"></img>
+<img src="https://raw.githubusercontent.com/NTT123/pax/main/images/pax_logo.png" alt="logo" width="94px"></img>
 </div>
 
 [**Introduction**](#introduction)
@@ -11,22 +11,30 @@
 
 ![pytest](https://github.com/ntt123/pax/workflows/pytest/badge.svg)
 ![docs](https://readthedocs.org/projects/pax/badge/?version=main)
-![pypi](https://img.shields.io/pypi/v/pax-j)
+![pypi](https://img.shields.io/pypi/v/pax3)
 
 
 ## Introduction<a id="introduction"></a>
 
-``PAX`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The central object of `PAX` is a `pax.Module`.
+``PAX`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The main class in `PAX` are `pax.Module`.
 
-A  `pax.Module` has two sides:
+A  `pax.Module` object has two sides:
 
 * It is a _normal_ python object which can be modified and called (it has ``__call__`` method).
 * It is a _pytree_ object whose leaves are `ndarray`'s.
 
-``pax.Module`` manages the pytree and executes functions that depends on the pytree. As a pytree object, `pax.Module` can be input and output to jax functions running on CPU/GPU/TPU cores.
+``pax.Module`` object manages the pytree and executes functions that depend on the pytree. As a pytree object, it can be input and output to JAX functions running on CPU/GPU/TPU cores.
 
 
 ## Installation<a id="installation"></a>
+
+Install from PyPI:
+
+```bash
+pip3 install pax3
+```
+
+Or install the latest from github:
 
 ```bash
 pip3 install git+https://github.com/ntt123/pax.git

@@ -8,12 +8,12 @@ install_requires = [
     "jmp",
 ]
 setup_requires = []
-tests_require = [
+tests_requires = [
     "chex",
     "dm-haiku",
     "fire",
     "mypy",
-    "opax @ git+https://github.com/ntt123/opax",
+    "opax",
     "pytest",
     "tensorflow_datasets",
     "tensorflow",
@@ -21,9 +21,11 @@ tests_require = [
 ]
 
 setup(
-    name="pax",
+    name="pax3",
     version=__version__,
     description="A stateful pytree library for training neural networks.",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     author="Thông Nguyễn",
     url=url,
     keywords=[
@@ -32,8 +34,8 @@ setup(
     ],
     install_requires=install_requires,
     setup_requires=setup_requires,
-    tests_require=tests_require,
+    tests_require=tests_requires,
     packages=find_namespace_packages(exclude=["examples", "tests"]),
-    extras_require={"test": tests_require},
-    python_requires=">=3.6",
+    extras_require={"test": tests_requires},
+    python_requires=">=3.7",
 )
