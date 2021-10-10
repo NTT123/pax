@@ -63,10 +63,4 @@ def test_sgd():
 
     f = pax.nn.Linear(2, 2)
     sgd = SGD(f, 0.9, 1e-4)
-
-    @pax.pure
-    def _run(sgd):
-        sgd.step(f, f)
-        return sgd
-
-    sgd = _run(sgd)
+    sgd.step(f, f)

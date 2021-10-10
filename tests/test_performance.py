@@ -47,13 +47,7 @@ def test_perf_flattenmodule_resnet200_flatten_unflatten():
     f = pax.nets.ResNet200(3, 100)
     y = f.eval()(x)
     f = pax.flatten_module(f.eval())
-
-    @pax.pure
-    def _run(f):
-        return f(x)
-
-    y1 = _run(f)
-
+    y1 = pax.pure(f)(x)
     np.testing.assert_array_equal(y, y1)
 
     start = time.perf_counter()

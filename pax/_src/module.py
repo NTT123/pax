@@ -73,12 +73,20 @@ class ModuleMetaclass(type):
 
     def __call__(cls: Type[T], *args, **kwargs) -> T:
         module = cls.__new__(cls, *args, **kwargs)  # type: ignore
-        with allow_mutation(module):
+
+        # if a module is created inside a `pure` function, it is mutable.
+        if ctx_state._inside_pure_function:
+            ctx_state._mutable_module_list = (module,) + ctx_state._mutable_module_list
             cls.__init__(module, *args, **kwargs)
             module.find_and_register_submodules()
-            # scan module after initialization for potential bugs
-            module._scan_fields(module.__dict__)
-            return module
+        else:
+            with allow_mutation(module):
+                cls.__init__(module, *args, **kwargs)
+                module.find_and_register_submodules()
+
+        # scan module after initialization for potential bugs
+        module._scan_fields(module.__dict__)
+        return module
 
 
 class Module(object, metaclass=ModuleMetaclass):
@@ -243,6 +251,10 @@ class Module(object, metaclass=ModuleMetaclass):
         # don't have to copy `_name_to_kind` anymore, speed thing up!
         # md["_name_to_kind"] = OrderedDict(module._name_to_kind)
         md.update(zip(module._pax.name_to_kind, children))
+
+        # if a module is created inside a `pure` function, it is mutable.
+        if ctx_state._inside_pure_function:
+            ctx_state._mutable_module_list = (module,) + ctx_state._mutable_module_list
 
         return module
 

@@ -89,12 +89,7 @@ class apply_mp_policy(Module, Generic[T]):
 
             casted_mod_clone = mod.copy()
             # task 2
-            @pure
-            def _run(mod):
-                output = f(mod, *casted_args, **casted_kwargs)
-                return mod, output
-
-            mod, output = _run(mod)
+            output = f(mod, *casted_args, **casted_kwargs)
 
             # task 3
             if jax.tree_structure(mod) != jax.tree_structure(old_mod_clone):

@@ -1,4 +1,5 @@
 import functools
+import inspect
 
 import jax
 
@@ -16,7 +17,7 @@ def _get_all_submodules(value):
 def pure(f):
     """Make a function pure by copying the inputs.
 
-    Any modifications on the copy will not affect the original inputs.
+    Any modification on the copy will not affect the original inputs.
 
     **Note**: only functions that wrapped by `pax.pure` are allowed to modify PAX's Modules.
 
@@ -45,14 +46,22 @@ def pure(f):
     def _f(*args, **kwargs):
         from .transforms import scan_bugs
 
-        [scan_bugs(m) for m in get_modules((args, kwargs))]
+        [scan_bugs(m) for m in get_modules((f, args, kwargs))]
+
+        # support calling method
+        if inspect.ismethod(f):
+            self = (f.__self__,)
+            fn = f.__func__
+        else:
+            self = ()
+            fn = f
 
         with enable_deep_copy():
-            leaves, treedef = jax.tree_flatten((args, kwargs))
-        args, kwargs = jax.tree_unflatten(treedef, leaves)
-
-        with allow_mutation(_get_all_submodules((args, kwargs))):
-            out = f(*args, **kwargs)
+            leaves, treedef = jax.tree_flatten((self, fn, args, kwargs))
+        self, fn, args, kwargs = jax.tree_unflatten(treedef, leaves)
+        modules = _get_all_submodules((self, fn, args, kwargs))
+        with allow_mutation(modules):
+            out = fn(*self, *args, **kwargs)
 
         [scan_bugs(m) for m in get_modules(out)]
 

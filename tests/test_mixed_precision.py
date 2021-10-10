@@ -56,6 +56,7 @@ def test_sequential_mixed_precision():
     assert y.dtype == half
 
 
+@pax.pure
 def test_change_internal_state():
     class M(pax.Module):
         counter: jnp.ndarray

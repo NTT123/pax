@@ -63,12 +63,7 @@ class flatten_module(Module, Generic[T]):
         module = self.unflatten()
         assert callable(module), "Expecting a callable module." ""
 
-        @pure
-        def _run(module):
-            out = module(*args, **kwargs)
-            return module, out
-
-        module, out = _run(module)
+        out = module(*args, **kwargs)
 
         states_leaves, _ = jax.tree_flatten(select_states(module))
         self.states_leaves = states_leaves

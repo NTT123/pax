@@ -52,11 +52,13 @@ import jax.numpy as jnp
 import pax
 
 class Counter(pax.Module):
+    bias: jnp.ndarray
+    counter: jnp.ndarray
+    
     def __init__(self, start_value: int = 0):
         super().__init__()
         self.register_parameter("bias", jnp.array(0.0))
         self.register_state("counter", jnp.array(start_value))
-
 
     def __call__(self, x):
         self.counter = self.counter + 1

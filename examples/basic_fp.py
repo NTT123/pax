@@ -32,7 +32,7 @@ class Linear(pax.Module):
 
 
 @pax.pure
-def loss_fn(model, x, y):
+def loss_fn(model: Linear, x, y):
     y_hat = model(x)
     loss = jnp.mean(jnp.square(y_hat - y))
     return loss, (loss, model)
@@ -40,7 +40,7 @@ def loss_fn(model, x, y):
 
 @jax.jit
 def train_step(model: Linear, optimizer: GradientTransformation, x, y):
-    grads, (loss, model) = jax.grad(loss_fn, has_aux=True, allow_int=True)(model, x, y)
+    grads, (loss, model) = pax.grad_parameters(loss_fn, has_aux=True)(model, x, y)
     updates, optimizer = pax.transform_gradients(
         grads, optimizer, params=model.parameters()
     )

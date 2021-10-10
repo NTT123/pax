@@ -9,6 +9,7 @@ state = threading.local()
 state._rng_key = None
 state._seed = None
 state._enable_deep_copy = False
+state._inside_pure_function = False
 state._mutable_module_list = ()
 
 
@@ -41,6 +42,9 @@ class allow_mutation(object):
     def __enter__(self):
         self.prev = state._mutable_module_list
         state._mutable_module_list = self.mods + state._mutable_module_list
+        self.prev_inside = state._inside_pure_function
+        state._inside_pure_function = True
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         state._mutable_module_list = self.prev
+        state._inside_pure_function = self.prev_inside
