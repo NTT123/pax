@@ -14,6 +14,7 @@ def test_list_of_mod():
     m._pax.name_to_kind["a"] == pax.PaxFieldKind.MODULE
 
 
+@pax.pure
 def test_assigned_field_an_array():
     class M(pax.Module):
         def __init__(self):
@@ -30,14 +31,9 @@ def test_assigned_field_an_array():
 
     n = N()
 
-    @pax.pure
-    def _mutate(n):
-        pax.scan_bugs(n)
-        # no error because we will automatically assign `a` to kind PARAMETER
-        n.register_parameter("b", jnp.array([1, 2, 3], dtype=jnp.float32))
-        return n
-
-    n = _mutate(n)
+    pax.scan_bugs(n)
+    # no error because we will automatically assign `a` to kind PARAMETER
+    n.register_parameter("b", jnp.array([1, 2, 3], dtype=jnp.float32))
 
     assert n._pax.name_to_kind["b"] == pax.PaxFieldKind.PARAMETER
 
