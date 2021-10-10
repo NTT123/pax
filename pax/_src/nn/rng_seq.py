@@ -54,7 +54,7 @@ class RngSeq(Module):
         _rng_key, *rng_keys = jax.random.split(self._rng_key, num_keys + 1)
 
         # only update internal state in `train` mode.
-        if self.is_training():
+        if self.training:
             self._rng_key = _rng_key
         if num_keys == 1:
             return rng_keys[0]

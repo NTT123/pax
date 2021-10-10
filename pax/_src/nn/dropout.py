@@ -35,7 +35,7 @@ class Dropout(Module):
         Return the input `x` if in `eval` mode or `dropout_rate=0`.
         """
 
-        if self.is_training() and self.dropout_rate > 0:
+        if self.training and self.dropout_rate > 0:
             self.rng_key, rng_key = jax.random.split(self.rng_key)
             return dropout(rng_key, self.dropout_rate, x)
         else:

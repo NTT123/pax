@@ -123,9 +123,11 @@ class Module(object, metaclass=ModuleMetaclass):
         """Initialize module's name."""
         super().__setattr__("_pax", self._pax._replace(name=name))
 
-    def is_training(self) -> bool:
+    @property
+    def training(self) -> bool:
         return self._pax.training
 
+    @property
     def name(self) -> Optional[str]:
         return self._pax.name
 
@@ -483,9 +485,15 @@ class Module(object, metaclass=ModuleMetaclass):
                     self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
 
     def replace(self: T, **kwargs) -> T:
-        mod = self
-        for name, value in kwargs.items():
-            mod = mod.copy()
-            assert hasattr(mod, name)
-            mod.__dict__[name] = value
+        """Return a new module with some attributes replaced."""
+        mod = self.copy()
+        with allow_mutation(mod):
+            for name, value in kwargs.items():
+                assert hasattr(mod, name)
+                setattr(mod, name, value)
+            mod.find_and_register_submodules()
+
+        from .transforms import scan_bugs
+
+        scan_bugs(mod)
         return mod
