@@ -8,8 +8,9 @@ import jax
 import jax.numpy as jnp
 import jax.tree_util
 
-KeyArray = Union[Any, jnp.ndarray]
 from .ctx import state
+
+KeyArray = Union[Any, jnp.ndarray]
 
 
 def seed_rng_key(seed: int) -> None:

@@ -177,15 +177,11 @@ def test_state_of_param():
             self.register_states("m2", {"m1": m11})
 
     m2 = M2(m1)
-    assert len(jax.tree_leaves(pax.select_kind(m1, kind=pax.PaxFieldKind.STATE))) == 0
-    assert (
-        len(jax.tree_leaves(pax.select_kind(m2, kind=pax.PaxFieldKind.PARAMETER))) == 0
-    )
+    assert len(jax.tree_leaves(pax.select_states(m1))) == 0
+    assert len(jax.tree_leaves(pax.select_parameters(m2))) == 0
 
-    assert (
-        len(jax.tree_leaves(pax.select_kind(m1, kind=pax.PaxFieldKind.PARAMETER))) == 1
-    )
-    assert len(jax.tree_leaves(pax.select_kind(m2, kind=pax.PaxFieldKind.STATE))) == 1
+    assert len(jax.tree_leaves(pax.select_parameters(m1))) == 1
+    assert len(jax.tree_leaves(pax.select_states(m2))) == 1
 
 
 def test_module_properties_modify():

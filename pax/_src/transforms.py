@@ -8,8 +8,7 @@ import jax.numpy as jnp
 import jmp
 
 from .module import Module, PaxFieldKind
-from .pure import pure
-from .utils import EmptyNode
+from .utils import EmptyNode, assertStructureEqual
 
 TreeDef = Any
 
@@ -101,20 +100,6 @@ def select_states(mod: T) -> T:
     return select_kind(mod, kind=PaxFieldKind.STATE)
 
 
-def scan_bugs(mod: T) -> T:
-    """Scan the module for potential bugs."""
-
-    def _scan_apply_fn(mod: T) -> T:
-        assert isinstance(mod, Module)
-        mod._scan_fields(mod.__class__.__dict__)
-        mod._scan_fields(mod.__dict__)
-        return mod
-
-    mod.apply(_scan_apply_fn)
-    return mod
-
-
-@pure
 def transform_gradients(grads: T, optimizer: O, *, params: T) -> Tuple[T, O]:
     """Transform gradients to updates using an optimizer.
 
@@ -129,25 +114,16 @@ def transform_gradients(grads: T, optimizer: O, *, params: T) -> Tuple[T, O]:
         - **updates** : The transformed gradients.
         - **optimizer** : The *updated* optimizer.
     """
+    from .pure import pure
+
     assert callable(optimizer), "Expecting a callable optimizer." ""
-    updates = optimizer(grads.parameters(), params=params)
+
+    def _run(optimizer):
+        updates = optimizer(grads.parameters(), params=params)
+        return optimizer, updates
+
+    optimizer, updates = pure(_run)(optimizer)
     return updates, optimizer
-
-
-def transform_gradients_(grads: T, optimizer: O, *, params: T) -> T:
-    """(In-place) Transform gradients to updates using an optimizer.
-
-    Arguments:
-        grads: The gradients.
-        optimizer: The gradient transformation.
-        params: The trainable parameters.
-
-    Returns:
-        The transformed gradients (updates).
-    """
-    assert callable(optimizer), "Expecting a callable optimizer." ""
-    updates = optimizer(grads.parameters(), params=params)
-    return updates
 
 
 def apply_updates(params: T, *, updates: T) -> T:
@@ -157,8 +133,6 @@ def apply_updates(params: T, *, updates: T) -> T:
         params: The trainable parameters.
         updates: The transformed gradients.
     """
-    from .utils import assertStructureEqual
-
     assertStructureEqual(updates, params)
     return jax.tree_map(lambda u, p: p - u, updates, params)
 

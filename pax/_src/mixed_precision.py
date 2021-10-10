@@ -7,7 +7,6 @@ import jax.numpy as jnp
 import jmp
 
 from . import ctx
-from .pure import pure
 from .module import Module
 
 TreeDef = Any

@@ -3,10 +3,11 @@ import inspect
 
 import jax
 
+from .ctx import allow_mutation, enable_deep_copy
+from .utils import get_modules, scan_bugs
+
 
 def _get_all_submodules(value):
-    from .utils import get_modules
-
     submods = get_modules(value)
     out = list(submods)
     for mod in submods:
@@ -14,7 +15,7 @@ def _get_all_submodules(value):
     return out
 
 
-def pure(f):
+def pure(func):
     """Make a function pure by copying the inputs.
 
     Any modification on the copy will not affect the original inputs.
@@ -37,24 +38,19 @@ def pure(f):
     >>> f = add_list(f)
     >>> print(f.a_list)
     []
-
     """
-    from .ctx import allow_mutation, enable_deep_copy
-    from .utils import get_modules
 
-    @functools.wraps(f)
+    @functools.wraps(func)
     def _f(*args, **kwargs):
-        from .transforms import scan_bugs
-
-        [scan_bugs(m) for m in get_modules((f, args, kwargs))]
+        [scan_bugs(m) for m in get_modules((func, args, kwargs))]
 
         # support calling method
-        if inspect.ismethod(f):
-            self = (f.__self__,)
-            fn = f.__func__
+        if inspect.ismethod(func):
+            self = (func.__self__,)
+            fn = func.__func__
         else:
             self = ()
-            fn = f
+            fn = func
 
         with enable_deep_copy():
             leaves, treedef = jax.tree_flatten((self, fn, args, kwargs))

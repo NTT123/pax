@@ -230,3 +230,16 @@ def get_modules(v):
     modules = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
     modules = [m for m in modules if isinstance(m, Module)]
     return modules
+
+
+def scan_bugs(mod: T) -> T:
+    """Scan the module for potential bugs."""
+
+    def _scan_apply_fn(mod: T) -> T:
+        assert isinstance(mod, Module)
+        mod._scan_fields(mod.__class__.__dict__)
+        mod._scan_fields(mod.__dict__)
+        return mod
+
+    mod.apply(_scan_apply_fn)
+    return mod

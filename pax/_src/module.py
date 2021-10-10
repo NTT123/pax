@@ -33,6 +33,7 @@ from .ctx import allow_mutation
 from .ctx import state as ctx_state
 
 T = TypeVar("T", bound="Module")
+M = TypeVar("M")
 TreeDef = Any
 
 
@@ -65,9 +66,6 @@ class PaxModuleInfo(NamedTuple):
         return f"PaxModuleInfo[name={self.name}, training={self.training}, nodes={{{nodes}}}]"
 
 
-M = TypeVar("M")
-
-
 class ModuleMetaclass(type):
     """Metaclass for `Module`."""
 
@@ -75,8 +73,8 @@ class ModuleMetaclass(type):
         module = cls.__new__(cls, *args, **kwargs)  # type: ignore
 
         # if a module is created inside a `pure` function, it is mutable.
-        if ctx_state._inside_pure_function:
-            ctx_state._mutable_module_list = (module,) + ctx_state._mutable_module_list
+        if ctx_state.inside_pure_function:
+            ctx_state.mutable_module_list = (module,) + ctx_state.mutable_module_list
             cls.__init__(module, *args, **kwargs)
             module.find_and_register_submodules()
         else:
@@ -89,7 +87,7 @@ class ModuleMetaclass(type):
         return module
 
 
-class Module(object, metaclass=ModuleMetaclass):
+class Module(metaclass=ModuleMetaclass):
     """Module manages all information related to the pytree.
 
     There are two important methods:
@@ -106,6 +104,8 @@ class Module(object, metaclass=ModuleMetaclass):
     def __new__(cls: Type[T], *args, **kwargs) -> T:
         """Initialize _name_to_kind and _training in `__new__` method to avoid
         calling `super().__init__()` in every subclass of Module."""
+
+        del args, kwargs
 
         obj = object.__new__(cls)
         obj.__dict__["_pax"] = PaxModuleInfo(
@@ -125,14 +125,16 @@ class Module(object, metaclass=ModuleMetaclass):
 
     @property
     def training(self) -> bool:
+        """If a module is in training mode."""
         return self._pax.training
 
     @property
     def name(self) -> Optional[str]:
+        """Return the name of the module."""
         return self._pax.name
 
     def _assert_mutability(self):
-        if id(self) not in [id(x) for x in ctx_state._mutable_module_list]:
+        if id(self) not in [id(x) for x in ctx_state.mutable_module_list]:
             raise ValueError(
                 "Cannot modify a module in immutable mode.\n"
                 "Please do this computation inside a function decorated by `pax.pure`."
@@ -153,7 +155,8 @@ class Module(object, metaclass=ModuleMetaclass):
         """Whenever a user sets an attribute, we will check the assignment:
 
         - Setting `_name_to_kind` and `_training` are forbidden.
-        - If `value` is a pytree of modules and `name` is not in `_name_to_kind`, its kind will be `PaxFieldKind.MODULE`.
+        - If `value` is a pytree of modules and `name` is not in `_name_to_kind`,
+        its kind will be `PaxFieldKind.MODULE`.
         """
         self._assert_mutability()
 
@@ -216,7 +219,6 @@ class Module(object, metaclass=ModuleMetaclass):
         self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
         setattr(self, name, value)
 
-    # TODO: this is redundant, fix it!
     register_parameters = register_parameter
     register_states = register_state
     register_module = register_modules
@@ -227,7 +229,7 @@ class Module(object, metaclass=ModuleMetaclass):
         aux = dict(self.__dict__)
         children = [aux.pop(name) for name in self._pax.name_to_kind]
 
-        if ctx_state._enable_deep_copy:
+        if ctx_state.enable_deep_copy:
             leaves, treedef = jax.tree_flatten(aux)
             new_leaves = []
             for leaf in leaves:
@@ -255,8 +257,8 @@ class Module(object, metaclass=ModuleMetaclass):
         md.update(zip(module._pax.name_to_kind, children))
 
         # if a module is created inside a `pure` function, it is mutable.
-        if ctx_state._inside_pure_function:
-            ctx_state._mutable_module_list = (module,) + ctx_state._mutable_module_list
+        if ctx_state.inside_pure_function:
+            ctx_state.mutable_module_list = (module,) + ctx_state.mutable_module_list
 
         return module
 
@@ -304,8 +306,8 @@ class Module(object, metaclass=ModuleMetaclass):
             )
         submodules = self.submodules()
 
-        def indent(lines: List[str], s) -> List[str]:
-            return [s + l for l in lines]
+        def indent(lines: List[str], start_string) -> List[str]:
+            return [start_string + l for l in lines]
 
         for i, module in enumerate(submodules):
             lines = module.summary(return_list=True)
@@ -314,6 +316,7 @@ class Module(object, metaclass=ModuleMetaclass):
             else:  # last submodule
                 indented_lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
             output.extend(indented_lines)
+
         if return_list:
             return output
         else:
@@ -400,11 +403,11 @@ class Module(object, metaclass=ModuleMetaclass):
             check_treedef: check treedef before applying the function.
         """
 
-        def rec_fn(x):
-            if isinstance(x, Module):
-                return x.apply(apply_fn)
+        def rec_fn(mod_or_ndarray):
+            if isinstance(mod_or_ndarray, Module):
+                return mod_or_ndarray.apply(apply_fn)
             else:
-                return x
+                return mod_or_ndarray
 
         submodules = self.submodules()
         new_self = jax.tree_map(
@@ -431,17 +434,21 @@ class Module(object, metaclass=ModuleMetaclass):
         """Compare two modules."""
         if id(self) == id(o):
             return True
-        if type(self) != type(o):
+
+        if type(self) is not type(o):
             return False
+
         self_leaves, self_treedef = jax.tree_flatten(self)
         o_leaves, o_treedef = jax.tree_flatten(o)
+
         if len(self_leaves) != len(o_leaves):
             return False
-        elif self_treedef != o_treedef:
+
+        if self_treedef != o_treedef:
             return False
-        else:
-            leaves_equal = jax.tree_map(lambda a, b: a is b, self_leaves, o_leaves)
-            return all(leaves_equal)
+
+        leaves_equal = jax.tree_map(lambda a, b: a is b, self_leaves, o_leaves)
+        return all(leaves_equal)
 
     def __hash__(self) -> int:
         leaves, treedef = jax.tree_flatten(self)
@@ -486,14 +493,14 @@ class Module(object, metaclass=ModuleMetaclass):
 
     def replace(self: T, **kwargs) -> T:
         """Return a new module with some attributes replaced."""
+        from .utils import scan_bugs
+
         mod = self.copy()
         with allow_mutation(mod):
             for name, value in kwargs.items():
                 assert hasattr(mod, name)
                 setattr(mod, name, value)
             mod.find_and_register_submodules()
-
-        from .transforms import scan_bugs
 
         scan_bugs(mod)
         return mod

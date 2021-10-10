@@ -9,8 +9,6 @@ from pax._src.transforms import (
     enable_train_mode,
     flatten_module,
     freeze_parameters,
-    scan_bugs,
-    select_kind,
     select_parameters,
     select_states,
     transform_gradients,
@@ -18,7 +16,7 @@ from pax._src.transforms import (
     update_parameters,
     update_states,
 )
-from pax._src.utils import build_update_fn, dropout, grad_parameters, scan
+from pax._src.utils import build_update_fn, dropout, grad_parameters, scan, scan_bugs
 
 from . import initializers, nets, nn, utils
 
@@ -43,7 +41,6 @@ __all__ = [
     "scan_bugs",
     "scan",
     "seed_rng_key",
-    "select_kind",
     "select_parameters",
     "select_states",
     "transform_gradients",
