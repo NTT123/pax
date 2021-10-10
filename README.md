@@ -80,7 +80,7 @@ There are a few important things in the above example:
 
 Let "PAX function" mean functions whose inputs contain PAX modules.
 
-> It is a good practice to make sure PAX functions have no side effects. This adheres to JAX functional programming style.
+> It is a good practice to make sure PAX functions have no side effects. This adheres to JAX functional programming  mode.
 
 Even though PAX modules are stateful objects, the modifications of PAX module's internal states are restricted. 
 Only PAX functions decorated by `pax.pure` are allowed to modify PAX modules.
