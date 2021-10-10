@@ -16,9 +16,9 @@
 
 ## Introduction<a id="introduction"></a>
 
-``PAX`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The main class in `PAX` are `pax.Module`.
+``PAX`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The main class of `PAX` is `pax.Module`.
 
-A  `pax.Module` object has two sides:
+A `pax.Module` object has two sides:
 
 * It is a _normal_ python object which can be modified and called (it has ``__call__`` method).
 * It is a _pytree_ object whose leaves are `ndarray`'s.
