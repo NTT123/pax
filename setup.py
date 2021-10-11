@@ -3,10 +3,7 @@ from setuptools import find_namespace_packages, setup
 __version__ = "0.4.0rc2"
 url = "https://github.com/ntt123/pax"
 
-install_requires = [
-    "jax",
-    "jmp",
-]
+install_requires = ["jax", "jmp", "opax"]
 setup_requires = []
 tests_requires = [
     "chex",
