@@ -72,7 +72,7 @@ class allow_mutation(object):
         self.prev_inside = STATE.inside_pure_function
         STATE.inside_pure_function = True
 
-    def __exit__(self, _: Any, __: Any, __: Any) -> None:
+    def __exit__(self, _: Any, __: Any, ___: Any) -> None:
         STATE.mutable_module_list = self.prev
         STATE.inside_pure_function = self.prev_inside
 
