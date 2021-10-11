@@ -33,12 +33,12 @@ class Module(BaseModule):
 
     def register_parameter(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
+        assign its kind to ``PaxFieldKind.PARAMETER`` in the ``name_to_kind`` dictionary."""
         self.register_subtree(name, value, PaxFieldKind.PARAMETER)
 
     def register_state(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
+        assign its kind to ``PaxFieldKind.STATE`` in the ``name_to_kind`` dictionary."""
         self.register_subtree(name, value, PaxFieldKind.STATE)
 
     def register_modules(self, name: str, value: Any):

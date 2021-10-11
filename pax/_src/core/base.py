@@ -154,14 +154,14 @@ class BaseModule(metaclass=ModuleMetaclass):
     - ``tree_flatten`` converts a module to ``(leaves, treedef)``
     - ``tree_unflatten`` restores the module.
 
-    BaseModule maintains a ``_name_to_kind`` dictionary that tells if an attribute is part of
+    BaseModule maintains a ``name_to_kind`` dictionary that tells if an attribute is part of
     the pytree and the kind of the tree part (parameter, state, module, etc.).
     """
 
     _pax: PaxModuleInfo
 
     def __new__(cls: Type[T], *args, **kwargs) -> T:
-        """Initialize _name_to_kind and _training in `__new__` method to avoid
+        """Initialize `_pax` attribute in `__new__` method to avoid
         calling `super().__init__()` in every subclass of Module."""
 
         del args, kwargs
@@ -190,7 +190,7 @@ class BaseModule(metaclass=ModuleMetaclass):
             )
 
     def _update_name_to_kind_dict(self, name: str, value):
-        """Update the `_name_to_kind` dictionary.
+        """Update the `name_to_kind` dictionary.
 
         Create a new dictionary and wrap it with `MappingProxyType` to avoid side effects."""
         self._assert_mutability()
@@ -203,8 +203,8 @@ class BaseModule(metaclass=ModuleMetaclass):
     def __setattr__(self, name: str, value: Any) -> None:
         """Whenever a user sets an attribute, we will check the assignment:
 
-        - Setting `_name_to_kind` and `_training` are forbidden.
-        - If `value` is a pytree of modules and `name` is not in `_name_to_kind`,
+        - Setting `_pax` is forbidden.
+        - If `value` is a pytree of modules and `name` is not in `name_to_kind`,
           its kind will be `PaxFieldKind.MODULE`.
         """
         self._assert_mutability()
@@ -267,8 +267,8 @@ class BaseModule(metaclass=ModuleMetaclass):
         module = object.__new__(cls)
         module_dict = module.__dict__
         module_dict.update(aux)
-        # don't have to copy `_name_to_kind` anymore, speed thing up!
-        # md["_name_to_kind"] = OrderedDict(module._name_to_kind)
+        # don't have to copy `name_to_kind` anymore, speed thing up!
+        # md["name_to_kind"] = OrderedDict(module.name_to_kind)
         module_dict.update(zip(module._pax.name_to_kind, children))
 
         # if a module is created inside a `pure` function, it is mutable.
