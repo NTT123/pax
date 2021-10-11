@@ -1,3 +1,5 @@
+"""Dropout module."""
+
 from typing import Optional
 
 import jax
@@ -25,7 +27,8 @@ def dropout(rng_key: KeyArray, dropout_rate: float, x: jnp.ndarray) -> jnp.ndarr
 class Dropout(Module):
     """A Dropout Module.
 
-    Dropout module stores an internal state ``rng_key``. It refreshes ``rng_key`` whenever a forward pass is executed.
+    Dropout module stores an internal state ``rng_key``.
+    It refreshes ``rng_key`` whenever a forward pass is executed.
     """
 
     rng_key: KeyArray

@@ -1,3 +1,5 @@
+"""Conv modules."""
+
 # Following the jax convolution tutorial:
 # https://jax.readthedocs.io/en/latest/notebooks/convolutions.html
 #

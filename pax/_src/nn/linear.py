@@ -1,3 +1,5 @@
+"""Linear module."""
+
 from typing import Optional
 
 import jax
@@ -15,7 +17,6 @@ class Linear(Module):
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    # props
     in_dim: int
     out_dim: int
     with_bias: bool

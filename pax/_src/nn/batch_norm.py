@@ -1,3 +1,5 @@
+"""BatchNorm modules."""
+
 from typing import Optional, Sequence
 
 import jax

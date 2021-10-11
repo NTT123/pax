@@ -1,3 +1,5 @@
+"""EMA module."""
+
 from typing import Any, Optional
 
 import jax

@@ -1,3 +1,5 @@
+"""Lambda module."""
+
 from typing import Callable, List, Optional, Union
 
 import jax
@@ -8,25 +10,27 @@ from ..core import Module
 class Lambda(Module):
     """Convert a function to a module."""
 
-    def __init__(self, f: Callable, name: Optional[str] = None):
+    func: Callable
+
+    def __init__(self, func: Callable, name: Optional[str] = None):
         super().__init__(name=name)
-        self.f = f
+        self.func = func
 
     def __call__(self, x):
-        return self.f(x)
+        return self.func(x)
 
-    def __repr__(self, info=None) -> str:
+    def __repr__(self) -> str:
         if self.name is not None:
             return super().__repr__()
         else:
-            return f"{self.__class__.__name__}[{self.f}]"
+            return f"{self.__class__.__name__}[{self.func}]"
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         if self.name is not None:
             name = self.name
-        elif self.f == jax.nn.relu:
+        elif self.func == jax.nn.relu:
             name = "relu"
         else:
-            name = f"{self.f}"
+            name = f"{self.func}"
         output = f"x => {name}(x)"
         return [output] if return_list else output

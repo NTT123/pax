@@ -1,13 +1,14 @@
-"""LayerNorm Module.
+"""LayerNorm Module."""
 
-The implementation is almost identical to dm-haiku LayerNorm at: 
-https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/layer_norm.py
-deepmind/dm-haiku is licensed under the Apache License 2.0
+# The implementation is almost identical to dm-haiku LayerNorm at:
+# https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/layer_norm.py
+# deepmind/dm-haiku is licensed under the Apache License 2.0
+#
+# Differences:
+#     1. We need to input ``num_channels``, the size of the last dimension,
+#        to initialize scale/offset parameters.
+#     2. We can input `rng_key` to seed the value of scale/offset parameters.
 
-Differences:
-    1. We need to input ``num_channels``, the size of the last dimension, to initialize scale/offset parameters.
-    2. We can input `rng_key` to seed the value of scale/offset parameters.
-"""
 import collections
 from typing import Optional, Sequence, Union
 

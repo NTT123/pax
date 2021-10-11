@@ -1,3 +1,5 @@
+"""RngSeq module."""
+
 from typing import Optional, Sequence, Union
 
 import jax

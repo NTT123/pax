@@ -1,4 +1,4 @@
-"""Recurrent Modules."""
+"""Recurrent modules."""
 
 from typing import NamedTuple, Optional, Tuple
 
@@ -12,11 +12,15 @@ from .linear import Linear
 
 
 class LSTMState(NamedTuple):
+    """LSTMState."""
+
     hidden: jnp.ndarray
     cell: jnp.ndarray
 
 
 class GRUState(NamedTuple):
+    """GRUState."""
+
     hidden: jnp.ndarray
 
 

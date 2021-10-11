@@ -1,3 +1,5 @@
+"""Transformer self-attention module."""
+
 # Source: https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/attention.py
 from typing import Optional
 
@@ -15,6 +17,11 @@ class MultiHeadAttention(Module):
     As described in the vanilla Transformer paper:
     "Attention is all you need" https://arxiv.org/abs/1706.03762
     """
+
+    num_heads: int
+    key_size: int
+    value_size: int
+    model_size: int
 
     def __init__(
         self,

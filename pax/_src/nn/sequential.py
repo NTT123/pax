@@ -1,4 +1,6 @@
-from typing import List, Optional, Tuple
+"""Sequential module."""
+
+from typing import Optional, Tuple
 
 from ..core import Module
 from .lambda_module import Lambda

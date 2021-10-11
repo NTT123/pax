@@ -30,11 +30,13 @@ def _compute_fans(shape):
 
 def zeros(shape: Sequence[int], dtype: Any, rng_key=None):
     """Initialize all zeros."""
+    del rng_key
     return jnp.zeros(shape, dtype=dtype)
 
 
 def ones(shape: Sequence[int], dtype: Any, rng_key=None):
     """Initialize all ones."""
+    del rng_key
     return jnp.ones(shape, dtype=dtype)
 
 

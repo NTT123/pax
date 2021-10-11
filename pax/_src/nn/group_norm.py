@@ -1,9 +1,12 @@
+"""GroupNorm module."""
+
 # This file is an adaptation from
 # https://raw.githubusercontent.com/deepmind/dm-haiku/main/haiku/_src/group_norm.py
 # which is under Apache License, Version 2.0.
 
 
-from typing import Optional
+import collections
+from typing import Optional, Sequence, Union
 
 import jax
 import jax.numpy as jnp
@@ -27,9 +30,6 @@ from ..rng import KeyArray, next_rng_key
 # limitations under the License.
 # ==============================================================================
 """Group normalization implementation for Haiku."""
-
-import collections
-from typing import Optional, Sequence, Union
 
 
 class GroupNorm(Module):
