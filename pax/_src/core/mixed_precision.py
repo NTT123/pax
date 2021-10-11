@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 import jmp
 
-from . import ctx
+from .base import allow_mutation
 from .module import Module
 
 TreeDef = Any
@@ -109,7 +109,7 @@ class apply_mp_policy(Module, Generic[T]):
 
             # `mod` has the same pytree structure as `self._module`,
             # therefore, this is safe.
-            with ctx.allow_mutation(self):
+            with allow_mutation(self):
                 self._module = mod
 
             # task 4

@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import numpy as np
 
 from .. import rng
-from ..module import Module
+from ..core import Module
 
 
 class RngSeq(Module):

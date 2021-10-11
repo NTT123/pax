@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import numpy as np
 
 from .. import initializers
-from ..module import Module
+from ..core import Module
 from ..nn import LayerNorm, Linear, MultiHeadAttention, RngSeq
 from ..utils import dropout
 

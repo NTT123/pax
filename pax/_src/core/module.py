@@ -5,23 +5,15 @@ https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda807690385362
 which is under MIT License.
 """
 
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    TypeVar,
-    Union,
-)
+from typing import Any, Dict, List, Optional, TypeVar, Union
 
 import jax
 import jax.tree_util
 
-from .ctx import allow_mutation
-from .base import BaseModule, PaxFieldKind
+from .base import BaseModule, PaxFieldKind, allow_mutation
 from .transforms import (
-    enable_train_mode,
     enable_eval_mode,
+    enable_train_mode,
     select_parameters,
     update_parameters,
 )
@@ -45,32 +37,17 @@ class Module(BaseModule):
     def register_parameter(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
-
-        if hasattr(self, name):
-            raise RuntimeError("Cannot register an existing attribute")
-
-        self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
-        setattr(self, name, value)
+        self.register_subtree(name, value, PaxFieldKind.PARAMETER)
 
     def register_state(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
-
-        if hasattr(self, name):
-            raise RuntimeError("Cannot register an existing attribute")
-
-        self._update_name_to_kind_dict(name, PaxFieldKind.STATE)
-        setattr(self, name, value)
+        self.register_subtree(name, value, PaxFieldKind.STATE)
 
     def register_modules(self, name: str, value: Any):
         """Register ``value`` as an attribute of the object under the name ``name`` and
         assign its kind to ``PaxFieldKind.MODULE`` in the ``name_to_kind`` dictionary."""
-
-        if hasattr(self, name):
-            raise RuntimeError("Cannot register an existing attribute")
-
-        self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
-        setattr(self, name, value)
+        self.register_subtree(name, value, PaxFieldKind.MODULE)
 
     register_parameters = register_parameter
     register_states = register_state
@@ -142,31 +119,6 @@ class Module(BaseModule):
             str_info = ", ".join(lst_info)
             return f"{name}{cls_name}[{str_info}]"
 
-    def __eq__(self, o: object) -> bool:
-        """Compare two modules."""
-        if id(self) == id(o):
-            return True
-
-        if type(self) is not type(o):
-            return False
-
-        self_leaves, self_treedef = jax.tree_flatten(self)
-        o_leaves, o_treedef = jax.tree_flatten(o)
-
-        if len(self_leaves) != len(o_leaves):
-            return False
-
-        if self_treedef != o_treedef:
-            return False
-
-        leaves_equal = jax.tree_map(lambda a, b: a is b, self_leaves, o_leaves)
-        return all(leaves_equal)
-
-    def __hash__(self) -> int:
-        leaves, treedef = jax.tree_flatten(self)
-        leaves = jax.tree_map(lambda x: (x.shape, x.dtype), leaves)
-        return hash((tuple(leaves), treedef))
-
     def train(self: T) -> T:
         """Return a module in training mode."""
         return enable_train_mode(self)
@@ -182,18 +134,6 @@ class Module(BaseModule):
     def update_parameters(self: T, params: T) -> T:
         """Return a new module with updated parameters."""
         return update_parameters(self, params=params)
-
-    def find_and_register_submodules(self):
-        """Find unregistered submodules and register it with MODULE kind."""
-
-        def all_module_leaves(x):
-            leaves = jax.tree_flatten(x, is_leaf=lambda m: isinstance(m, Module))[0]
-            return len(leaves) > 0 and all(isinstance(m, Module) for m in leaves)
-
-        for name, value in vars(self).items():
-            if name not in self._pax.name_to_kind:
-                if all_module_leaves(value):
-                    self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
 
     def replace(self: T, **kwargs) -> T:
         """Return a new module with some attributes replaced."""

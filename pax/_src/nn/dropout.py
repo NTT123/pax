@@ -2,7 +2,7 @@ from typing import Optional
 
 import jax
 
-from ..module import Module
+from ..core import Module
 from ..rng import KeyArray, next_rng_key
 from ..utils import dropout
 

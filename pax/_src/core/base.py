@@ -5,6 +5,7 @@ https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda807690385362
 which is under MIT License.
 """
 
+import threading
 from collections import OrderedDict
 from copy import deepcopy
 from enum import Enum
@@ -27,12 +28,53 @@ import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
 
-from .ctx import allow_mutation
-from .ctx import state as ctx_state
-
 T = TypeVar("T", bound="BaseModule")
 M = TypeVar("M")
 TreeDef = Any
+
+
+STATE = threading.local()
+STATE.enable_deep_copy = False
+STATE.inside_pure_function = False
+STATE.mutable_module_list = ()
+
+
+class enable_deep_copy(object):
+    r"""A context manager that turns on deepcopy mode."""
+    prev: Any
+
+    def __init__(self):
+        super().__init__()
+        self.prev = STATE.enable_deep_copy
+
+    def __enter__(self):
+        self.prev = STATE.enable_deep_copy
+        STATE.enable_deep_copy = True
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        STATE.enable_deep_copy = self.prev
+
+
+class allow_mutation(object):
+    r"""A context manager that turns on mutability."""
+    prev: Any
+    prev_inside: bool
+
+    def __init__(self, modules):
+        super().__init__()
+        if isinstance(modules, BaseModule):
+            modules = (modules,)
+        self.mods = tuple(modules)
+
+    def __enter__(self):
+        self.prev = STATE.mutable_module_list
+        STATE.mutable_module_list = self.mods + STATE.mutable_module_list
+        self.prev_inside = STATE.inside_pure_function
+        STATE.inside_pure_function = True
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        STATE.mutable_module_list = self.prev
+        STATE.inside_pure_function = self.prev_inside
 
 
 @jax.tree_util.register_pytree_node_class
@@ -86,8 +128,8 @@ class ModuleMetaclass(type):
         module = cls.__new__(cls, *args, **kwargs)  # type: ignore
 
         # if a module is created inside a `pure` function, it is mutable.
-        if ctx_state.inside_pure_function:
-            ctx_state.mutable_module_list = (module,) + ctx_state.mutable_module_list
+        if STATE.inside_pure_function:
+            STATE.mutable_module_list = (module,) + STATE.mutable_module_list
             cls.__init__(module, *args, **kwargs)
             module.find_and_register_submodules()
         else:
@@ -137,7 +179,7 @@ class BaseModule(metaclass=ModuleMetaclass):
         super().__setattr__("_pax", self._pax._replace(name=name))
 
     def _assert_mutability(self):
-        if id(self) not in [id(x) for x in ctx_state.mutable_module_list]:
+        if id(self) not in [id(x) for x in STATE.mutable_module_list]:
             raise ValueError(
                 "Cannot modify a module in immutable mode.\n"
                 "Please do this computation inside a function decorated by `pax.pure`."
@@ -198,7 +240,7 @@ class BaseModule(metaclass=ModuleMetaclass):
         aux = dict(self.__dict__)
         children = [aux.pop(name) for name in self._pax.name_to_kind]
 
-        if ctx_state.enable_deep_copy:
+        if STATE.enable_deep_copy:
             leaves, treedef = jax.tree_flatten(aux)
             new_leaves = []
             for leaf in leaves:
@@ -226,8 +268,8 @@ class BaseModule(metaclass=ModuleMetaclass):
         md.update(zip(module._pax.name_to_kind, children))
 
         # if a module is created inside a `pure` function, it is mutable.
-        if ctx_state.inside_pure_function:
-            ctx_state.mutable_module_list = (module,) + ctx_state.mutable_module_list
+        if STATE.inside_pure_function:
+            STATE.mutable_module_list = (module,) + STATE.mutable_module_list
 
         return module
 
@@ -344,3 +386,10 @@ class BaseModule(metaclass=ModuleMetaclass):
             if name not in self._pax.name_to_kind:
                 if all_module_leaves(value):
                     self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
+
+    def register_subtree(self, name, value, kind):
+        if hasattr(self, name):
+            raise RuntimeError("Cannot register an existing attribute")
+
+        self._update_name_to_kind_dict(name, kind)
+        setattr(self, name, value)

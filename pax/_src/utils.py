@@ -6,7 +6,7 @@ from typing import Any, Callable, Tuple, TypeVar, Union
 import jax
 import jax.numpy as jnp
 
-from .module import (
+from .core import (
     Module,
     apply_updates,
     select_parameters,

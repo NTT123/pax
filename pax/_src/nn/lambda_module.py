@@ -2,7 +2,7 @@ from typing import Callable, List, Optional, Union
 
 import jax
 
-from ..module import Module
+from ..core import Module
 
 
 class Lambda(Module):

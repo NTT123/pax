@@ -3,7 +3,7 @@ from typing import Optional, Sequence
 import jax
 import jax.numpy as jnp
 
-from ..module import Module
+from ..core import Module
 from .ema import EMA
 
 

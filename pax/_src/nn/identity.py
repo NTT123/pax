@@ -1,4 +1,4 @@
-from ..module import Module
+from ..core import Module
 
 
 class Identity(Module):

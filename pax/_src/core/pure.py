@@ -3,7 +3,7 @@ import inspect
 
 import jax
 
-from .ctx import allow_mutation, enable_deep_copy
+from .base import allow_mutation, enable_deep_copy
 from .utils import get_modules
 
 

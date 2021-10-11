@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from ..module import Module
+from ..core import Module
 from .lambda_module import Lambda
 
 
