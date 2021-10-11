@@ -131,4 +131,4 @@ class apply_mp_policy(Module, Generic[T]):
             "compute_dtype": dtype_to_name[self.mp_policy.compute_dtype],
             "output_dtype": dtype_to_name[self.mp_policy.output_dtype],
         }
-        return super().__repr__(info=info)
+        return super()._repr(info=info)

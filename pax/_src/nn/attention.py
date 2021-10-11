@@ -74,4 +74,4 @@ class MultiHeadAttention(Module):
 
     def __repr__(self, info=None) -> str:
         info = {"num_heads": self.num_heads, "key_size": self.key_size}
-        return super().__repr__(info)
+        return super()._repr(info)

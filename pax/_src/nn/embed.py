@@ -55,4 +55,4 @@ class Embed(Module):
 
     def __repr__(self):
         info = {"vocab_size": self.vocab_size, "embed_dim": self.embed_dim}
-        return super().__repr__(info)
+        return super()._repr(info)

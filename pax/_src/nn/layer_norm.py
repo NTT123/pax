@@ -156,4 +156,4 @@ class LayerNorm(Module):
             "create_scale": self.create_scale,
             "create_offset": self.create_offset,
         }
-        return super().__repr__(info)
+        return super()._repr(info)

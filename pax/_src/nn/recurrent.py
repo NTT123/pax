@@ -95,7 +95,7 @@ class LSTM(RNN):
 
     def __repr__(self):
         info = {"input_dim": self.input_dim, "hidden_dim": self.hidden_dim}
-        return super().__repr__(info)
+        return super()._repr(info)
 
     def initial_state(self, batch_size) -> LSTMState:
         shape = (batch_size, self.hidden_dim)
@@ -166,4 +166,4 @@ class GRU(RNN):
 
     def __repr__(self):
         info = {"input_dim": self.input_dim, "hidden_dim": self.hidden_dim}
-        return super().__repr__(info)
+        return super()._repr(info)

@@ -478,7 +478,7 @@ class BaseModule(metaclass=ModuleMetaclass):
         else:
             return "\n".join(output)
 
-    def __repr__(self, info: Optional[Dict[str, Any]] = None) -> str:
+    def _repr(self, info: Optional[Dict[str, Any]] = None) -> str:
         name = f"({self._pax.name}) " if self._pax.name is not None else ""
         cls_name = self.__class__.__name__
         if info is None:
@@ -487,3 +487,6 @@ class BaseModule(metaclass=ModuleMetaclass):
             lst_info = [f"{k}={v}" for (k, v) in info.items() if v is not None]
             str_info = ", ".join(lst_info)
             return f"{name}{cls_name}[{str_info}]"
+
+    def __repr__(self) -> str:
+        return self._repr()

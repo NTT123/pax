@@ -151,7 +151,7 @@ class Conv(Module):
         if all_one(info["stride"]):
             del info["stride"]
 
-        return super().__repr__(info)
+        return super()._repr(info)
 
 
 class Conv1D(Conv):
@@ -396,7 +396,7 @@ class ConvTranspose(Module):
             "stride": self.stride,
             "with_bias": self.with_bias,
         }
-        return super().__repr__(info)
+        return super()._repr(info)
 
 
 class Conv1DTranspose(ConvTranspose):
