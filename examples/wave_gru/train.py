@@ -12,12 +12,11 @@ from data_loader import data_loader
 from model import WaveGRU
 
 
-@pax.pure
 def loss_fn(model: WaveGRU, inputs):
     logmel, wav = inputs
     input_wav = wav[:, :-1]
     target_wav = wav[:, 1:]
-    logits = model((logmel, input_wav))
+    model, logits = pax.module_and_value(model)((logmel, input_wav))
     log_pr = jax.nn.log_softmax(logits, axis=-1)
     target_wave = jax.nn.one_hot(target_wav, num_classes=logits.shape[-1])
     log_pr = jnp.sum(log_pr * target_wave, axis=-1)

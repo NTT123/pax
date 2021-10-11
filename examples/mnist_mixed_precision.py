@@ -48,11 +48,10 @@ class ConvNet(pax.Module):
         return jnp.squeeze(x, (1, 2))
 
 
-@pax.pure
 def loss_fn(model: ConvNet, batch: Batch):
     x = batch["image"].astype(jnp.float32) / 255
     target = batch["label"]
-    logits = model(x)
+    model, logits = pax.module_and_value(model)(x)
     log_pr = jax.nn.log_softmax(logits, axis=-1)
     log_pr = jnp.sum(jax.nn.one_hot(target, log_pr.shape[-1]) * log_pr, axis=-1)
     loss = -jnp.mean(log_pr)

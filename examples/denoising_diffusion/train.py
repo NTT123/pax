@@ -66,9 +66,8 @@ def train(
         .prefetch(tf.data.AUTOTUNE)
     )
 
-    @pax.pure
     def loss_fn(model, inputs):
-        loss = model(inputs)
+        model, loss = pax.module_and_value(model)(inputs)
         return loss, (loss, model)
 
     update_fn = pax.utils.build_update_fn(loss_fn)

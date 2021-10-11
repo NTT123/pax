@@ -78,7 +78,6 @@ class LM(pax.Module):
         logits = self.output(x)
         return logits
 
-    @pax.pure
     def inference(self, prompt: List[int] = [], length=32):
         hx = self.lstm.initial_state(1)
         if len(prompt) == 0:
@@ -107,7 +106,6 @@ class LM(pax.Module):
         return jnp.concatenate(out)
 
 
-@pax.pure
 def loss_fn(model: LM, batch: jnp.ndarray):
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
@@ -119,7 +117,6 @@ def loss_fn(model: LM, batch: jnp.ndarray):
     return loss
 
 
-@pax.pure
 def update_step(model_and_optimizer: Tuple[LM, pax.Module], batch: jnp.ndarray):
     model, optimizer = model_and_optimizer
     loss, grads = jax.value_and_grad(loss_fn)(model, batch)
