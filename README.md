@@ -88,12 +88,11 @@ There are a few important things in the above example:
 
 ## PAX functional programming<a id="functional"></a>
 
+### `pax.pure`
+
 Let "PAX function" mean functions whose inputs contain PAX modules.
 
----
-**It is a good practice to make PAX functions pure (no side effects).**
-
----
+It is a good practice to make PAX functions pure (no side effects).
 
 Even though PAX modules are stateful objects, the modifications of PAX module's internal states are restricted. 
 Only PAX functions decorated by `pax.pure` are allowed to modify PAX modules.
@@ -135,10 +134,10 @@ print(net.counter) # increased by 1
 # 4
 ```
 
----
-**It is a good practice to keep functions decorated by `pax.pure` as small as possible.**
+### `pax.module_and_value`
 
----
+It is a good practice to keep functions decorated by `pax.pure` as small as possible.
+
 
 PAX provides the function `pax.module_and_value` that converts a PAX module's method to a pure function which returns the updated module in the output. For example:
 
