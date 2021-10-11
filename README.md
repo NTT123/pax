@@ -88,15 +88,19 @@ There are a few important things in the above example:
 
 ## PAX functional programming<a id="functional"></a>
 
-### `pax.pure`
-
 Let "PAX function" mean functions whose inputs contain PAX modules.
 
-> It is a good practice to make sure PAX functions have no side effects. This adheres to JAX functional programming  mode.
+---
 
+**It is a good practice to make PAX functions pure (no side effects). This adheres to JAX functional programming  mode.**
+
+---
 
 Even though PAX modules are stateful objects, the modifications of PAX module's internal states are restricted. 
 Only PAX functions decorated by `pax.pure` are allowed to modify PAX modules.
+
+<details>
+<summary>Click to expand</summary>
 
 ```python
 net = Counter(3)
@@ -105,9 +109,13 @@ net(0)
 # ValueError: Cannot modify a module in immutable mode.
 # Please do this computation inside a function decorated by `pax.pure`.
 ```
+</details>
+
 
 Furthermore, a decorated function can only access the copy of its of inputs. Any modification on the copy will not affect the original inputs.
 
+<details>
+<summary>Click to expand</summary>
 
 ```python
 @pax.pure
@@ -120,7 +128,8 @@ update_counter_wo_return(net)
 print(net.counter) # the same counter
 # 3
 ```
-   
+</details>
+
 As a consequence, the only way to *update* an input module is to return it in the output.
 
 ```python
@@ -136,9 +145,11 @@ print(net.counter) # increased by 1
 # 4
 ```
 
-## `pax.module_and_value`
+---
 
-> It is a good practice to keep functions decorated by `pax.pure` as small as possible. 
+**It is a good practice to keep functions decorated by `pax.pure` as small as possible.**
+
+---
 
 PAX provides the function `pax.module_and_value` that converts a PAX module's method to a pure function which returns the updated module in the output. For example:
 
@@ -161,11 +172,6 @@ def loss_fn(model: Counter, x: jnp.ndarray):
 ```
 
 
-
-
-
-
-
 ## PAX and other libraries <a id="paxandfriends"></a>
 
 PAX module has several methods that are similar to Pytorch. 
@@ -184,8 +190,11 @@ PAX learns a lot from other libraries too:
 
 ## Examples<a id="examples"></a>
 
-A good way to learn about ``PAX`` is to see examples in the [examples/](./examples) directory:
+A good way to learn about ``PAX`` is to see examples in the [examples/](./examples) directory.
 
+
+<details>
+<summary>Click to expand</summary>
 
 | Path     |      Description      |
 |----------|-----------------------|
@@ -199,6 +208,9 @@ A good way to learn about ``PAX`` is to see examples in the [examples/](./exampl
 | ``mnist_mixed_precision.py`` (experimental) | train an image classifier with mixed precision. |
 | ``wave_gru/`` | train a WaveGRU vocoder: convert mel-spectrogram to waveform. |
 | ``denoising_diffusion/`` | train a denoising diffusion model on `Celeb-A` dataset. |
+
+</details>
+
 
 
 
