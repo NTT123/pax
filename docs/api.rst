@@ -19,12 +19,14 @@ PAX's Module
    .. autoattribute:: OTHERS
 
 
-Purify a function
------------------
+Purify functions and methods
+----------------------------
 
 .. currentmodule:: pax
 
 .. autofunction:: pure
+
+.. autofunction:: module_and_value 
 
 
 Random Number Generator

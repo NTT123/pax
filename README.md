@@ -88,9 +88,12 @@ There are a few important things in the above example:
 
 ## PAX functional programming<a id="functional"></a>
 
+### `pax.pure`
+
 Let "PAX function" mean functions whose inputs contain PAX modules.
 
 > It is a good practice to make sure PAX functions have no side effects. This adheres to JAX functional programming  mode.
+
 
 Even though PAX modules are stateful objects, the modifications of PAX module's internal states are restricted. 
 Only PAX functions decorated by `pax.pure` are allowed to modify PAX modules.
@@ -132,6 +135,35 @@ net = update_counter(net)
 print(net.counter) # increased by 1
 # 4
 ```
+
+## `pax.module_and_value`
+
+> It is a good practice to keep functions decorated by `pax.pure` as small as possible. 
+
+PAX provides the function `pax.module_and_value` that converts a PAX module's method to a pure function which returns the updated module in the output. For example:
+
+```python
+net = Counter(3)
+print(net.counter) # 3
+net, y = pax.module_and_value(net)(0)
+print(net.counter) # 4
+```
+
+In this example, `pax.module_and_value` converts `net.__call__` to a pure function which returns the updated `net` in its output.
+
+Below is a better implementation of `loss_fn` with a smaller mutable scope:
+
+```python
+def loss_fn(model: Counter, x: jnp.ndarray):
+    model, y = pax.module_and_value(model)(x)
+    loss = jnp.mean(jnp.square(x - y))
+    return loss, (loss, model)
+```
+
+
+
+
+
 
 
 ## PAX and other libraries <a id="paxandfriends"></a>

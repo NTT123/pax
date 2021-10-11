@@ -3,6 +3,7 @@
 from .flatten_module import flatten_module
 from .mixed_precision import apply_mp_policy
 from .module import Module, PaxFieldKind
+from .module_and_value import module_and_value
 from .pure import pure
 from .transforms import (
     enable_eval_mode,

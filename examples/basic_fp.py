@@ -31,9 +31,8 @@ class Linear(pax.Module):
         return x
 
 
-@pax.pure
 def loss_fn(model: Linear, x, y):
-    y_hat = model(x)
+    model, y_hat = pax.module_and_value(model)(x)
     loss = jnp.mean(jnp.square(y_hat - y))
     return loss, (loss, model)
 
