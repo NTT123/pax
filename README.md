@@ -40,7 +40,7 @@ Or install the latest version from github:
 pip3 install git+https://github.com/ntt123/pax.git
 
 ## or test mode to run tests and examples
-pip3 install git+https://github.com/ntt123/pax.git#egg=pax[test]
+pip3 install git+https://github.com/ntt123/pax.git#egg=pax3[test]
 ```
 
 

@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 
 from ..core import Module
-from ..rng import KeyArray, next_rng_key
+from ..core.rng import KeyArray, next_rng_key
 
 
 def dropout(rng_key: KeyArray, dropout_rate: float, x: jnp.ndarray) -> jnp.ndarray:

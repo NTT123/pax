@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from .rng import KeyArray
+from .core.rng import KeyArray
 
 Initializer = Callable[[Sequence[int], Any, KeyArray], jnp.ndarray]
 

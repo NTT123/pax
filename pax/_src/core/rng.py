@@ -18,6 +18,18 @@ RNG_STATE._seed = None
 KeyArray = Union[Any, jnp.ndarray]
 
 
+def get_rng_state():
+    """Return internal states."""
+    return (RNG_STATE._rng_key, RNG_STATE._seed)
+
+
+def set_rng_state(state):
+    """Set internal states."""
+    _rng_key, _seed = state
+    RNG_STATE._rng_key = _rng_key
+    RNG_STATE._seed = _seed
+
+
 def seed_rng_key(seed: int) -> None:
     """Set ``state._seed = seed`` and reset ``state._rng_key`` to ``None``.
 

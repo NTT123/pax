@@ -1,9 +1,8 @@
-"""PAX BaseModule.
+"""PAX BaseModule."""
 
-Note: This file is originated from
-https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
-which is under MIT License.
-"""
+# Note: This file is originated from
+# https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
+# which is under MIT License.
 
 import threading
 from collections import OrderedDict
@@ -29,6 +28,8 @@ import jax.numpy as jnp
 import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
+
+from .rng import get_rng_state, set_rng_state
 
 T = TypeVar("T", bound="BaseModule")
 M = TypeVar("M")
@@ -61,6 +62,7 @@ class allow_mutation(object):
     r"""A context manager that turns on mutability."""
     prev: Any
     prev_inside: bool
+    prev_rng_state: Any
 
     def __init__(self, modules):
         super().__init__()
@@ -72,11 +74,13 @@ class allow_mutation(object):
         self.prev = STATE.mutable_module_list
         STATE.mutable_module_list = self.mods + STATE.mutable_module_list
         self.prev_inside = STATE.inside_pure_function
+        self.prev_rng_state = get_rng_state()
         STATE.inside_pure_function = True
 
     def __exit__(self, _: Any, __: Any, ___: Any) -> None:
         STATE.mutable_module_list = self.prev
         STATE.inside_pure_function = self.prev_inside
+        set_rng_state(self.prev_rng_state)
 
 
 @jax.tree_util.register_pytree_node_class

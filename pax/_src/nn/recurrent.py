@@ -7,7 +7,7 @@ import jax.numpy as jnp
 
 from ..initializers import Initializer
 from ..core import Module
-from ..rng import KeyArray, next_rng_key
+from ..core.rng import KeyArray, next_rng_key
 from .linear import Linear
 
 

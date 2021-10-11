@@ -18,7 +18,7 @@ import numpy as np
 
 from .. import initializers
 from ..core import Module
-from ..rng import KeyArray, next_rng_key
+from ..core.rng import KeyArray, next_rng_key
 
 
 class LayerNorm(Module):

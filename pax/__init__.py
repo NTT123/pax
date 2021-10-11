@@ -17,8 +17,8 @@ from ._src.core import (
     update_parameters,
     update_states,
 )
+from ._src.core.rng import next_rng_key, seed_rng_key
 from ._src.nn.dropout import dropout
-from ._src.rng import next_rng_key, seed_rng_key
 from ._src.utils import build_update_fn, grad_parameters, scan
 
 __all__ = [
