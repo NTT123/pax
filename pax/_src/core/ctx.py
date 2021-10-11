@@ -1,13 +1,11 @@
 """
-Manage the global variable ``state``.
+Manage the global variable `state` and context managers.
 """
 
 import threading
 from typing import Any
 
 state = threading.local()
-state._rng_key = None
-state._seed = None
 state.enable_deep_copy = False
 state.inside_pure_function = False
 state.mutable_module_list = ()

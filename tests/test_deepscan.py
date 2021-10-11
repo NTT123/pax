@@ -31,7 +31,7 @@ def test_assigned_field_an_array():
 
     n = N()
 
-    pax.scan_bugs(n)
+    n.scan_bugs()
     # no error because we will automatically assign `a` to kind PARAMETER
     n.register_parameter("b", jnp.array([1, 2, 3], dtype=jnp.float32))
 

@@ -284,7 +284,7 @@ def test_automatic_assign_module_list_1():
                 self.fc.append(pax.nn.Linear(3, 3))
 
     m = M()
-    m = pax.scan_bugs(m)
+    m.scan_bugs()
 
 
 def test_automatic_assign_module_dict_1():
@@ -296,7 +296,7 @@ def test_automatic_assign_module_dict_1():
                 self.fc[i] = pax.nn.Linear(3, 3)
 
     m = M()
-    m = pax.scan_bugs(m)
+    m.scan_bugs()
 
 
 def test_assign_empty_list_2():
@@ -310,7 +310,7 @@ def test_assign_empty_list_2():
                 self.fc.append(pax.nn.Linear(3, 3))
 
     m = M()
-    m = pax.scan_bugs(m)
+    m.scan_bugs()
 
 
 def test_compare_modules():
@@ -380,4 +380,4 @@ def test_module_list_contains_int():
 def test_append_module_list():
     n = pax.nn.Sequential(pax.nn.Linear(3, 3))
     n.replace(modules=n.modules + (pax.nn.Linear(4, 4),))
-    pax.scan_bugs(n)
+    n.scan_bugs()

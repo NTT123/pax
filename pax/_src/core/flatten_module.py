@@ -5,7 +5,6 @@ import jax
 import jax.numpy as jnp
 
 from .module import Module
-from .pure import pure
 
 TreeDef = Any
 

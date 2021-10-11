@@ -2,33 +2,23 @@
 
 import functools
 from typing import Any, Callable, Tuple, TypeVar, Union
-from unittest import TestCase
 
 import jax
 import jax.numpy as jnp
 
-from .module import Module
+from .module import (
+    Module,
+    apply_updates,
+    select_parameters,
+    transform_gradients,
+    update_parameters,
+)
 from .rng import KeyArray
 
 GradientTransformation = Module
 T = TypeVar("T", bound=Module)
 O = TypeVar("O", bound=GradientTransformation)
 C = TypeVar("C")
-
-
-@jax.tree_util.register_pytree_node_class
-class EmptyNode(Tuple):
-    """We use this class to mark deleted nodes.
-
-    Note: this is inspired by treex's `Nothing` class.
-    """
-
-    def tree_flatten(self):
-        return (), None
-
-    @classmethod
-    def tree_unflatten(cls, _, __):
-        return EmptyNode()
 
 
 @functools.wraps(jax.grad)
@@ -115,13 +105,6 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
             aux: the aux info.
         """
 
-        from .transforms import (
-            apply_updates,
-            select_parameters,
-            transform_gradients,
-            update_parameters,
-        )
-
         assert isinstance(model, Module)
         assert isinstance(optimizer, Module)
 
@@ -189,57 +172,3 @@ def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):
         state, output = jax.lax.scan(fn, init, xs, length=length, unroll=unroll)
         output = jnp.swapaxes(output, 0, 1)  # restore to NT...
         return state, output
-
-
-def assertStructureEqual(self: T, other: T):
-    """Assert that the two modules are structurally the same.
-
-    Print out the difference.
-    """
-    if jax.tree_structure(self) == jax.tree_structure(other):
-        return True
-
-    def check(a, b):
-        if isinstance(a, Module) and isinstance(b, Module):
-            assertStructureEqual(a, b)
-
-    has_error = False
-    try:
-        jax.tree_map(
-            check,
-            self,
-            other,
-            is_leaf=lambda x: isinstance(x, Module)
-            and x is not self
-            and x is not other,
-        )
-    except ValueError:
-        has_error = True
-
-    if has_error:
-        tc = TestCase()
-        tc.maxDiff = None
-        # do not compare weights
-        u = jax.tree_map(lambda x: None, self)
-        v = jax.tree_map(lambda y: None, other)
-        tc.assertDictEqual(vars(u), vars(v))
-
-
-def get_modules(v):
-    "Return a list of modules in the pytree `v`."
-    modules = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
-    modules = [m for m in modules if isinstance(m, Module)]
-    return modules
-
-
-def scan_bugs(mod: T) -> T:
-    """Scan the module for potential bugs."""
-
-    def _scan_apply_fn(mod: T) -> T:
-        assert isinstance(mod, Module)
-        mod._scan_fields(mod.__class__.__dict__)
-        mod._scan_fields(mod.__dict__)
-        return mod
-
-    mod.apply(_scan_apply_fn)
-    return mod

@@ -4,7 +4,7 @@ import inspect
 import jax
 
 from .ctx import allow_mutation, enable_deep_copy
-from .utils import get_modules, scan_bugs
+from .utils import get_modules
 
 
 def _get_all_submodules(value):
@@ -42,7 +42,7 @@ def pure(func):
 
     @functools.wraps(func)
     def _f(*args, **kwargs):
-        [scan_bugs(m) for m in get_modules((func, args, kwargs))]
+        [m.scan_bugs() for m in get_modules((func, args, kwargs))]
 
         # support calling method
         if inspect.ismethod(func):
@@ -59,7 +59,7 @@ def pure(func):
         with allow_mutation(modules):
             out = fn(*self, *args, **kwargs)
 
-        [scan_bugs(m) for m in get_modules(out)]
+        [m.scan_bugs() for m in get_modules(out)]
 
         return out
 

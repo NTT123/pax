@@ -11,7 +11,6 @@ from enum import Enum
 from types import MappingProxyType
 from typing import (
     Any,
-    Dict,
     List,
     Mapping,
     NamedTuple,
@@ -20,7 +19,6 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
-    Union,
 )
 
 import jax
@@ -32,9 +30,24 @@ from jax.dtypes import issubdtype as isdt
 from .ctx import allow_mutation
 from .ctx import state as ctx_state
 
-T = TypeVar("T", bound="Module")
+T = TypeVar("T", bound="BaseModule")
 M = TypeVar("M")
 TreeDef = Any
+
+
+@jax.tree_util.register_pytree_node_class
+class EmptyNode(Tuple):
+    """We use this class to mark deleted nodes.
+
+    Note: this is inspired by treex's `Nothing` class.
+    """
+
+    def tree_flatten(self):
+        return (), None
+
+    @classmethod
+    def tree_unflatten(cls, _, __):
+        return EmptyNode()
 
 
 class PaxFieldKind(Enum):
@@ -87,7 +100,7 @@ class ModuleMetaclass(type):
         return module
 
 
-class Module(metaclass=ModuleMetaclass):
+class BaseModule(metaclass=ModuleMetaclass):
     """Module manages all information related to the pytree.
 
     There are two important methods:
@@ -122,16 +135,6 @@ class Module(metaclass=ModuleMetaclass):
     def __init__(self, name: Optional[str] = None):
         """Initialize module's name."""
         super().__setattr__("_pax", self._pax._replace(name=name))
-
-    @property
-    def training(self) -> bool:
-        """If a module is in training mode."""
-        return self._pax.training
-
-    @property
-    def name(self) -> Optional[str]:
-        """Return the name of the module."""
-        return self._pax.name
 
     def _assert_mutability(self):
         if id(self) not in [id(x) for x in ctx_state.mutable_module_list]:
@@ -169,14 +172,14 @@ class Module(metaclass=ModuleMetaclass):
 
         # If `value` contains Module's instances only, it is registered as MODULE.
         module_leaves, _ = jax.tree_flatten(
-            value, is_leaf=lambda x: isinstance(x, Module)
+            value, is_leaf=lambda x: isinstance(x, BaseModule)
         )
-        all_modules = all(isinstance(mod, Module) for mod in module_leaves)
+        all_modules = all(isinstance(mod, BaseModule) for mod in module_leaves)
         if (
             value is not None
             and len(module_leaves) > 0
             and name not in self._pax.name_to_kind
-            and (isinstance(value, Module) or all_modules)
+            and (isinstance(value, BaseModule) or all_modules)
         ):
             self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
 
@@ -188,40 +191,6 @@ class Module(metaclass=ModuleMetaclass):
         if name in self._pax.name_to_kind:
             raise ValueError("Cannot delete a pytree attribute.")
         super().__delattr__(name)
-
-    def register_parameter(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.PARAMETER`` in the ``_name_to_kind`` dictionary."""
-
-        if hasattr(self, name):
-            raise RuntimeError("Cannot register an existing attribute")
-
-        self._update_name_to_kind_dict(name, PaxFieldKind.PARAMETER)
-        setattr(self, name, value)
-
-    def register_state(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.STATE`` in the ``_name_to_kind`` dictionary."""
-
-        if hasattr(self, name):
-            raise RuntimeError("Cannot register an existing attribute")
-
-        self._update_name_to_kind_dict(name, PaxFieldKind.STATE)
-        setattr(self, name, value)
-
-    def register_modules(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.MODULE`` in the ``name_to_kind`` dictionary."""
-
-        if hasattr(self, name):
-            raise RuntimeError("Cannot register an existing attribute")
-
-        self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
-        setattr(self, name, value)
-
-    register_parameters = register_parameter
-    register_states = register_state
-    register_module = register_modules
 
     def tree_flatten(self) -> Tuple[List[jnp.ndarray], Mapping[str, Any]]:
         """Convert a module to ``(children, treedef)``."""
@@ -266,75 +235,21 @@ class Module(metaclass=ModuleMetaclass):
         """Any subclass of ``Module`` is also registered as pytree."""
         jax.tree_util.register_pytree_node_class(cls)
 
-    def copy(self: T) -> T:
-        """Return a copy of current module."""
-        leaves, treedef = jax.tree_flatten(self)
-        return jax.tree_unflatten(treedef, leaves)
-
-    def submodules(self) -> List["Module"]:
-        """Return a list of submodules."""
-        module_subtrees = [
-            getattr(self, name)
-            for name, kind in self._pax.name_to_kind.items()
-            if kind == PaxFieldKind.MODULE
-        ]
-
-        is_module = lambda x: isinstance(x, Module)
-        submods, _ = jax.tree_flatten(module_subtrees, is_leaf=is_module)
-        return [v for v in submods if is_module(v)]
-
-    def summary(self, return_list: bool = False) -> Union[str, List[str]]:
-        """This is the default summary method.
-
-        Arguments:
-            return_list: return a list of lines instead of a joined string.
-
-
-        Example:
-
-        >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
-        Sequential
-        ├── Linear[in_dim=2, out_dim=3, with_bias=True]
-        ├── x => relu(x)
-        └── Linear[in_dim=3, out_dim=4, with_bias=True]
-        """
-
-        output = [self.__repr__()]
-        if output[0] is None:
-            raise ValueError(
-                f"The `{self.__class__}.__repr__` method returns a `None` value."
-            )
-        submodules = self.submodules()
-
-        def indent(lines: List[str], start_string) -> List[str]:
-            return [start_string + l for l in lines]
-
-        for i, module in enumerate(submodules):
-            lines = module.summary(return_list=True)
-            if i + 1 < len(submodules):  # middle submodules
-                indented_lines = indent(lines[:1], "├── ") + indent(lines[1:], "│   ")
-            else:  # last submodule
-                indented_lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
-            output.extend(indented_lines)
-
-        if return_list:
-            return output
-        else:
-            return "\n".join(output)
-
     def _scan_fields(self, fields: Sequence[str]):
         """Scan fields for *potential* bugs."""
 
         for name in fields:
             value = getattr(self, name)
             kind = self._pax.name_to_kind.get(name, PaxFieldKind.OTHERS)
-            mods, _ = jax.tree_flatten(value, is_leaf=lambda x: isinstance(x, Module))
+            mods, _ = jax.tree_flatten(
+                value, is_leaf=lambda x: isinstance(x, BaseModule)
+            )
             leaves = jax.tree_leaves(value)
 
             # Check if a MODULE attribute contains non-module leafs.
             if kind == PaxFieldKind.MODULE:
                 for mod in mods:
-                    if not isinstance(mod, Module):
+                    if not isinstance(mod, BaseModule):
                         raise ValueError(
                             f"Field `{self}.{name}` (kind={kind}, value={value}) contains a non-module leaf "
                             f"(type={type(mod)}, value={mod})."
@@ -364,12 +279,12 @@ class Module(metaclass=ModuleMetaclass):
             if kind == PaxFieldKind.OTHERS:
                 # if a field contains empty pytree
                 leaves, _ = jax.tree_flatten(
-                    value, is_leaf=lambda x: isinstance(x, Module)
+                    value, is_leaf=lambda x: isinstance(x, BaseModule)
                 )
 
                 # Check if a field contains unregistered module
                 for leaf in mods:
-                    if isinstance(leaf, Module):
+                    if isinstance(leaf, BaseModule):
                         raise ValueError(
                             f"Unregistered field `{self}.{name}` ({kind}) contains a Module "
                             f"({leaf}). "
@@ -387,48 +302,11 @@ class Module(metaclass=ModuleMetaclass):
             # Check if an unregistered (or PARAMETER) field contains pax.Module instances
             if kind not in [PaxFieldKind.MODULE, PaxFieldKind.STATE]:
                 for mod in mods:
-                    if isinstance(mod, Module):
+                    if isinstance(mod, BaseModule):
                         raise ValueError(
                             f"Field `{self}.{name}` ({kind}) "
                             f"SHOULD NOT contains a pax.Module instance {mod}."
                         )
-
-    def apply(self: T, apply_fn) -> T:
-        """Apply a function to all submodules.
-
-        **Note**: this function returns a transformed copy of the module.
-
-        Arguments:
-            apply_fn: a function which inputs a module and outputs a transformed module.
-            check_treedef: check treedef before applying the function.
-        """
-
-        def rec_fn(mod_or_ndarray):
-            if isinstance(mod_or_ndarray, Module):
-                return mod_or_ndarray.apply(apply_fn)
-            else:
-                return mod_or_ndarray
-
-        submodules = self.submodules()
-        new_self = jax.tree_map(
-            rec_fn,
-            self,
-            is_leaf=lambda x: isinstance(x, Module) and (x in submodules),
-        )
-
-        # tree_map already created a copy of self,
-        # hence `apply_fn` is guaranteed to have no side effects.
-        return apply_fn(new_self)
-
-    def __repr__(self, info: Optional[Dict[str, Any]] = None) -> str:
-        name = f"({self._pax.name}) " if self._pax.name is not None else ""
-        cls_name = self.__class__.__name__
-        if info is None:
-            return f"{name}{cls_name}"
-        else:
-            lst_info = [f"{k}={v}" for (k, v) in info.items() if v is not None]
-            str_info = ", ".join(lst_info)
-            return f"{name}{cls_name}[{str_info}]"
 
     def __eq__(self, o: object) -> bool:
         """Compare two modules."""
@@ -455,52 +333,14 @@ class Module(metaclass=ModuleMetaclass):
         leaves = jax.tree_map(lambda x: (x.shape, x.dtype), leaves)
         return hash((tuple(leaves), treedef))
 
-    def train(self: T) -> T:
-        """Return a module in training mode."""
-        from .transforms import enable_train_mode
-
-        return enable_train_mode(self)
-
-    def eval(self: T) -> T:
-        """Return a module in evaluation mode."""
-        from .transforms import enable_eval_mode
-
-        return enable_eval_mode(self)
-
-    def parameters(self: T) -> T:
-        """Return trainable parameters."""
-        from .transforms import select_parameters
-
-        return select_parameters(self)
-
-    def update_parameters(self: T, params: T) -> T:
-        """Return a new module with updated parameters."""
-        from .transforms import update_parameters
-
-        return update_parameters(self, params=params)
-
     def find_and_register_submodules(self):
         """Find unregistered submodules and register it with MODULE kind."""
 
         def all_module_leaves(x):
-            leaves = jax.tree_flatten(x, is_leaf=lambda m: isinstance(m, Module))[0]
-            return len(leaves) > 0 and all(isinstance(m, Module) for m in leaves)
+            leaves = jax.tree_flatten(x, is_leaf=lambda m: isinstance(m, BaseModule))[0]
+            return len(leaves) > 0 and all(isinstance(m, BaseModule) for m in leaves)
 
         for name, value in vars(self).items():
             if name not in self._pax.name_to_kind:
                 if all_module_leaves(value):
                     self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
-
-    def replace(self: T, **kwargs) -> T:
-        """Return a new module with some attributes replaced."""
-        from .utils import scan_bugs
-
-        mod = self.copy()
-        with allow_mutation(mod):
-            for name, value in kwargs.items():
-                assert hasattr(mod, name)
-                setattr(mod, name, value)
-            mod.find_and_register_submodules()
-
-        scan_bugs(mod)
-        return mod

@@ -1,14 +1,16 @@
-from pax._src.module import Module, PaxFieldKind
-from pax._src.pure import pure
-from pax._src.rng import next_rng_key, seed_rng_key
-from pax._src.transforms import (
+from . import initializers, nets, nn, utils
+from ._src.core import (
+    Module,
+    PaxFieldKind,
     apply_gradients,
     apply_mp_policy,
     apply_updates,
+    assertStructureEqual,
     enable_eval_mode,
     enable_train_mode,
     flatten_module,
     freeze_parameters,
+    pure,
     select_parameters,
     select_states,
     transform_gradients,
@@ -16,14 +18,14 @@ from pax._src.transforms import (
     update_parameters,
     update_states,
 )
-from pax._src.utils import build_update_fn, dropout, grad_parameters, scan, scan_bugs
-
-from . import initializers, nets, nn, utils
+from ._src.rng import next_rng_key, seed_rng_key
+from ._src.utils import build_update_fn, dropout, grad_parameters, scan
 
 __all__ = [
     "apply_gradients",
     "apply_mp_policy",
     "apply_updates",
+    "assertStructureEqual",
     "build_update_fn",
     "dropout",
     "enable_eval_mode",
@@ -38,7 +40,6 @@ __all__ = [
     "nn",
     "PaxFieldKind",
     "pure",
-    "scan_bugs",
     "scan",
     "seed_rng_key",
     "select_parameters",
