@@ -1,4 +1,4 @@
-"""PAX module.
+"""PAX BaseModule.
 
 Note: This file is originated from 
 https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
@@ -51,7 +51,7 @@ class enable_deep_copy(object):
         self.prev = STATE.enable_deep_copy
         STATE.enable_deep_copy = True
 
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+    def __exit__(self, _: Any, __: Any, ___: Any) -> None:
         STATE.enable_deep_copy = self.prev
 
 
@@ -72,7 +72,7 @@ class allow_mutation(object):
         self.prev_inside = STATE.inside_pure_function
         STATE.inside_pure_function = True
 
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+    def __exit__(self, _: Any, __: Any, __: Any) -> None:
         STATE.mutable_module_list = self.prev
         STATE.inside_pure_function = self.prev_inside
 
@@ -387,7 +387,7 @@ class BaseModule(metaclass=ModuleMetaclass):
                 if all_module_leaves(value):
                     self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
 
-    def register_subtree(self, name, value, kind):
+    def register_subtree(self, name: str, value, kind: PaxFieldKind):
         if hasattr(self, name):
             raise RuntimeError("Cannot register an existing attribute")
 
