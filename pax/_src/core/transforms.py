@@ -39,11 +39,11 @@ def freeze_parameters(mod: T) -> T:
 
     def _freeze_apply_fn(mod: T) -> T:
         new_name_to_kind = OrderedDict()
-        for k, v in mod._pax.name_to_kind.items():
-            if v == PaxFieldKind.PARAMETER:
-                new_name_to_kind[k] = PaxFieldKind.STATE
+        for name, kind in mod._pax.name_to_kind.items():
+            if kind == PaxFieldKind.PARAMETER:
+                new_name_to_kind[name] = PaxFieldKind.STATE
             else:
-                new_name_to_kind[k] = v
+                new_name_to_kind[name] = kind
 
         # use proxy to avoid any side effects
         mod.__dict__["_pax"] = mod._pax._replace(
@@ -77,11 +77,11 @@ def select_kind(mod: T, *, kind: PaxFieldKind) -> T:
         none_list = [PaxFieldKind.STATE]
 
     def _select_apply_fn(mod: T) -> T:
-        for k, v in mod._pax.name_to_kind.items():
-            if v in none_list:
-                value = getattr(mod, k)
+        for name, kind in mod._pax.name_to_kind.items():
+            if kind in none_list:
+                value = getattr(mod, name)
                 none_v = jax.tree_map(lambda _: EmptyNode(), value)
-                mod.__dict__[k] = none_v
+                mod.__dict__[name] = none_v
         return mod
 
     return mod.apply(_select_apply_fn)
@@ -100,11 +100,11 @@ def select_states(mod: T) -> T:
 def update_pytree(mod: T, *, other: T) -> T:
     """Use non-EmptyNode leaves from others"""
 
-    def _select_fn(x, y):
-        if isinstance(y, EmptyNode):
-            return x
+    def _select_fn(leaf_x, leaf_y):
+        if isinstance(leaf_y, EmptyNode):
+            return leaf_x
         else:
-            return y
+            return leaf_y
 
     new_mod = jax.tree_map(_select_fn, mod, other)
     new_mod = jax.tree_unflatten(jax.tree_structure(mod), jax.tree_leaves(new_mod))

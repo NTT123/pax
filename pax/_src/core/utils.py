@@ -1,3 +1,5 @@
+"""Useful functions."""
+
 from typing import TypeVar
 from unittest import TestCase
 
@@ -8,42 +10,42 @@ from .module import Module
 T = TypeVar("T", bound=Module)
 
 
-def get_modules(v):
-    "Return a list of modules in the pytree `v`."
-    modules = jax.tree_flatten(v, is_leaf=lambda x: isinstance(x, Module))[0]
+def get_modules(tree):
+    "Return a list of modules in the pytree `tree`."
+    modules = jax.tree_flatten(tree, is_leaf=lambda x: isinstance(x, Module))[0]
     modules = [m for m in modules if isinstance(m, Module)]
     return modules
 
 
-def assertStructureEqual(self: T, other: T):
-    """Assert that the two modules are structurally the same.
+def assertStructureEqual(tree_a: T, tree_b: T):
+    """Assert that the two pytrees are structurally the same.
 
     Print out the difference.
     """
-    if jax.tree_structure(self) == jax.tree_structure(other):
+    if jax.tree_structure(tree_a) == jax.tree_structure(tree_b):
         return True
 
-    def check(a, b):
-        if isinstance(a, Module) and isinstance(b, Module):
-            assertStructureEqual(a, b)
+    def check(subtree_a, subtree_b):
+        if isinstance(subtree_a, Module) and isinstance(subtree_b, Module):
+            assertStructureEqual(subtree_a, subtree_b)
 
     has_error = False
     try:
         jax.tree_map(
             check,
-            self,
-            other,
+            tree_a,
+            tree_b,
             is_leaf=lambda x: isinstance(x, Module)
-            and x is not self
-            and x is not other,
+            and x is not tree_a
+            and x is not tree_b,
         )
     except ValueError:
         has_error = True
 
     if has_error:
-        tc = TestCase()
-        tc.maxDiff = None
+        test_case = TestCase()
+        test_case.maxDiff = None
         # do not compare weights
-        u = jax.tree_map(lambda x: None, self)
-        v = jax.tree_map(lambda y: None, other)
-        tc.assertDictEqual(vars(u), vars(v))
+        tree_a_w_none_leaves = jax.tree_map(lambda _: None, tree_a)
+        tree_b_w_none_leaves = jax.tree_map(lambda _: None, tree_b)
+        test_case.assertDictEqual(vars(tree_a_w_none_leaves), vars(tree_b_w_none_leaves))

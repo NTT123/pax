@@ -1,3 +1,5 @@
+"""Transformer Decoder Stack."""
+
 from typing import Dict, Optional, Sequence
 
 import jax

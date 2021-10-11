@@ -1,4 +1,6 @@
-from pax._src.nets import (
+"""Public nets."""
+
+from ._src.nets import (
     ResNet18,
     ResNet34,
     ResNet50,

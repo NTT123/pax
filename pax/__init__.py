@@ -1,3 +1,5 @@
+"""PAX package."""
+
 from . import initializers, nets, nn, utils
 from ._src.core import (
     Module,

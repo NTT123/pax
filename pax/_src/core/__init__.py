@@ -1,3 +1,5 @@
+"""PAX core module"""
+
 from .flatten_module import flatten_module
 from .mixed_precision import apply_mp_policy
 from .module import Module, PaxFieldKind

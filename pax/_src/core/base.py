@@ -1,6 +1,6 @@
 """PAX BaseModule.
 
-Note: This file is originated from 
+Note: This file is originated from
 https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
 which is under MIT License.
 """
@@ -87,10 +87,12 @@ class EmptyNode(Tuple):
     """
 
     def tree_flatten(self):
+        """Flatten empty node."""
         return (), None
 
     @classmethod
     def tree_unflatten(cls, _, __):
+        """Unflatten empty node."""
         return EmptyNode()
 
 
@@ -202,7 +204,8 @@ class BaseModule(metaclass=ModuleMetaclass):
         """Whenever a user sets an attribute, we will check the assignment:
 
         - Setting `_name_to_kind` and `_training` are forbidden.
-        - If `value` is a pytree of modules and `name` is not in `_name_to_kind`, its kind will be `PaxFieldKind.MODULE`.
+        - If `value` is a pytree of modules and `name` is not in `_name_to_kind`,
+          its kind will be `PaxFieldKind.MODULE`.
         """
         self._assert_mutability()
 
@@ -251,7 +254,7 @@ class BaseModule(metaclass=ModuleMetaclass):
                         new_leaves.append(new_leaf)
                     else:
                         new_leaves.append(leaf)
-                except:
+                except TypeError:
                     new_leaves.append(leaf)
 
             aux = jax.tree_unflatten(treedef, leaves)
@@ -262,11 +265,11 @@ class BaseModule(metaclass=ModuleMetaclass):
     def tree_unflatten(cls, aux, children):
         """Recreate a module from its ``(children, treedef)``."""
         module = object.__new__(cls)
-        md = module.__dict__
-        md.update(aux)
+        module_dict = module.__dict__
+        module_dict.update(aux)
         # don't have to copy `_name_to_kind` anymore, speed thing up!
         # md["_name_to_kind"] = OrderedDict(module._name_to_kind)
-        md.update(zip(module._pax.name_to_kind, children))
+        module_dict.update(zip(module._pax.name_to_kind, children))
 
         # if a module is created inside a `pure` function, it is mutable.
         if STATE.inside_pure_function:
@@ -379,8 +382,10 @@ class BaseModule(metaclass=ModuleMetaclass):
     def find_and_register_submodules(self):
         """Find unregistered submodules and register it with MODULE kind."""
 
-        def all_module_leaves(x):
-            leaves = jax.tree_flatten(x, is_leaf=lambda m: isinstance(m, BaseModule))[0]
+        def all_module_leaves(tree):
+            leaves = jax.tree_flatten(
+                tree, is_leaf=lambda m: isinstance(m, BaseModule)
+            )[0]
             return len(leaves) > 0 and all(isinstance(m, BaseModule) for m in leaves)
 
         for name, value in vars(self).items():

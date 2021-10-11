@@ -1,3 +1,5 @@
+"""PAX mechanisms to make PAX functions pure."""
+
 import functools
 import inspect
 
@@ -42,24 +44,24 @@ def pure(func):
 
     @functools.wraps(func)
     def _f(*args, **kwargs):
-        [m.scan_bugs() for m in get_modules((func, args, kwargs))]
+        _ = [m.scan_bugs() for m in get_modules((func, args, kwargs))]
 
         # support calling method
         if inspect.ismethod(func):
             self = (func.__self__,)
-            fn = func.__func__
+            unbound_func = func.__func__
         else:
             self = ()
-            fn = func
+            unbound_func = func
 
         with enable_deep_copy():
-            leaves, treedef = jax.tree_flatten((self, fn, args, kwargs))
-        self, fn, args, kwargs = jax.tree_unflatten(treedef, leaves)
-        modules = _get_all_submodules((self, fn, args, kwargs))
+            leaves, treedef = jax.tree_flatten((self, unbound_func, args, kwargs))
+        self, unbound_func, args, kwargs = jax.tree_unflatten(treedef, leaves)
+        modules = _get_all_submodules((self, unbound_func, args, kwargs))
         with allow_mutation(modules):
-            out = fn(*self, *args, **kwargs)
+            out = unbound_func(*self, *args, **kwargs)
 
-        [m.scan_bugs() for m in get_modules(out)]
+        _ = [m.scan_bugs() for m in get_modules(out)]
 
         return out
 

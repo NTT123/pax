@@ -88,7 +88,8 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
         """An update function.
 
         Note that: ``model`` and ``optimizer`` have internal states.
-        We have to return them in the output as jax transformations (e.g., ``jax.grad`` and ``jax.jit``) requires pure functions.
+        We have to return them in the output as jax transformations
+        (e.g., ``jax.grad`` and ``jax.jit``) requires pure functions.
 
 
         Arguments:
@@ -126,7 +127,7 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
     return _update_fn_scan if scan_mode else _update_fn
 
 
-def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):
+def scan(func, init, xs, length=None, unroll: int = 1, time_major=True):
     """``jax.lax.scan`` with an additional ``time_major=False`` mode.
 
 
@@ -144,11 +145,11 @@ def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):
     """
     if time_major:
         # data format: TN...
-        return jax.lax.scan(fn, init, xs, length=length, unroll=unroll)
+        return jax.lax.scan(func, init, xs, length=length, unroll=unroll)
     else:
         # data format: NT...
         if xs is not None:
             xs = jnp.swapaxes(xs, 0, 1)  # swap batch and time axes
-        state, output = jax.lax.scan(fn, init, xs, length=length, unroll=unroll)
+        state, output = jax.lax.scan(func, init, xs, length=length, unroll=unroll)
         output = jnp.swapaxes(output, 0, 1)  # restore to NT...
         return state, output

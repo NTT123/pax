@@ -1,4 +1,6 @@
-from pax._src.initializers import (
+"""Public initializers."""
+
+from ._src.initializers import (
     zeros,
     ones,
     truncated_normal,
