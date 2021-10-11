@@ -91,16 +91,12 @@ There are a few important things in the above example:
 Let "PAX function" mean functions whose inputs contain PAX modules.
 
 ---
-
-**It is a good practice to make PAX functions pure (no side effects). This adheres to JAX functional programming  mode.**
+**It is a good practice to make PAX functions pure (no side effects).**
 
 ---
 
 Even though PAX modules are stateful objects, the modifications of PAX module's internal states are restricted. 
 Only PAX functions decorated by `pax.pure` are allowed to modify PAX modules.
-
-<details>
-<summary>Click to expand</summary>
 
 ```python
 net = Counter(3)
@@ -109,13 +105,8 @@ net(0)
 # ValueError: Cannot modify a module in immutable mode.
 # Please do this computation inside a function decorated by `pax.pure`.
 ```
-</details>
-
 
 Furthermore, a decorated function can only access the copy of its of inputs. Any modification on the copy will not affect the original inputs.
-
-<details>
-<summary>Click to expand</summary>
 
 ```python
 @pax.pure
@@ -128,7 +119,6 @@ update_counter_wo_return(net)
 print(net.counter) # the same counter
 # 3
 ```
-</details>
 
 As a consequence, the only way to *update* an input module is to return it in the output.
 
@@ -146,7 +136,6 @@ print(net.counter) # increased by 1
 ```
 
 ---
-
 **It is a good practice to keep functions decorated by `pax.pure` as small as possible.**
 
 ---
