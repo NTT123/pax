@@ -48,4 +48,6 @@ def assertStructureEqual(tree_a: T, tree_b: T):
         # do not compare weights
         tree_a_w_none_leaves = jax.tree_map(lambda _: None, tree_a)
         tree_b_w_none_leaves = jax.tree_map(lambda _: None, tree_b)
-        test_case.assertDictEqual(vars(tree_a_w_none_leaves), vars(tree_b_w_none_leaves))
+        test_case.assertDictEqual(
+            vars(tree_a_w_none_leaves), vars(tree_b_w_none_leaves)
+        )

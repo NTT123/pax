@@ -2,7 +2,7 @@ einops
 fire
 jax
 opax
-pax
+pax3
 pillow
 tensorflow
 tqdm
