@@ -196,10 +196,9 @@ A PAX program can be seen as a series of module transformations.
 PAX provides several module transformations:
 
 - `pax.select_{parameters,states}`: select parameter/state leaves.
-- `pax.apply_gradients`: update model & optimizer using gradients.
 - `pax.update_{parameters,states}`: updates module's parameters/states.
 - `pax.enable_{train,eval}_mode`: turn on/off training mode.
-- `pax.(un)freeze_parameters`: freeze/unfreeze trainable parameters.
+- `pax.freeze_parameters`: freeze trainable parameters.
 - `pax.apply_mp_policy`: apply a mixed-precision policy.
 
 

@@ -2,9 +2,7 @@ from . import initializers, nets, nn, utils
 from ._src.core import (
     Module,
     PaxFieldKind,
-    apply_gradients,
     apply_mp_policy,
-    apply_updates,
     assertStructureEqual,
     enable_eval_mode,
     enable_train_mode,
@@ -13,18 +11,16 @@ from ._src.core import (
     pure,
     select_parameters,
     select_states,
-    transform_gradients,
     unfreeze_parameters,
     update_parameters,
     update_states,
 )
+from ._src.nn.dropout import dropout
 from ._src.rng import next_rng_key, seed_rng_key
-from ._src.utils import build_update_fn, dropout, grad_parameters, scan
+from ._src.utils import build_update_fn, grad_parameters, scan
 
 __all__ = [
-    "apply_gradients",
     "apply_mp_policy",
-    "apply_updates",
     "assertStructureEqual",
     "build_update_fn",
     "dropout",
@@ -44,7 +40,6 @@ __all__ = [
     "seed_rng_key",
     "select_parameters",
     "select_states",
-    "transform_gradients",
     "unfreeze_parameters",
     "update_parameters",
     "update_states",

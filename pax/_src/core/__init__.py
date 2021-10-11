@@ -1,5 +1,4 @@
 from .flatten_module import flatten_module
-from .gradient_transforms import apply_gradients, apply_updates, transform_gradients
 from .mixed_precision import apply_mp_policy
 from .module import Module, PaxFieldKind
 from .pure import pure

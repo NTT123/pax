@@ -1,10 +1,25 @@
 from typing import Optional
 
 import jax
+import jax.numpy as jnp
 
 from ..core import Module
 from ..rng import KeyArray, next_rng_key
-from ..utils import dropout
+
+
+def dropout(rng_key: KeyArray, dropout_rate: float, x: jnp.ndarray) -> jnp.ndarray:
+    """Dropout input `x` randomly.
+
+    Scaling the input by ``1 / (1-dropout_rate)`` makes ``E[output] = input``.
+    """
+    assert 0 <= dropout_rate < 1.0
+
+    if dropout_rate == 0.0:
+        return x
+    else:
+        mask = jax.random.bernoulli(rng_key, dropout_rate, shape=x.shape)
+        x = jnp.where(mask, 0.0, x / (1.0 - dropout_rate))
+        return x
 
 
 class Dropout(Module):

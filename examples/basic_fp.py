@@ -41,10 +41,8 @@ def loss_fn(model: Linear, x, y):
 @jax.jit
 def train_step(model: Linear, optimizer: GradientTransformation, x, y):
     grads, (loss, model) = pax.grad_parameters(loss_fn, has_aux=True)(model, x, y)
-    updates, optimizer = pax.transform_gradients(
-        grads, optimizer, params=model.parameters()
-    )
-    new_params = pax.apply_updates(model.parameters(), updates=updates)
+    updates, optimizer = opax.transform_gradients(grads, optimizer, model.parameters())
+    new_params = opax.apply_updates(model.parameters(), updates)
     model = model.update_parameters(new_params)
     return model, optimizer, loss
 

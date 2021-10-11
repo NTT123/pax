@@ -16,7 +16,7 @@ def test_grad_parameters():
     @jax.jit
     def update_fn(model, optimizer, inputs):
         grads, (loss, model) = pax.grad_parameters(loss_fn, has_aux=True)(model, inputs)
-        model, optimizer = pax.apply_gradients(model, opt, grads=grads)
+        model, optimizer = opax.apply_gradients(model, opt, grads=grads)
         return model, optimizer, loss
 
     net = pax.nn.Linear(2, 1)

@@ -6,14 +6,7 @@ from typing import Any, Callable, Tuple, TypeVar, Union
 import jax
 import jax.numpy as jnp
 
-from .core import (
-    Module,
-    apply_updates,
-    select_parameters,
-    transform_gradients,
-    update_parameters,
-)
-from .rng import KeyArray
+from .core import Module, select_parameters, update_parameters
 
 GradientTransformation = Module
 T = TypeVar("T", bound=Module)
@@ -89,6 +82,8 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
     >>> net, optimizer, loss = update_fn(net, optimizer, x, y)
     """
 
+    from opax import apply_updates, transform_gradients
+
     def _update_fn(model: T, optimizer: O, *inputs, **kwinputs) -> Tuple[T, O, Any]:
         """An update function.
 
@@ -129,21 +124,6 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
         return (model, optimizer), aux
 
     return _update_fn_scan if scan_mode else _update_fn
-
-
-def dropout(rng_key: KeyArray, dropout_rate: float, x: jnp.ndarray) -> jnp.ndarray:
-    """Dropout input `x` randomly.
-
-    Scaling the input by ``1 / (1-dropout_rate)`` makes ``E[output] = input``.
-    """
-    assert 0 <= dropout_rate < 1.0
-
-    if dropout_rate == 0.0:
-        return x
-    else:
-        mask = jax.random.bernoulli(rng_key, dropout_rate, shape=x.shape)
-        x = jnp.where(mask, 0.0, x / (1.0 - dropout_rate))
-        return x
 
 
 def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):

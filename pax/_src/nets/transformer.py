@@ -7,7 +7,7 @@ import numpy as np
 from .. import initializers
 from ..core import Module
 from ..nn import LayerNorm, Linear, MultiHeadAttention, RngSeq
-from ..utils import dropout
+from ..nn.dropout import dropout
 
 
 class CausalSelfAttention(MultiHeadAttention):
