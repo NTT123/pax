@@ -7,6 +7,7 @@ PAX's Module
 .. currentmodule:: pax
 
 .. autoclass:: Module
+   :inherited-members:
    :members:
 
 .. autoclass:: PaxFieldKind
@@ -254,9 +255,6 @@ A module transformation is a pure function that inputs PAX's modules and outputs
    select_states
    freeze_parameters
    unfreeze_parameters
-   transform_gradients
-   apply_updates
-   apply_gradients
    flatten_module
    apply_mp_policy
 
@@ -307,25 +305,6 @@ unfreeze_parameters
 -------------------
 
 .. autofunction:: unfreeze_parameters
-
-
-transform_gradients
--------------------
-
-.. autofunction:: transform_gradients
-
-
-apply_updates
--------------
-
-.. autofunction:: apply_updates
-
-
-apply_gradients
----------------
-
-.. autofunction:: apply_gradients
-
 
 
 flatten_module
@@ -406,7 +385,6 @@ Utilities
     grad_parameters
     scan
     build_update_fn
-    dropout
 
 
 
@@ -427,10 +405,3 @@ build_update_fn
 ---------------
 
 .. autofunction:: build_update_fn
-
-
-dropout
--------
-
-.. autofunction:: dropout
-

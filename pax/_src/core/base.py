@@ -12,6 +12,7 @@ from enum import Enum
 from types import MappingProxyType
 from typing import (
     Any,
+    Dict,
     List,
     Mapping,
     NamedTuple,
@@ -20,6 +21,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Union,
 )
 
 import jax
@@ -143,14 +145,14 @@ class ModuleMetaclass(type):
 
 
 class BaseModule(metaclass=ModuleMetaclass):
-    """Module manages all information related to the pytree.
+    """BaseModule manages all information related to the pytree.
 
     There are two important methods:
 
     - ``tree_flatten`` converts a module to ``(leaves, treedef)``
     - ``tree_unflatten`` restores the module.
 
-    Module maintains a ``_name_to_kind`` dictionary that tells if an attribute is part of
+    BaseModule maintains a ``_name_to_kind`` dictionary that tells if an attribute is part of
     the pytree and the kind of the tree part (parameter, state, module, etc.).
     """
 
@@ -200,8 +202,7 @@ class BaseModule(metaclass=ModuleMetaclass):
         """Whenever a user sets an attribute, we will check the assignment:
 
         - Setting `_name_to_kind` and `_training` are forbidden.
-        - If `value` is a pytree of modules and `name` is not in `_name_to_kind`,
-        its kind will be `PaxFieldKind.MODULE`.
+        - If `value` is a pytree of modules and `name` is not in `_name_to_kind`, its kind will be `PaxFieldKind.MODULE`.
         """
         self._assert_mutability()
 
@@ -393,3 +394,91 @@ class BaseModule(metaclass=ModuleMetaclass):
 
         self._update_name_to_kind_dict(name, kind)
         setattr(self, name, value)
+
+    def apply(self: T, apply_fn) -> T:
+        """Apply a function to all submodules.
+
+        **Note**: this function returns a transformed copy of the module.
+
+        Arguments:
+            apply_fn: a function which inputs a module and outputs a transformed module.
+            check_treedef: check treedef before applying the function.
+        """
+
+        def rec_fn(mod_or_ndarray):
+            if isinstance(mod_or_ndarray, BaseModule):
+                return mod_or_ndarray.apply(apply_fn)
+            else:
+                return mod_or_ndarray
+
+        submodules = self.submodules()
+        new_self = jax.tree_map(
+            rec_fn,
+            self,
+            is_leaf=lambda x: isinstance(x, BaseModule) and (x in submodules),
+        )
+
+        # tree_map already created a copy of self,
+        # hence `apply_fn` is guaranteed to have no side effects.
+        return apply_fn(new_self)
+
+    def submodules(self) -> List[T]:
+        """Return a list of submodules."""
+        module_subtrees = [
+            getattr(self, name)
+            for name, kind in self._pax.name_to_kind.items()
+            if kind == PaxFieldKind.MODULE
+        ]
+
+        is_module = lambda x: isinstance(x, BaseModule)
+        submods, _ = jax.tree_flatten(module_subtrees, is_leaf=is_module)
+        return [v for v in submods if is_module(v)]
+
+    def summary(self, return_list: bool = False) -> Union[str, List[str]]:
+        """This is the default summary method.
+
+        Arguments:
+            return_list: return a list of lines instead of a joined string.
+
+
+        Example:
+
+        >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
+        Sequential
+        ├── Linear[in_dim=2, out_dim=3, with_bias=True]
+        ├── x => relu(x)
+        └── Linear[in_dim=3, out_dim=4, with_bias=True]
+        """
+
+        output = [self.__repr__()]
+        if output[0] is None:
+            raise ValueError(
+                f"The `{self.__class__}.__repr__` method returns a `None` value."
+            )
+        submodules = self.submodules()
+
+        def indent(lines: List[str], start_string) -> List[str]:
+            return [start_string + l for l in lines]
+
+        for i, module in enumerate(submodules):
+            lines = module.summary(return_list=True)
+            if i + 1 < len(submodules):  # middle submodules
+                indented_lines = indent(lines[:1], "├── ") + indent(lines[1:], "│   ")
+            else:  # last submodule
+                indented_lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
+            output.extend(indented_lines)
+
+        if return_list:
+            return output
+        else:
+            return "\n".join(output)
+
+    def __repr__(self, info: Optional[Dict[str, Any]] = None) -> str:
+        name = f"({self._pax.name}) " if self._pax.name is not None else ""
+        cls_name = self.__class__.__name__
+        if info is None:
+            return f"{name}{cls_name}"
+        else:
+            lst_info = [f"{k}={v}" for (k, v) in info.items() if v is not None]
+            str_info = ", ".join(lst_info)
+            return f"{name}{cls_name}[{str_info}]"
