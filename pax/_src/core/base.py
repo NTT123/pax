@@ -6,6 +6,7 @@
 
 import threading
 from collections import OrderedDict
+from contextlib import contextmanager
 from copy import deepcopy
 from enum import Enum
 from types import MappingProxyType
@@ -42,45 +43,35 @@ STATE.inside_pure_function = False
 STATE.mutable_module_list = ()
 
 
-class enable_deep_copy(object):
+@contextmanager
+def enable_deep_copy():
     r"""A context manager that turns on deepcopy mode."""
-    prev: Any
-
-    def __init__(self):
-        super().__init__()
-        self.prev = STATE.enable_deep_copy
-
-    def __enter__(self):
-        self.prev = STATE.enable_deep_copy
-        STATE.enable_deep_copy = True
-
-    def __exit__(self, _: Any, __: Any, ___: Any) -> None:
-        STATE.enable_deep_copy = self.prev
+    prev = STATE.enable_deep_copy
+    STATE.enable_deep_copy = True
+    try:
+        yield
+    finally:
+        STATE.enable_deep_copy = prev
 
 
-class allow_mutation(object):
+@contextmanager
+def allow_mutation(modules):
     r"""A context manager that turns on mutability."""
-    prev: Any
-    prev_inside: bool
-    prev_rng_state: Any
+    if not isinstance(modules, (tuple, list)):
+        modules = (modules,)
+    modules = tuple(modules)
 
-    def __init__(self, modules):
-        super().__init__()
-        if isinstance(modules, BaseModule):
-            modules = (modules,)
-        self.mods = tuple(modules)
-
-    def __enter__(self):
-        self.prev = STATE.mutable_module_list
-        STATE.mutable_module_list = self.mods + STATE.mutable_module_list
-        self.prev_inside = STATE.inside_pure_function
-        self.prev_rng_state = get_rng_state()
+    prev = STATE.mutable_module_list
+    prev_inside = STATE.inside_pure_function
+    prev_rng_state = get_rng_state()
+    try:
         STATE.inside_pure_function = True
-
-    def __exit__(self, _: Any, __: Any, ___: Any) -> None:
-        STATE.mutable_module_list = self.prev
-        STATE.inside_pure_function = self.prev_inside
-        set_rng_state(self.prev_rng_state)
+        STATE.mutable_module_list = modules + STATE.mutable_module_list
+        yield
+    finally:
+        STATE.mutable_module_list = prev
+        STATE.inside_pure_function = prev_inside
+        set_rng_state(prev_rng_state)
 
 
 @jax.tree_util.register_pytree_node_class

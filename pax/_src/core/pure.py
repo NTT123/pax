@@ -6,6 +6,7 @@ import inspect
 import jax
 
 from .base import allow_mutation, enable_deep_copy
+from .rng import get_rng_state, set_rng_state
 from .utils import get_modules
 
 
@@ -42,6 +43,8 @@ def pure(func):
     []
     """
 
+    rng_state = get_rng_state()
+
     @functools.wraps(func)
     def _f(*args, **kwargs):
         _ = [m.scan_bugs() for m in get_modules((func, args, kwargs))]
@@ -59,6 +62,7 @@ def pure(func):
         self, unbound_func, args, kwargs = jax.tree_unflatten(treedef, leaves)
         modules = _get_all_submodules((self, unbound_func, args, kwargs))
         with allow_mutation(modules):
+            set_rng_state(rng_state)
             out = unbound_func(*self, *args, **kwargs)
 
         _ = [m.scan_bugs() for m in get_modules(out)]
