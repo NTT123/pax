@@ -34,7 +34,7 @@ Install from PyPI:
 pip3 install pax3
 ```
 
-Or install the latest from github:
+Or install the latest version from github:
 
 ```bash
 pip3 install git+https://github.com/ntt123/pax.git
@@ -84,7 +84,7 @@ There are a few important things in the above example:
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
 * ``loss_fn`` is decorated by `pax.pure` and it returns the updated `model` in the output.
-* ``allow_int=True`` to compute gradients with respect to ``model`` which contains integer ``ndarray`` leaves.
+* ``allow_int=True`` to compute gradients with respect to integer ndarray leaf `counter`.
 
 ## PAX functional programming<a id="functional"></a>
 
