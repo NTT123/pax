@@ -66,7 +66,7 @@ def allow_mutation(modules):
     prev_rng_state = get_rng_state()
     try:
         STATE.inside_pure_function = True
-        STATE.mutable_module_list = modules + STATE.mutable_module_list
+        STATE.mutable_module_list = modules
         yield
     finally:
         STATE.mutable_module_list = prev
