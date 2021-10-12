@@ -34,9 +34,18 @@ class RNN(Module):
         raise NotImplementedError()
 
 
+@jax.jit
 def _sigmoid(x: jnp.ndarray):
-    """Cannot use jax.nn.sigmoid because of tracing leaks."""
-    return 1.0 / (1. + jnp.exp(-x))
+    """This is a hack to get the same XLA optimized code as `jax.nn.sigmoid`.
+
+    TODO: remove this function when jax tracer issue is fixed.
+    https://github.com/google/jax/issues/8171
+    """
+    out = 1 / (1 + jnp.exp(-x))
+    grad = out * (1 - out)
+    grad_path = jax.lax.stop_gradient(grad) * x
+    no_grad_path = jax.lax.stop_gradient(-grad_path + out)
+    return grad_path + no_grad_path
 
 
 class LSTM(RNN):

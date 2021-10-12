@@ -889,3 +889,18 @@ def test_identity_module():
     x = jnp.zeros((3, 3))
     y = ident(x)
     assert jnp.array_equal(x, y) == True
+
+
+def test_sigmoid():
+    @jax.jit
+    @jax.vmap
+    @jax.grad
+    def _sigmoid(x: jnp.ndarray):
+        out = 1 / (1 + jnp.exp(-x))
+        grad = out * (1 - out)
+        t = jax.lax.stop_gradient(grad) * x
+        return t + jax.lax.stop_gradient(-t + out)
+
+    x = jnp.linspace(-50, 50, 1000)
+    s = jax.jit(jax.vmap(jax.grad(jax.nn.sigmoid)))
+    np.testing.assert_array_equal(_sigmoid(x), s(x))
