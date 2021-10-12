@@ -1,7 +1,7 @@
 """PAX mechanisms to make PAX method pure."""
 
-import inspect
 from functools import partial
+from types import MethodType
 from typing import Callable, Union
 
 from .module import Module
@@ -26,15 +26,15 @@ def module_and_value(module_or_method: Union[Module, Callable]):
     Returns:
         a pure function.
     """
-    if inspect.ismethod(module_or_method):  # a method
+    if isinstance(module_or_method, MethodType):  # a method
         mod = module_or_method.__self__
         func = module_or_method.__func__
     elif isinstance(module_or_method, Module):  # a module
         mod = module_or_method
-        assert hasattr(mod, "__call__"), """Expecting a callable module"""
+        assert hasattr(mod, "__call__"), "Expecting a callable module."
         func = module_or_method.__call__.__func__
     else:
-        raise ValueError("Expecting a module or a module's method")
+        raise ValueError("Expecting a module or a module's method.")
 
     assert isinstance(mod, Module), "Expecting a PAX module."
 
