@@ -64,9 +64,8 @@ class Counter(pax.Module):
         self.counter = self.counter + 1
         return self.counter * x + self.bias
 
-@pax.pure
 def loss_fn(model: Counter, x: jnp.ndarray):
-    y = model(x)
+    model, y = pax.module_and_value(model)(x)
     loss = jnp.mean(jnp.square(x - y))
     return loss, (loss, model)
 
@@ -83,7 +82,9 @@ There are a few important things in the above example:
 
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
-* ``loss_fn`` is decorated by `pax.pure` and it returns the updated `model` in the output.
+* ``pax.module_and_value`` transforms `model.__call__` to a 
+  pure function which returns the updated model in its output.
+* ``loss_fn`` returns the updated `model` in the output.
 * ``allow_int=True`` to compute gradients with respect to integer ndarray leaf `counter`.
 
 ## PAX functional programming<a id="functional"></a>
@@ -149,15 +150,6 @@ print(net.counter) # 4
 ```
 
 In this example, `pax.module_and_value` converts `net.__call__` to a pure function which returns the updated `net` in its output.
-
-Below is a better implementation of `loss_fn` with a smaller mutable scope:
-
-```python
-def loss_fn(model: Counter, x: jnp.ndarray):
-    model, y = pax.module_and_value(model)(x)
-    loss = jnp.mean(jnp.square(x - y))
-    return loss, (loss, model)
-```
 
 
 ## PAX and other libraries <a id="paxandfriends"></a>
