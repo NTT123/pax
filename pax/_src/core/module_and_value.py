@@ -8,7 +8,7 @@ from .module import Module
 from .pure import pure
 
 
-def module_and_value(module_or_method: Union[Module, Callable]):
+def module_and_value(module_or_method: Union[Module, Callable], static_argnums=None):
     """Return a pure function that executes a module's method.
 
     This pure function also returns the updated input module in the output.
@@ -38,7 +38,13 @@ def module_and_value(module_or_method: Union[Module, Callable]):
 
     assert isinstance(mod, Module), "Expecting a PAX module."
 
-    @pure
+    if static_argnums is not None:
+        if isinstance(static_argnums, int):
+            static_argnums = [static_argnums]
+        # offset by 1 for `self` argument.
+        static_argnums = tuple(x + 1 for x in static_argnums)
+
+    @partial(pure, static_argnums=static_argnums)
     def _run(mod, *args, **kwargs):
         out = func(mod, *args, **kwargs)
         return mod, out

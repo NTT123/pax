@@ -40,7 +40,7 @@ TreeDef = Any
 STATE = threading.local()
 STATE.enable_deep_copy = False
 STATE.inside_pure_function = False
-STATE.mutable_module_list = ()
+STATE.mutable_module_id_list = ()
 
 
 @contextmanager
@@ -59,17 +59,17 @@ def allow_mutation(modules):
     r"""A context manager that turns on mutability."""
     if not isinstance(modules, (tuple, list)):
         modules = (modules,)
-    modules = tuple(modules)
+    modules = tuple([id(mod) for mod in modules])
 
-    prev = STATE.mutable_module_list
+    prev = STATE.mutable_module_id_list
     prev_inside = STATE.inside_pure_function
     prev_rng_state = get_rng_state()
     try:
         STATE.inside_pure_function = True
-        STATE.mutable_module_list = modules
+        STATE.mutable_module_id_list = modules
         yield
     finally:
-        STATE.mutable_module_list = prev
+        STATE.mutable_module_id_list = prev
         STATE.inside_pure_function = prev_inside
         set_rng_state(prev_rng_state)
 
@@ -128,7 +128,7 @@ class ModuleMetaclass(type):
 
         # if a module is created inside a `pure` function, it is mutable.
         if STATE.inside_pure_function:
-            STATE.mutable_module_list = (module,) + STATE.mutable_module_list
+            STATE.mutable_module_id_list = (id(module),) + STATE.mutable_module_id_list
             cls.__init__(module, *args, **kwargs)
             module.find_and_register_submodules()
         else:
@@ -178,7 +178,7 @@ class BaseModule(metaclass=ModuleMetaclass):
         super().__setattr__("_pax", self._pax._replace(name=name))
 
     def _assert_mutability(self):
-        if id(self) not in [id(x) for x in STATE.mutable_module_list]:
+        if id(self) not in STATE.mutable_module_id_list:
             raise ValueError(
                 "Cannot modify a module in immutable mode.\n"
                 "Please do this computation inside a function decorated by `pax.pure`."
@@ -268,7 +268,7 @@ class BaseModule(metaclass=ModuleMetaclass):
 
         # if a module is created inside a `pure` function, it is mutable.
         if STATE.inside_pure_function:
-            STATE.mutable_module_list = (module,) + STATE.mutable_module_list
+            STATE.mutable_module_id_list = (id(module),) + STATE.mutable_module_id_list
 
         return module
 

@@ -1,11 +1,12 @@
 """PAX mechanisms to make PAX functions pure."""
 
 import functools
-import inspect
+from types import MethodType
+from typing import Optional, Sequence, Union
 
 import jax
 
-from .base import allow_mutation, enable_deep_copy
+from .base import BaseModule, allow_mutation, enable_deep_copy
 from .rng import get_rng_state, set_rng_state
 from .utils import get_modules
 
@@ -18,7 +19,7 @@ def _get_all_submodules(value):
     return out
 
 
-def pure(func):
+def pure(func, static_argnums: Optional[Union[Sequence[int], int]] = None):
     """Make a function pure by copying the inputs.
 
     Any modification on the copy will not affect the original inputs.
@@ -45,28 +46,67 @@ def pure(func):
 
     rng_state = get_rng_state()
 
+    if isinstance(static_argnums, int):
+        static_argnums = (static_argnums,)
+
+    if static_argnums is None:
+        static_argnums = ()
+
+    def _deepcopy(value):
+        with enable_deep_copy():
+            leaves, treedef = jax.tree_flatten(value)
+        return jax.tree_unflatten(treedef, leaves)
+
     @functools.wraps(func)
     def _f(*args, **kwargs):
-        _ = [m.scan_bugs() for m in get_modules((func, args, kwargs))]
+        with jax.checking_leaks():
+            _ = [m.scan_bugs() for m in get_modules((func, args, kwargs))]
 
-        # support calling method
-        if inspect.ismethod(func):
-            self = (func.__self__,)
-            unbound_func = func.__func__
-        else:
-            self = ()
-            unbound_func = func
+            # support calling method
+            if isinstance(func, MethodType):
+                args = (func.__self__, *args)
+                unbound_func = func.__func__
+            # or calling a module
+            elif isinstance(func, BaseModule) and callable(func):
+                args = (func, *args)
+                unbound_func = func.__call__.__func__
+            elif callable(func):
+                unbound_func = func
+            else:
+                raise ValueError("Not supported")
 
-        with enable_deep_copy():
-            leaves, treedef = jax.tree_flatten((self, unbound_func, args, kwargs))
-        self, unbound_func, args, kwargs = jax.tree_unflatten(treedef, leaves)
-        modules = _get_all_submodules((self, unbound_func, args, kwargs))
-        with allow_mutation(modules):
-            set_rng_state(rng_state)
-            out = unbound_func(*self, *args, **kwargs)
+            args = list(args)
+            args_copy = tuple(args)
+            for i in static_argnums:
+                args[i] = None
+            args = tuple(args)
 
-        _ = [m.scan_bugs() for m in get_modules(out)]
+            def no_leak_func(*args, **kwargs):
+                args = list(args)
+                for i in static_argnums:
+                    args[i] = args_copy[i]
+                args = tuple(args)
+                set_rng_state(rng_state)
+                out = unbound_func(*args, **kwargs)
+                set_rng_state(rng_state)
+                return out
 
-        return out
+            def _run(args, kwargs, eval_shape: bool = False):
+                args, kwargs = _deepcopy((args, kwargs))
+                modules = _get_all_submodules((args, kwargs))
+                with allow_mutation(modules):
+                    if eval_shape:
+                        out = jax.eval_shape(no_leak_func, *args, **kwargs)
+                    else:
+                        out = no_leak_func(*args, **kwargs)
+                    return out
+
+            # leak check
+            _run(args, kwargs, eval_shape=True)
+
+            # real run
+            out = _run(args, kwargs, eval_shape=False)
+            _ = [m.scan_bugs() for m in get_modules(out)]
+            return out
 
     return _f

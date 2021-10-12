@@ -56,7 +56,6 @@ def test_sequential_mixed_precision():
     assert y.dtype == half
 
 
-@pax.pure
 def test_change_internal_state():
     class M(pax.Module):
         counter: jnp.ndarray
@@ -78,7 +77,7 @@ def test_change_internal_state():
     )
     x = jnp.array(0.0)
     assert mm._module.counter.item() == 0  # type: ignore
-    y = mm(x)
+    mm, y = pax.module_and_value(mm)(x)
     assert mm._module.counter.item() == 1  # type: ignore
     assert m.counter.item() == 0
 
