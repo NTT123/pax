@@ -131,7 +131,7 @@ class Conv(Module):
                 x = x + self.bias
             else:
                 raise ValueError(
-                    f"Not expecting this to happend, data_format {self.data_format}"
+                    f"Not expecting this to happen, data_format {self.data_format}"
                 )
 
         return x
@@ -384,7 +384,7 @@ class ConvTranspose(Module):
                 x = x + self.bias
             else:
                 raise ValueError(
-                    f"Not expecting this to happend, data_format={self.data_format}"
+                    f"Not expecting this to happen, data_format={self.data_format}"
                 )
 
         return x

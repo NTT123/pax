@@ -34,6 +34,11 @@ class RNN(Module):
         raise NotImplementedError()
 
 
+def _sigmoid(x: jnp.ndarray):
+    """Cannot use jax.nn.sigmoid because of tracing leaks."""
+    return 1.0 / (1. + jnp.exp(-x))
+
+
 class LSTM(RNN):
     """Long Short Term Memory (LSTM) RNN module."""
 
@@ -92,9 +97,9 @@ class LSTM(RNN):
         xh = jnp.concatenate((x, state.hidden), axis=-1)
         gated = self.fc(xh)
         i, g, f, o = jnp.split(gated, 4, axis=-1)
-        f = jax.nn.sigmoid(f + self.forget_gate_bias)
-        c = f * state.cell + jax.nn.sigmoid(i) * jnp.tanh(g)
-        h = jax.nn.sigmoid(o) * jnp.tanh(c)
+        f = _sigmoid(f + self.forget_gate_bias)
+        c = f * state.cell + _sigmoid(i) * jnp.tanh(g)
+        h = _sigmoid(o) * jnp.tanh(c)
         return LSTMState(h, c), h
 
     def __repr__(self):
@@ -160,7 +165,7 @@ class GRU(RNN):
         """
         hidden = state.hidden
         xh = jnp.concatenate((x, hidden), axis=-1)
-        zr = jax.nn.sigmoid(self.xh_zr_fc(xh))
+        zr = _sigmoid(self.xh_zr_fc(xh))
         z, r = jnp.split(zr, 2, axis=-1)
 
         xrh = jnp.concatenate((x, r * hidden), axis=-1)
