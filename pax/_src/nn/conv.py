@@ -1,3 +1,5 @@
+"""Conv modules."""
+
 # Following the jax convolution tutorial:
 # https://jax.readthedocs.io/en/latest/notebooks/convolutions.html
 #
@@ -9,8 +11,8 @@ import jax.numpy as jnp
 import numpy as np
 
 from .. import initializers
-from ..module import Module
-from ..rng import KeyArray, next_rng_key
+from ..core import Module
+from ..core.rng import KeyArray, next_rng_key
 
 
 class Conv(Module):
@@ -129,7 +131,7 @@ class Conv(Module):
                 x = x + self.bias
             else:
                 raise ValueError(
-                    f"Not expecting this to happend, data_format {self.data_format}"
+                    f"Not expecting this to happen, data_format {self.data_format}"
                 )
 
         return x
@@ -151,7 +153,7 @@ class Conv(Module):
         if all_one(info["stride"]):
             del info["stride"]
 
-        return super().__repr__(info)
+        return super()._repr(info)
 
 
 class Conv1D(Conv):
@@ -382,7 +384,7 @@ class ConvTranspose(Module):
                 x = x + self.bias
             else:
                 raise ValueError(
-                    f"Not expecting this to happend, data_format={self.data_format}"
+                    f"Not expecting this to happen, data_format={self.data_format}"
                 )
 
         return x
@@ -396,7 +398,7 @@ class ConvTranspose(Module):
             "stride": self.stride,
             "with_bias": self.with_bias,
         }
-        return super().__repr__(info)
+        return super()._repr(info)
 
 
 class Conv1DTranspose(ConvTranspose):

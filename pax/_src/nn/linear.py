@@ -1,3 +1,5 @@
+"""Linear module."""
+
 from typing import Optional
 
 import jax
@@ -5,8 +7,8 @@ import jax.numpy as jnp
 import numpy as np
 
 from .. import initializers
-from ..module import Module
-from ..rng import KeyArray, next_rng_key
+from ..core import Module
+from ..core.rng import KeyArray, next_rng_key
 
 
 class Linear(Module):
@@ -15,7 +17,6 @@ class Linear(Module):
     weight: jnp.ndarray
     bias: jnp.ndarray
 
-    # props
     in_dim: int
     out_dim: int
     with_bias: bool
@@ -74,4 +75,4 @@ class Linear(Module):
             "out_dim": self.out_dim,
             "with_bias": self.with_bias,
         }
-        return super().__repr__(info)
+        return super()._repr(info)

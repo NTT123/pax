@@ -68,7 +68,7 @@ class LM(pax.Module):
 
     def __call__(self, x):
         x = self.embed(x)
-        hx, x = pax.utils.scan(
+        hx, x = pax.scan(
             self.lstm,
             self.lstm.initial_state(x.shape[0]),
             x,
@@ -121,15 +121,13 @@ def update_step(model_and_optimizer: Tuple[LM, pax.Module], batch: jnp.ndarray):
     model, optimizer = model_and_optimizer
     loss, grads = jax.value_and_grad(loss_fn)(model, batch)
     grads = jax.lax.pmean(grads, axis_name="i")
-    model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
+    model, optimizer = opax.apply_gradients(model, optimizer, grads=grads)
     return (model, optimizer), loss
 
 
 @partial(jax.pmap, axis_name="i")
 def update_fn(model, optimizer, multi_batch: jnp.ndarray):
-    (model, optimizer), losses = pax.utils.scan(
-        update_step, (model, optimizer), multi_batch
-    )
+    (model, optimizer), losses = pax.scan(update_step, (model, optimizer), multi_batch)
     return model, optimizer, jnp.sum(losses)
 
 

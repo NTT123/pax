@@ -8,7 +8,7 @@ import jax
 import jax.numpy as jnp
 
 from .. import initializers
-from ..module import Module
+from ..core import Module
 from ..nn import BatchNorm2D, Conv2D, Linear, max_pool
 
 

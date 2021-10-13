@@ -1,3 +1,5 @@
+"""Transformer self-attention module."""
+
 # Source: https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/attention.py
 from typing import Optional
 
@@ -6,7 +8,7 @@ import jax.numpy as jnp
 import numpy as np
 
 from .. import initializers
-from ..module import Module
+from ..core import Module
 from .linear import Linear
 
 
@@ -15,6 +17,11 @@ class MultiHeadAttention(Module):
     As described in the vanilla Transformer paper:
     "Attention is all you need" https://arxiv.org/abs/1706.03762
     """
+
+    num_heads: int
+    key_size: int
+    value_size: int
+    model_size: int
 
     def __init__(
         self,
@@ -74,4 +81,4 @@ class MultiHeadAttention(Module):
 
     def __repr__(self, info=None) -> str:
         info = {"num_heads": self.num_heads, "key_size": self.key_size}
-        return super().__repr__(info)
+        return super()._repr(info)

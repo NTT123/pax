@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import pax
+import pytest
 
 
 def test_jit_immutability():
@@ -15,7 +16,8 @@ def test_jit_immutability():
 
     m = M()
     x = jnp.zeros((1, 1))
-    y = jax.jit(lambda y: m(y))(x)
+    with pytest.raises(ValueError):
+        y = jax.jit(lambda y: m(y))(x)
 
 
 def test_grad_deepscan():

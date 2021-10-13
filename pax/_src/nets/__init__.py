@@ -1,3 +1,5 @@
+"""Public nets."""
+
 from .resnet import (
     ResNet,
     ResNet18,

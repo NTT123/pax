@@ -1,7 +1,3 @@
-from pax._src.utils import (
-    scan,
-    build_update_fn,
-    grad_parameters,
-    dropout,
-    assertStructureEqual,
-)
+"""Public utility functions."""
+
+from ._src.utils import build_update_fn, grad_parameters, scan

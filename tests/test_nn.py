@@ -26,7 +26,7 @@ def test_batchnorm1D_train():
     bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 3))
     old_state = bn.ema_mean.averages
-    y = bn(x)
+    bn, y = pax.module_and_value(bn)(x)
     new_state = bn.ema_mean.averages
     chex.assert_tree_all_equal_shapes(old_state, new_state)
     chex.assert_tree_all_finite(new_state)
@@ -38,7 +38,7 @@ def test_batchnorm2D_train():
     bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 8, 3))
     old_state = bn.scale
-    y = bn(x)
+    bn, y = pax.module_and_value(bn)(x)
     new_state = bn.scale
     chex.assert_tree_all_equal_shapes(old_state, new_state)
     chex.assert_tree_all_finite(new_state)
@@ -778,11 +778,12 @@ def test_dropout():
     y = drop(x)
     assert y is x
     drop = pax.enable_train_mode(drop)
-    y = drop(x)
+
+    drop, y = pax.module_and_value(drop)(x)
     assert jnp.sum(y == 0).item() > 80
 
     x = jnp.ones_like(x)
-    y = drop(x)
+    drop, y = pax.module_and_value(drop)(x)
     assert jnp.max(y).item() == 10.0
 
     with pytest.raises(AssertionError):
@@ -858,7 +859,7 @@ def test_sequential_get_set_item():
     fc3 = pax.nn.Linear(2, 1)
     a = pax.nn.Sequential(fc1, jax.nn.relu, fc2)
     assert a[-1] == fc2
-    a[-1] = fc3
+    a = a.set(-1, fc3)
     assert a[-1] == fc3
     assert a[0] == fc1
 
@@ -866,6 +867,7 @@ def test_sequential_get_set_item():
 def test_apply_mutate_no_side_effect():
     a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(4, 4))
 
+    @pax.pure
     def f(mod):
         mod.test__ = 123
         return mod
@@ -875,7 +877,7 @@ def test_apply_mutate_no_side_effect():
     assert hasattr(b[0], "test__")
 
 
-def test_new_method_no_side_effects():
+def test_new_method_mutate():
     init_fn = pax.nn.Linear.__init__
     a = pax.nn.Linear(1, 1)
     b = pax.nn.Linear(2, 2)
@@ -887,3 +889,18 @@ def test_identity_module():
     x = jnp.zeros((3, 3))
     y = ident(x)
     assert jnp.array_equal(x, y) == True
+
+
+def test_sigmoid():
+    @jax.jit
+    @jax.vmap
+    @jax.grad
+    def _sigmoid(x: jnp.ndarray):
+        out = 1 / (1 + jnp.exp(-x))
+        grad = out * (1 - out)
+        t = jax.lax.stop_gradient(grad) * x
+        return t + jax.lax.stop_gradient(-t + out)
+
+    x = jnp.linspace(-50, 50, 1000)
+    s = jax.jit(jax.vmap(jax.grad(jax.nn.sigmoid)))
+    np.testing.assert_array_equal(_sigmoid(x), s(x))

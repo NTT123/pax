@@ -16,7 +16,6 @@
 # ==============================================================================
 """Pooling Haiku modules."""
 
-import types
 import warnings
 from typing import Optional, Sequence, Tuple, Union
 

@@ -1,11 +1,12 @@
+"""RngSeq module."""
+
 from typing import Optional, Sequence, Union
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 
-from .. import rng
-from ..module import Module
+from ..core import Module, rng
 
 
 class RngSeq(Module):
@@ -18,7 +19,7 @@ class RngSeq(Module):
     ):
         """Initialize a random key sequence.
 
-        **Note**: ``rng_key`` has higher priority than ``seed``.
+        **Note**: ``rng_key`` has a higher priority than ``seed``.
 
         Arguments:
             seed: an integer seed.
@@ -44,9 +45,9 @@ class RngSeq(Module):
 
         **Note**:
 
-            * Return a key if ``num_keys`` is ``1``,
-            * Return a list of keys if ``num_keys`` is greater than ``1``.
-            * This is not a deterministic sequence if values of ``num_keys`` is mixed randomly.
+        * Return a key if ``num_keys`` is ``1``,
+        * Return a list of keys if ``num_keys`` is greater than ``1``.
+        * This is not a deterministic sequence if values of ``num_keys`` are mixed randomly.
 
         Arguments:
             num_keys: return more than one key.

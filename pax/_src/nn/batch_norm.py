@@ -1,9 +1,11 @@
+"""BatchNorm modules."""
+
 from typing import Optional, Sequence
 
 import jax
 import jax.numpy as jnp
 
-from ..module import Module
+from ..core import Module
 from .ema import EMA
 
 
@@ -111,7 +113,7 @@ class BatchNorm(Module):
             "data_format": self.data_format,
             "decay_rate": self.decay_rate,
         }
-        return super().__repr__(info)
+        return super()._repr(info)
 
     def summary(self, return_list: bool = True):
         lines = super().summary(return_list=True)

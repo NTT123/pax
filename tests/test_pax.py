@@ -177,15 +177,11 @@ def test_state_of_param():
             self.register_states("m2", {"m1": m11})
 
     m2 = M2(m1)
-    assert len(jax.tree_leaves(pax.select_kind(m1, kind=pax.PaxFieldKind.STATE))) == 0
-    assert (
-        len(jax.tree_leaves(pax.select_kind(m2, kind=pax.PaxFieldKind.PARAMETER))) == 0
-    )
+    assert len(jax.tree_leaves(pax.select_states(m1))) == 0
+    assert len(jax.tree_leaves(pax.select_parameters(m2))) == 0
 
-    assert (
-        len(jax.tree_leaves(pax.select_kind(m1, kind=pax.PaxFieldKind.PARAMETER))) == 1
-    )
-    assert len(jax.tree_leaves(pax.select_kind(m2, kind=pax.PaxFieldKind.STATE))) == 1
+    assert len(jax.tree_leaves(pax.select_parameters(m1))) == 1
+    assert len(jax.tree_leaves(pax.select_states(m2))) == 1
 
 
 def test_module_properties_modify():
@@ -198,6 +194,7 @@ def test_module_properties_modify():
     assert fc1.training == True
 
 
+@pax.pure
 def test_clone_no_side_effect():
     fc1 = pax.nn.Linear(3, 3)
     fc2 = fc1.copy()
@@ -265,11 +262,11 @@ def test_class_attribute_copy():
     assert m.a_list == m1.a_list
 
 
+@pax.pure
 def test_assign_empty_list_dict():
     fc = pax.nn.Linear(3, 3)
 
     fc.a = []
-
     fc.a.append(1)
     assert fc.a == [1]
     del fc.a[0]
@@ -287,7 +284,7 @@ def test_automatic_assign_module_list_1():
                 self.fc.append(pax.nn.Linear(3, 3))
 
     m = M()
-    m = pax.scan_bugs(m)
+    m.scan_bugs()
 
 
 def test_automatic_assign_module_dict_1():
@@ -299,7 +296,7 @@ def test_automatic_assign_module_dict_1():
                 self.fc[i] = pax.nn.Linear(3, 3)
 
     m = M()
-    m = pax.scan_bugs(m)
+    m.scan_bugs()
 
 
 def test_assign_empty_list_2():
@@ -313,7 +310,7 @@ def test_assign_empty_list_2():
                 self.fc.append(pax.nn.Linear(3, 3))
 
     m = M()
-    m = pax.scan_bugs(m)
+    m.scan_bugs()
 
 
 def test_compare_modules():
@@ -347,21 +344,19 @@ def test_hash_module():
     assert hash(a) == hash(b)
 
 
+@pax.pure
 def test_deepcopy_pytreedef():
     f = pax.nn.Linear(3, 3)
-
     f.de = jax.tree_structure(f)
-
     g = f.copy()
 
     assert jax.tree_structure(g) == jax.tree_structure(f)
 
 
+@pax.pure
 def test_delete_attribute():
     f = pax.nn.Linear(3, 3)
-
     f.t = pax.nn.Linear(1, 1)
-
     assert "t" in f._pax.name_to_kind
     with pytest.raises(ValueError):
         del f.t
@@ -384,5 +379,5 @@ def test_module_list_contains_int():
 
 def test_append_module_list():
     n = pax.nn.Sequential(pax.nn.Linear(3, 3))
-    n.modules.append(pax.nn.Linear(4, 4))
-    pax.scan_bugs(n)
+    n.replace(modules=n.modules + (pax.nn.Linear(4, 4),))
+    n.scan_bugs()

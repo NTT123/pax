@@ -17,6 +17,7 @@ def test_counter():
             self.counter = self.counter + 1
             return self.counter * x + self.bias
 
+    @pax.pure
     def loss_fn(model: Counter, x: jnp.ndarray):
         y = model(x)
         loss = jnp.mean(jnp.square(x - y))

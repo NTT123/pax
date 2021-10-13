@@ -1,16 +1,19 @@
+"""GroupNorm module."""
+
 # This file is an adaptation from
 # https://raw.githubusercontent.com/deepmind/dm-haiku/main/haiku/_src/group_norm.py
 # which is under Apache License, Version 2.0.
 
 
-from typing import Optional
+import collections
+from typing import Optional, Sequence, Union
 
 import jax
 import jax.numpy as jnp
 
 from .. import initializers
-from ..module import Module
-from ..rng import KeyArray, next_rng_key
+from ..core import Module
+from ..core.rng import KeyArray, next_rng_key
 
 # Copyright 2020 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -28,16 +31,13 @@ from ..rng import KeyArray, next_rng_key
 # ==============================================================================
 """Group normalization implementation for Haiku."""
 
-import collections
-from typing import Optional, Sequence, Union
-
 
 class GroupNorm(Module):
     r"""Group normalization module.
 
     This applies group normalization to the x. This involves splitting the
     channels into groups before calculating the mean and variance. The default
-    behaviour is to compute the mean and variance over the spatial dimensions and
+    behavior is to compute the mean and variance over the spatial dimensions and
     the grouped channels. The mean and variance will never be computed over the
     created groups axis.
 

@@ -1,26 +1,44 @@
 """
-Manage the global variable ``state._rng_key``. Generate new ``rng_key`` if requested.
+Manage the global variable ``RNG_STATE``. Generate new ``rng_key`` if requested.
 """
+
 import logging
+import threading
 from typing import Any, Union
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
 
+RNG_STATE = threading.local()
+RNG_STATE._rng_key = None
+RNG_STATE._seed = None
+
+
 KeyArray = Union[Any, jnp.ndarray]
-from .ctx import state
+
+
+def get_rng_state():
+    """Return internal states."""
+    return (RNG_STATE._rng_key, RNG_STATE._seed)
+
+
+def set_rng_state(state):
+    """Set internal states."""
+    _rng_key, _seed = state
+    RNG_STATE._rng_key = _rng_key
+    RNG_STATE._seed = _seed
 
 
 def seed_rng_key(seed: int) -> None:
     """Set ``state._seed = seed`` and reset ``state._rng_key`` to ``None``.
 
     Arguments:
-        seed: an interger seed.
+        seed: an integer seed.
     """
     assert isinstance(seed, int)
-    state._seed = seed
-    state._rng_key = None  # reset `_rng_key`
+    RNG_STATE._seed = seed
+    RNG_STATE._rng_key = None  # reset `_rng_key`
 
 
 def next_rng_key() -> KeyArray:
@@ -28,8 +46,8 @@ def next_rng_key() -> KeyArray:
 
     If ``state._rng_key`` is ``None``, generate a new ``state._rng_key`` from ``state._seed``.
     """
-    if state._rng_key is None:
-        if state._seed is None:
+    if RNG_STATE._rng_key is None:
+        if RNG_STATE._seed is None:
             seed = 42
             logging.warning(
                 f"Seeding RNG key with seed {seed}. "
@@ -40,11 +58,14 @@ def next_rng_key() -> KeyArray:
         # Delay the generating of state._rng_key until `next_rng_key` is called.
         # This helps to avoid the problem when `seed_rng_key` is called
         # before jax found TPU cores.
-        if state._seed is not None:
-            state._rng_key = jax.random.PRNGKey(state._seed)
+        if RNG_STATE._seed is not None:
+            RNG_STATE._rng_key = jax.random.PRNGKey(RNG_STATE._seed)
         else:
             raise ValueError("Impossible")
 
-    key, state._rng_key = jax.random.split(state._rng_key)
+    key, RNG_STATE._rng_key = jax.random.split(RNG_STATE._rng_key)
 
     return key
+
+
+__all__ = ["seed_rng_key", "next_rng_key"]

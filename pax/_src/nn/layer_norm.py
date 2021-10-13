@@ -1,13 +1,14 @@
-"""LayerNorm Module.
+"""LayerNorm Module."""
 
-The implementation is almost identical to dm-haiku LayerNorm at: 
-https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/layer_norm.py
-deepmind/dm-haiku is licensed under the Apache License 2.0
+# The implementation is almost identical to dm-haiku LayerNorm at:
+# https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/layer_norm.py
+# deepmind/dm-haiku is licensed under the Apache License 2.0
+#
+# Differences:
+#     1. We need to input ``num_channels``, the size of the last dimension,
+#        to initialize scale/offset parameters.
+#     2. We can input `rng_key` to seed the value of scale/offset parameters.
 
-Differences:
-    1. We need to input ``num_channels``, the size of the last dimension, to initialize scale/offset parameters.
-    2. We can input `rng_key` to seed the value of scale/offset parameters.
-"""
 import collections
 from typing import Optional, Sequence, Union
 
@@ -16,8 +17,8 @@ import jax.numpy as jnp
 import numpy as np
 
 from .. import initializers
-from ..module import Module
-from ..rng import KeyArray, next_rng_key
+from ..core import Module
+from ..core.rng import KeyArray, next_rng_key
 
 
 class LayerNorm(Module):
@@ -44,7 +45,7 @@ class LayerNorm(Module):
         """Constructs a LayerNorm module.
 
         Arguments:
-            num_channels: Interger, size of the last dimension. The data format is ``[N, ..., C]``.
+            num_channels: Integer, size of the last dimension. The data format is ``[N, ..., C]``.
             axis: Integer, list of integers, or slice indicating which axes to normalize over.
             create_scale: Bool, defines whether to create a trainable scale per channel applied after the normalization.
             create_offset: Bool, defines whether to create a trainable offset per channel applied after normalization and scaling.
@@ -156,4 +157,4 @@ class LayerNorm(Module):
             "create_scale": self.create_scale,
             "create_offset": self.create_offset,
         }
-        return super().__repr__(info)
+        return super()._repr(info)

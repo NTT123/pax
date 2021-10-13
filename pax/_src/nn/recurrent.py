@@ -1,4 +1,4 @@
-"""Recurrent Modules."""
+"""Recurrent modules."""
 
 from typing import NamedTuple, Optional, Tuple
 
@@ -6,17 +6,21 @@ import jax
 import jax.numpy as jnp
 
 from ..initializers import Initializer
-from ..module import Module
-from ..rng import KeyArray, next_rng_key
+from ..core import Module
+from ..core.rng import KeyArray, next_rng_key
 from .linear import Linear
 
 
 class LSTMState(NamedTuple):
+    """LSTMState."""
+
     hidden: jnp.ndarray
     cell: jnp.ndarray
 
 
 class GRUState(NamedTuple):
+    """GRUState."""
+
     hidden: jnp.ndarray
 
 
@@ -95,7 +99,7 @@ class LSTM(RNN):
 
     def __repr__(self):
         info = {"input_dim": self.input_dim, "hidden_dim": self.hidden_dim}
-        return super().__repr__(info)
+        return super()._repr(info)
 
     def initial_state(self, batch_size) -> LSTMState:
         shape = (batch_size, self.hidden_dim)
@@ -166,4 +170,4 @@ class GRU(RNN):
 
     def __repr__(self):
         info = {"input_dim": self.input_dim, "hidden_dim": self.hidden_dim}
-        return super().__repr__(info)
+        return super()._repr(info)

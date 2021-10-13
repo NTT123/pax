@@ -1,9 +1,11 @@
+"""EMA module."""
+
 from typing import Any, Optional
 
 import jax
 import jax.numpy as jnp
 
-from ..module import Module
+from ..core import Module
 
 
 class EMA(Module):

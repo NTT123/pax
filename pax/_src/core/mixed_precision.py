@@ -1,3 +1,5 @@
+"""Mixed precision computation."""
+
 import inspect
 from types import FunctionType
 from typing import Any, Generic, TypeVar
@@ -6,7 +8,7 @@ import jax
 import jax.numpy as jnp
 import jmp
 
-from . import ctx
+from .base import allow_mutation
 from .module import Module
 
 TreeDef = Any
@@ -40,7 +42,9 @@ class apply_mp_policy(Module, Generic[T]):
 
     def unwrap_mixed_precision(self) -> T:
         """Recreate the original module.
-        **Note**: No guarantee that the parameter/state's dtype will be the same as the original module.
+
+        **Note**: No guarantee that the parameter/state's
+        dtype will be the same as the original module.
         """
         return self._module.copy()
 
@@ -93,7 +97,8 @@ class apply_mp_policy(Module, Generic[T]):
             # task 3
             if jax.tree_structure(mod) != jax.tree_structure(old_mod_clone):
                 raise ValueError(
-                    f"The module `{self._module.__class__.__name__}` has its treedef modified during the forward pass. "
+                    f"The module `{self._module.__class__.__name__}` has "
+                    f"its treedef modified during the forward pass. "
                     f"This is currently not supported for a mixed-precision module!"
                 )
 
@@ -109,7 +114,8 @@ class apply_mp_policy(Module, Generic[T]):
 
             # `mod` has the same pytree structure as `self._module`,
             # therefore, this is safe.
-            self._module = mod
+            with allow_mutation(self):
+                self._module = mod
 
             # task 4
             output = self.mp_policy.cast_to_output(output)
@@ -130,4 +136,4 @@ class apply_mp_policy(Module, Generic[T]):
             "compute_dtype": dtype_to_name[self.mp_policy.compute_dtype],
             "output_dtype": dtype_to_name[self.mp_policy.output_dtype],
         }
-        return super().__repr__(info=info)
+        return super()._repr(info=info)

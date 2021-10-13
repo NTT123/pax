@@ -1,65 +1,55 @@
-from pax._src.module import Module, PaxFieldKind
-from pax._src.rng import next_rng_key, seed_rng_key
-from pax._src.side_effects import grad_, jit_, pmap_, value_and_grad_, vmap_
-from pax._src.transforms import (
-    apply_gradients,
-    apply_gradients_,
+"""PAX package."""
+
+from . import initializers, nets, nn, utils
+from ._src.core import (
+    Module,
+    PaxFieldKind,
     apply_mp_policy,
-    apply_updates,
+    assert_structure_equal,
     enable_eval_mode,
     enable_train_mode,
     flatten_module,
-    forward,
     freeze_parameters,
-    scan_bugs,
-    select_kind,
+    pure,
+    module_and_value,
     select_parameters,
     select_states,
-    transform_gradients,
-    transform_gradients_,
     unfreeze_parameters,
     update_parameters,
     update_states,
 )
-from pax._src.utils import dropout, grad_parameters, scan
+from ._src.core.rng import next_rng_key, seed_rng_key
+from ._src.nn.dropout import dropout
+from ._src.utils import build_update_fn, grad_parameters, scan
 
-from . import initializers, nets, nn, utils
+__version__ = "0.4.0"
 
 __all__ = [
-    "apply_gradients_",
-    "apply_gradients",
     "apply_mp_policy",
-    "apply_updates",
+    "assert_structure_equal",
+    "build_update_fn",
     "dropout",
     "enable_eval_mode",
     "enable_train_mode",
     "flatten_module",
-    "forward",
     "freeze_parameters",
-    "grad_",
     "grad_parameters",
     "initializers",
-    "jit_",
     "Module",
     "nets",
     "next_rng_key",
     "nn",
     "PaxFieldKind",
-    "pmap_",
-    "scan_bugs",
+    "pure",
+    "module_and_value",
     "scan",
     "seed_rng_key",
-    "select_kind",
     "select_parameters",
     "select_states",
-    "transform_gradients_",
-    "transform_gradients",
     "unfreeze_parameters",
     "update_parameters",
     "update_states",
     "utils",
-    "value_and_grad_",
-    "vmap_",
 ]
 
 try:

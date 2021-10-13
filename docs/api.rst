@@ -1,12 +1,13 @@
-Pax Basics
+PAX Basics
 ==========
 
-Pax's Module
+PAX's Module
 ------------
 
 .. currentmodule:: pax
 
 .. autoclass:: Module
+   :inherited-members:
    :members:
 
 .. autoclass:: PaxFieldKind
@@ -16,6 +17,16 @@ Pax's Module
    .. autoattribute:: PARAMETER
    .. autoattribute:: MODULE
    .. autoattribute:: OTHERS
+
+
+Purify functions and methods
+----------------------------
+
+.. currentmodule:: pax
+
+.. autofunction:: pure
+
+.. autofunction:: module_and_value 
 
 
 Random Number Generator
@@ -234,7 +245,7 @@ Module Transformations
 
 .. currentmodule:: pax
 
-A module transformation is a pure function that inputs Pax's modules and outputs Pax's modules.
+A module transformation is a pure function that inputs PAX's modules and outputs PAX's modules.
 
 .. autosummary::
 
@@ -242,17 +253,10 @@ A module transformation is a pure function that inputs Pax's modules and outputs
    update_states
    enable_train_mode
    enable_eval_mode
-   select_kind
    select_parameters
    select_states
    freeze_parameters
    unfreeze_parameters
-   transform_gradients
-   transform_gradients_
-   apply_updates
-   apply_gradients
-   apply_gradients_
-   scan_bugs
    flatten_module
    apply_mp_policy
 
@@ -281,12 +285,6 @@ enable_eval_mode
 .. autofunction:: enable_eval_mode
 
 
-select_kind
------------
-
-.. autofunction:: select_kind
-
-
 select_parameters
 -----------------
 
@@ -309,42 +307,6 @@ unfreeze_parameters
 -------------------
 
 .. autofunction:: unfreeze_parameters
-
-
-transform_gradients
--------------------
-
-.. autofunction:: transform_gradients
-
-
-transform_gradients\_
----------------------
-
-.. autofunction:: transform_gradients_
-
-
-apply_updates
--------------
-
-.. autofunction:: apply_updates
-
-
-apply_gradients
----------------
-
-.. autofunction:: apply_gradients
-
-
-apply_gradients\_
------------------
-
-.. autofunction:: apply_gradients_
-
-
-scan_bugs
----------
-
-.. autofunction:: scan_bugs
 
 
 flatten_module
@@ -414,66 +376,19 @@ variance_scaling
 .. autofunction:: variance_scaling
 
 
-Side-effects
-============
-
-Jax's transformations prevent side effects to happen. However, we usually want modifications of our modules to be available outside of a transformed function.
-There are two ways to achieve this:
-
-1. We can return the updated modules as outputs of the transformed function (**recommended**).
-2. We can use thin wrappers of jax transformations that support side-effects.
-
-Pax provides thin wrappers of jax transformations to support inputs modules with side-effects.
-
-
-Example:
-
->>> grad_fn = pax.grad_(loss_fn) # as an alternative to jax.grad(loss_fn)
-
-
-.. currentmodule:: pax
-
-
-pax.jit\_
----------
-
-.. autofunction:: jit_
-
-
-pax.grad\_
-----------
-
-.. autofunction:: grad_
-
-
-pax.value\_and_grad\_
----------------------
-
-.. autofunction:: value_and_grad_
-
-
-pax.vmap\_
-----------
-
-.. autofunction:: vmap_
-
-pax.pmap\_
-----------
-
-.. autofunction:: pmap_
-
 
 Utilities
 =========
 
-.. currentmodule:: pax.utils
+.. currentmodule:: pax
 
 
 .. autosummary::
     grad_parameters
     scan
     build_update_fn
-    dropout
+
+
 
 
 grad_parameters
@@ -492,10 +407,3 @@ build_update_fn
 ---------------
 
 .. autofunction:: build_update_fn
-
-
-dropout
--------
-
-.. autofunction:: dropout
-

@@ -1,14 +1,16 @@
+"""Embed module."""
+
 from typing import Optional
 
 import jax.numpy as jnp
 
 from .. import initializers
-from ..module import Module
-from ..rng import KeyArray, next_rng_key
+from ..core import Module
+from ..core.rng import KeyArray, next_rng_key
 
 
 class Embed(Module):
-    """Embed module maps interger values to real vectors.
+    """Embed module maps integer values to real vectors.
     The embedded vectors are trainable.
     """
 
@@ -55,4 +57,4 @@ class Embed(Module):
 
     def __repr__(self):
         info = {"vocab_size": self.vocab_size, "embed_dim": self.embed_dim}
-        return super().__repr__(info)
+        return super()._repr(info)

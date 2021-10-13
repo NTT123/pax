@@ -396,7 +396,7 @@ class GaussianDiffusion(pax.Module):
             img = self.p_sample(img, jnp.full((b,), i, dtype=jnp.int32), rng_key)
             return img, None
 
-        img, _ = pax.utils.scan(loop_fn, img, (i_s, rng_keys))
+        img, _ = pax.scan(loop_fn, img, (i_s, rng_keys))
         return img
 
     @partial(jax.jit, static_argnums=[1, 2])

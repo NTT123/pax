@@ -47,7 +47,12 @@ def test_sequential_mixed_precision():
 
     f_mp = f.apply(policy_fn)
     x = jnp.zeros((32, 5, 5, 3))
-    y = f_mp(x)
+
+    @pax.pure
+    def run(f_mp):
+        return f_mp(x)
+
+    y = run(f_mp)
     assert y.dtype == half
 
 
@@ -72,7 +77,7 @@ def test_change_internal_state():
     )
     x = jnp.array(0.0)
     assert mm._module.counter.item() == 0  # type: ignore
-    y = mm(x)
+    mm, y = pax.module_and_value(mm)(x)
     assert mm._module.counter.item() == 1  # type: ignore
     assert m.counter.item() == 0
 
@@ -122,6 +127,7 @@ def test_wrap_wrap_mixed_precision():
         f = pax.apply_mp_policy(f, mp_policy=my_policy)
 
 
+@pax.pure
 def test_mixed_precision_clone():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
@@ -129,19 +135,17 @@ def test_mixed_precision_clone():
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
 
     f.new_fc = pax.nn.Linear(1, 1)
-
     assert "new_fc" not in ff._pax.name_to_kind
 
 
+@pax.pure
 def test_mixed_precision_unwrap_clone():
     f = pax.nn.Linear(3, 3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
     f = ff.unwrap_mixed_precision()
-
     f.new_fc = pax.nn.Linear(1, 1)
-
     assert "new_fc" not in ff._pax.name_to_kind
 
 
@@ -191,6 +195,7 @@ def test_mp_call_staticmethod():
         y = m.t(x)
 
 
+@pax.pure
 def test_mp_call_function():
     class M(pax.Module):
         def __init__(self):
@@ -199,9 +204,7 @@ def test_mp_call_function():
 
     m = M()
     x = jnp.zeros((3, 3))
-
     m.q = lambda x: x
-
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
     m = apply_mp_policy(m, mp_policy=my_policy)
     with pytest.raises(ValueError):

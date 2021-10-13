@@ -14,6 +14,7 @@ def test_list_of_mod():
     m._pax.name_to_kind["a"] == pax.PaxFieldKind.MODULE
 
 
+@pax.pure
 def test_assigned_field_an_array():
     class M(pax.Module):
         def __init__(self):
@@ -29,7 +30,8 @@ def test_assigned_field_an_array():
             super().__init__()
 
     n = N()
-    n = pax.scan_bugs(n)
+
+    n.scan_bugs()
     # no error because we will automatically assign `a` to kind PARAMETER
     n.register_parameter("b", jnp.array([1, 2, 3], dtype=jnp.float32))
 
@@ -55,27 +57,27 @@ def test_assign_int_to_param_deepscan():
     with pytest.raises(ValueError):
         m = M()
         # m = pax.freeze_parameters(m)
-        # d = OrderedDict(m._name_to_kind)
+        # d = OrderedDict(m.name_to_kind)
         # d["a"] = pax.module.PaxFieldKind.PARAMETER
-        # m.__dict__["_name_to_kind"] = MappingProxyType(d)
+        # m.__dict__["name_to_kind"] = MappingProxyType(d)
         # m = pax.scan_bugs(m)
 
 
-def test_jit_():
-    class M(pax.Module):
-        def __init__(self):
-            super().__init__()
-            self.a_list = [pax.nn.Linear(2, 2)]
+# def test_jit_():
+#     class M(pax.Module):
+#         def __init__(self):
+#             super().__init__()
+#             self.a_list = [pax.nn.Linear(2, 2)]
 
-        def __call__(self, x):
-            self.a_list.append(0)
-            return x
+#         def __call__(self, x):
+#             self.a_list.append(0)
+#             return x
 
-    m = M()
+#     m = M()
 
-    @pax.jit_
-    def fwd(m, x):
-        return m(x)
+#     @pax.jit_
+#     def fwd(m, x):
+#         return m(x)
 
-    with pytest.raises(ValueError):
-        x = fwd(m, jnp.zeros((2, 2)))
+#     with pytest.raises(ValueError):
+#         x = fwd(m, jnp.zeros((2, 2)))

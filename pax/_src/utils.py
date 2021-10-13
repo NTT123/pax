@@ -2,33 +2,16 @@
 
 import functools
 from typing import Any, Callable, Tuple, TypeVar, Union
-from unittest import TestCase
 
 import jax
 import jax.numpy as jnp
 
-from .module import Module
-from .rng import KeyArray
+from .core import Module, select_parameters, update_parameters
 
 GradientTransformation = Module
 T = TypeVar("T", bound=Module)
 O = TypeVar("O", bound=GradientTransformation)
 C = TypeVar("C")
-
-
-@jax.tree_util.register_pytree_node_class
-class EmptyNode(Tuple):
-    """We use this class to mark deleted nodes.
-
-    Note: this is inspired by treex's `Nothing` class.
-    """
-
-    def tree_flatten(self):
-        return (), None
-
-    @classmethod
-    def tree_unflatten(cls, _, __):
-        return EmptyNode()
 
 
 @functools.wraps(jax.grad)
@@ -46,7 +29,8 @@ def grad_parameters(
 
     Example:
 
-    >>> def loss_fn(model: pax.nn.Linear, x, y):
+    >>> @pax.pure
+    ... def loss_fn(model: pax.nn.Linear, x, y):
     ...     y_hat = model(x)
     ...     loss = jnp.mean(jnp.square(y - y_hat))
     ...     return loss, (loss, model)
@@ -66,7 +50,7 @@ def grad_parameters(
 
     def grad_fn(mod: T, *args, **kwargs) -> Tuple[T, C]:
         if not isinstance(mod, Module):
-            raise ValueError("Expecting a Pax's Module at the first argument.")
+            raise ValueError("Expecting a PAX's Module at the first argument.")
 
         out = _grad_fn(mod.parameters(), mod, *args, **kwargs)
         return out
@@ -98,11 +82,14 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
     >>> net, optimizer, loss = update_fn(net, optimizer, x, y)
     """
 
+    from opax import apply_updates, transform_gradients
+
     def _update_fn(model: T, optimizer: O, *inputs, **kwinputs) -> Tuple[T, O, Any]:
         """An update function.
 
         Note that: ``model`` and ``optimizer`` have internal states.
-        We have to return them in the output as jax transformations (e.g., ``jax.grad`` and ``jax.jit``) requires pure functions.
+        We have to return them in the output as jax transformations
+        (e.g., ``jax.grad`` and ``jax.jit``) requires pure functions.
 
 
         Arguments:
@@ -113,13 +100,6 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
             model_and_optimizer: updated (model, optimizer),
             aux: the aux info.
         """
-
-        from .transforms import (
-            apply_updates,
-            select_parameters,
-            transform_gradients,
-            update_parameters,
-        )
 
         assert isinstance(model, Module)
         assert isinstance(optimizer, Module)
@@ -147,22 +127,7 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
     return _update_fn_scan if scan_mode else _update_fn
 
 
-def dropout(rng_key: KeyArray, dropout_rate: float, x: jnp.ndarray) -> jnp.ndarray:
-    """Dropout input `x` randomly.
-
-    Scaling the input by ``1 / (1-dropout_rate)`` makes ``E[output] = input``.
-    """
-    assert 0 <= dropout_rate < 1.0
-
-    if dropout_rate == 0.0:
-        return x
-    else:
-        mask = jax.random.bernoulli(rng_key, dropout_rate, shape=x.shape)
-        x = jnp.where(mask, 0.0, x / (1.0 - dropout_rate))
-        return x
-
-
-def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):
+def scan(func, init, xs, length=None, unroll: int = 1, time_major=True):
     """``jax.lax.scan`` with an additional ``time_major=False`` mode.
 
 
@@ -180,45 +145,11 @@ def scan(fn, init, xs, length=None, unroll: int = 1, time_major=True):
     """
     if time_major:
         # data format: TN...
-        return jax.lax.scan(fn, init, xs, length=length, unroll=unroll)
+        return jax.lax.scan(func, init, xs, length=length, unroll=unroll)
     else:
         # data format: NT...
         if xs is not None:
             xs = jnp.swapaxes(xs, 0, 1)  # swap batch and time axes
-        state, output = jax.lax.scan(fn, init, xs, length=length, unroll=unroll)
+        state, output = jax.lax.scan(func, init, xs, length=length, unroll=unroll)
         output = jnp.swapaxes(output, 0, 1)  # restore to NT...
         return state, output
-
-
-def assertStructureEqual(self: T, other: T):
-    """Assert that the two modules are structurally the same.
-
-    Print out the difference.
-    """
-    if jax.tree_structure(self) == jax.tree_structure(other):
-        return True
-
-    def check(a, b):
-        if isinstance(a, Module) and isinstance(b, Module):
-            assertStructureEqual(a, b)
-
-    has_error = False
-    try:
-        jax.tree_map(
-            check,
-            self,
-            other,
-            is_leaf=lambda x: isinstance(x, Module)
-            and x is not self
-            and x is not other,
-        )
-    except ValueError:
-        has_error = True
-
-    if has_error:
-        tc = TestCase()
-        tc.maxDiff = None
-        # do not compare weights
-        u = jax.tree_map(lambda x: None, self)
-        v = jax.tree_map(lambda y: None, other)
-        tc.assertDictEqual(vars(u), vars(v))

@@ -1,16 +1,16 @@
 :github_url: https://github.com/ntt123/pax/tree/main/docs
 
 
-.. Pax documentation master file, created by
+.. PAX documentation master file, created by
    sphinx-quickstart on Fri Sep  3 01:09:13 2021.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Pax documentation
+PAX documentation
 ===============================
 
-Pax is a stateful pytree library for training neural networks using Jax. It is designed to be simple
-and easy to use while preserving benefits from Jax.
+PAX is a stateful pytree library for training neural networks using JAX. It is designed to be simple
+and easy to use while preserving benefits from JAX.
 
 .. code-block:: python
 
@@ -51,8 +51,7 @@ To install the latest version::
    notebooks/basics
    notebooks/training
    notebooks/understanding
-   notebooks/side_effects
-   notebooks/limitations
+   notebooks/jax_transformations
    notebooks/performance
 
 
@@ -66,7 +65,7 @@ To install the latest version::
 
 
 
-Pax is licensed under the MIT License.
+PAX is licensed under the MIT License.
 
 Indices
 =======

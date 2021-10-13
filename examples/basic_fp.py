@@ -1,4 +1,4 @@
-"""Pax and functional programming."""
+"""PAX and functional programming."""
 import jax
 import jax.numpy as jnp
 import opax
@@ -31,8 +31,8 @@ class Linear(pax.Module):
         return x
 
 
-def loss_fn(model, x, y):
-    y_hat = model(x)
+def loss_fn(model: Linear, x, y):
+    model, y_hat = pax.module_and_value(model)(x)
     loss = jnp.mean(jnp.square(y_hat - y))
     return loss, (loss, model)
 
@@ -40,7 +40,9 @@ def loss_fn(model, x, y):
 @jax.jit
 def train_step(model: Linear, optimizer: GradientTransformation, x, y):
     grads, (loss, model) = pax.grad_parameters(loss_fn, has_aux=True)(model, x, y)
-    model, optimizer = pax.apply_gradients(model, optimizer, grads=grads)
+    updates, optimizer = opax.transform_gradients(grads, optimizer, model.parameters())
+    new_params = opax.apply_updates(model.parameters(), updates)
+    model = model.update_parameters(new_params)
     return model, optimizer, loss
 
 
