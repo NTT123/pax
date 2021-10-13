@@ -3,14 +3,14 @@ from setuptools import find_namespace_packages, setup
 __version__ = "0.4.0rc3"
 url = "https://github.com/ntt123/pax"
 
-install_requires = ["jax", "jmp", "opax"]
+install_requires = ["jax", "jmp", "opax==0.2.3rc1"]
 setup_requires = []
 tests_requires = [
     "chex",
     "dm-haiku",
     "fire",
     "mypy",
-    "opax",
+    "opax==0.2.3rc1",
     "pytest",
     "tensorflow_datasets",
     "tensorflow",
