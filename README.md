@@ -34,7 +34,7 @@ Install from PyPI:
 pip3 install pax3
 ```
 
-Or install the latest version from github:
+Or install the latest version from Github:
 
 ```bash
 pip3 install git+https://github.com/ntt123/pax.git
@@ -78,7 +78,7 @@ print(grads.counter) # (b'',)
 print(grads.bias) # 60.0
 ```
 
-There are a few important things in the above example:
+There are few noteworthy points in the above example:
 
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
@@ -106,7 +106,7 @@ net(0)
 # Please do this computation inside a function decorated by `pax.pure`.
 ```
 
-Furthermore, a decorated function can only access the copy of its of inputs. Any modification on the copy will not affect the original inputs.
+Furthermore, a decorated function can only access a copy of its inputs. Any modification on the copy will not affect the original inputs.
 
 ```python
 @pax.pure
@@ -139,8 +139,7 @@ print(net.counter) # increased by 1
 
 It is a good practice to keep functions decorated by `pax.pure` as small as possible.
 
-
-PAX provides the function `pax.module_and_value` that converts a PAX module's method to a pure function which returns the updated module in the output. For example:
+PAX provides the function `pax.module_and_value` that converts a module's method to a pure function. The pure function also returns the updated module in its output. For example:
 
 ```python
 net = Counter(3)
@@ -205,11 +204,11 @@ At the moment, PAX includes:
 * ``pax.nn.{Conv1D, Conv2D, Conv1DTranspose, Conv2DTranspose}``, 
 * ``pax.nn.{Dropout, Sequential, Identity, Lambda, RngSeq, EMA}``.
 
-We intent to add new modules in the near future.
+We are intent to add new modules in the near future.
 
 ## Optimizers<a id="optimizers"></a>
 
-PAX has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's github repository for more information. 
+PAX has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's GitHub repository for more information. 
 
 
 ## Module transformations<a id="transformations"></a>
