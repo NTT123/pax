@@ -21,8 +21,7 @@ def convert_conv(conv, name=None):
         name=name,
     )
     assert pax_conv.weight.shape == weight.shape
-    pax_conv.weight = weight
-    return pax_conv
+    return pax_conv.replace(weight=weight)
 
 
 def convert_bn(bn, name=None):
@@ -46,13 +45,12 @@ def convert_bn(bn, name=None):
     assert pax_bn.ema_mean.averages.shape == running_mean.shape
     assert pax_bn.ema_var.averages.shape == running_var.shape
 
-    pax_bn.scale = weight
-    pax_bn.offset = bias
-
-    pax_bn.ema_mean.averages = running_mean
-    pax_bn.ema_var.averages = running_var
-
-    return pax_bn
+    return pax_bn.replace(
+        scale=weight,
+        offset=bias,
+        ema_mean=pax_bn.ema_mean.replace(averages=running_mean),
+        ema_var=pax_bn.ema_var.replace(averages=running_var),
+    )
 
 
 def convert_basic_block(block):
@@ -86,10 +84,7 @@ def convert_linear(linear):
     assert pax_linear.bias.shape == bias.shape
     assert pax_linear.weight.shape == weight.shape
 
-    pax_linear.weight = weight
-    pax_linear.bias = bias
-
-    return pax_linear
+    return pax_linear.replace(weight=weight, bias=bias)
 
 
 def load_pretrained_resnet18():
@@ -105,21 +100,22 @@ def load_pretrained_resnet18():
         convert_linear(resnet18_pt.fc),
     ]
 
-    # replace resnet18 part by part
-    resnet18.initial_conv = pax_resnet[0]
-    resnet18.initial_batchnorm = pax_resnet[1]
-    for i in range(len(resnet18.block_groups)):
-        bg = resnet18.block_groups[i]
-        for j in range(len(bg.blocks)):
-            b = bg.blocks[j]
-            mods = pax_resnet[2 + i][j]
-            b.layers = mods[0]
-            if b.use_projection:
-                b.proj_conv = mods[1][0]
-                b.proj_batchnorm = mods[1][1]
+    def replace_parts(resnet18):
+        # replace resnet18 part by part
+        resnet18.initial_conv = pax_resnet[0]
+        resnet18.initial_batchnorm = pax_resnet[1]
+        for i in range(len(resnet18.block_groups)):
+            bg = resnet18.block_groups[i]
+            for j in range(len(bg.blocks)):
+                b = bg.blocks[j]
+                mods = pax_resnet[2 + i][j]
+                b.layers = mods[0]
+                if b.use_projection:
+                    b.proj_conv = mods[1][0]
+                    b.proj_batchnorm = mods[1][1]
 
-    resnet18.logits = pax_resnet[-1]
+        resnet18.logits = pax_resnet[-1]
+        # make sure we are in `eval` mode when doing evaluation.
+        return resnet18.eval()
 
-    # make sure we are in `eval` mode when doing evaluation.
-    resnet18 = resnet18.eval()
-    return resnet18
+    return pax.pure(replace_parts)(resnet18)
