@@ -22,6 +22,8 @@ from ._src.core.rng import next_rng_key, seed_rng_key
 from ._src.nn.dropout import dropout
 from ._src.utils import build_update_fn, grad_parameters, scan
 
+__version__ = "0.4.0"
+
 __all__ = [
     "apply_mp_policy",
     "assert_structure_equal",
@@ -51,6 +53,6 @@ __all__ = [
 ]
 
 try:
-    del _src
+    del _src  # pylint: disable=undefined-variable
 except NameError:
     pass

@@ -1,17 +1,28 @@
 from setuptools import find_namespace_packages, setup
 
-__version__ = "0.4.0rc3"
+
+def _get_version():
+    with open("pax/__init__.py") as fp:
+        for line in fp:
+            if line.startswith("__version__"):
+                g = {}
+                exec(line, g)  # pylint: disable=exec-used
+                return g["__version__"]
+        raise ValueError("`__version__` not defined in `pax/__init__.py`")
+
+
+__version__ = _get_version()
 url = "https://github.com/ntt123/pax"
 
-install_requires = ["jax", "jmp", "opax==0.2.3rc1"]
+install_requires = ["jax>=0.2.21", "jmp>=0.0.2"]
 setup_requires = []
 tests_requires = [
     "chex",
     "dm-haiku",
     "fire",
-    "mypy",
-    "opax==0.2.3rc1",
+    "opax",
     "pytest",
+    "pytype",
     "tensorflow_datasets",
     "tensorflow",
     "tqdm",
