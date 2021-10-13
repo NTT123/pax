@@ -75,7 +75,7 @@ class WaveGRU(pax.Module):
         wav = self.embed(wav)
         assert x.shape == wav.shape
         x = x + wav
-        _, x = pax.utils.scan(self.gru, hx, x, time_major=False)
+        _, x = pax.scan(self.gru, hx, x, time_major=False)
         x = jax.nn.relu(self.O1(x))
         x = self.O2(x)
         return x
@@ -99,5 +99,5 @@ class WaveGRU(pax.Module):
             x = jax.random.categorical(rng_key, x)
             return (x, hx, next_rng_key), x
 
-        _, x = pax.utils.scan(loop, (x, hx, rng_key), conds, time_major=False)
+        _, x = pax.scan(loop, (x, hx, rng_key), conds, time_major=False)
         return x

@@ -74,9 +74,7 @@ def update_step(prev, batch: jnp.ndarray):
 
 @partial(jax.pmap, axis_name="i")
 def update_fn(model: LM, optimizer: GradientTransformation, multi_batch: jnp.ndarray):
-    (model, optimizer), losses = pax.utils.scan(
-        update_step, (model, optimizer), multi_batch
-    )
+    (model, optimizer), losses = pax.scan(update_step, (model, optimizer), multi_batch)
     return model, optimizer, jnp.sum(losses)
 
 
