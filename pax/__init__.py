@@ -5,7 +5,7 @@ from ._src.core import (
     Module,
     PaxFieldKind,
     apply_mp_policy,
-    assertStructureEqual,
+    assert_structure_equal,
     enable_eval_mode,
     enable_train_mode,
     flatten_module,
@@ -24,7 +24,7 @@ from ._src.utils import build_update_fn, grad_parameters, scan
 
 __all__ = [
     "apply_mp_policy",
-    "assertStructureEqual",
+    "assert_structure_equal",
     "build_update_fn",
     "dropout",
     "enable_eval_mode",

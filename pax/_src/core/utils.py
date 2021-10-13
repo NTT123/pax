@@ -17,7 +17,7 @@ def get_modules(tree):
     return modules
 
 
-def assertStructureEqual(tree_a: T, tree_b: T):
+def assert_structure_equal(tree_a: T, tree_b: T):
     """Assert that the two pytrees are structurally the same.
 
     Print out the difference.
@@ -27,7 +27,7 @@ def assertStructureEqual(tree_a: T, tree_b: T):
 
     def check(subtree_a, subtree_b):
         if isinstance(subtree_a, Module) and isinstance(subtree_b, Module):
-            assertStructureEqual(subtree_a, subtree_b)
+            assert_structure_equal(subtree_a, subtree_b)
 
     has_error = False
     try:

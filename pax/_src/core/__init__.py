@@ -15,4 +15,4 @@ from .transforms import (
     update_parameters,
     update_states,
 )
-from .utils import assertStructureEqual
+from .utils import assert_structure_equal

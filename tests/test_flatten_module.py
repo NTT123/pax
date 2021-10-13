@@ -23,7 +23,7 @@ def test_none_state():
     m = M()
     p = pax.select_parameters(m)
     assert p.s == []
-    pax.assertStructureEqual(m, p)
+    pax.assert_structure_equal(m, p)
 
 
 def test_flatten_non_callable_module():
