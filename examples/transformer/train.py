@@ -162,7 +162,7 @@ def train():
     tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")
     for step in tr:
         batch = next(tfdata)
-        # (num_devices,) is for jax.pmap, (steps_per_update,) is for pax.utils.scan
+        # (num_devices,) is for jax.pmap, (steps_per_update,) is for pax.scan
         net, optimizer, loss = update_fn(net, optimizer, batch)
         total_losses = total_losses + loss
         if step % 1000 == 0:
