@@ -19,7 +19,11 @@ def _get_all_submodules(value):
     return out
 
 
-def pure(func, static_argnums: Optional[Union[Sequence[int], int]] = None):
+def pure(
+    func,
+    static_argnums: Optional[Union[Sequence[int], int]] = None,
+    check_leaks: bool = True,
+):
     """Make a function pure by copying the inputs.
 
     Any modification on the copy will not affect the original inputs.
@@ -59,7 +63,7 @@ def pure(func, static_argnums: Optional[Union[Sequence[int], int]] = None):
 
     @functools.wraps(func)
     def _f(*args, **kwargs):
-        with jax.checking_leaks():
+        with jax.check_tracer_leaks(check_leaks):
             _ = [m.scan_bugs() for m in get_modules((func, args, kwargs))]
 
             # support calling method

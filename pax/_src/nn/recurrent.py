@@ -34,20 +34,6 @@ class RNN(Module):
         raise NotImplementedError()
 
 
-@jax.jit
-def _sigmoid(x: jnp.ndarray):
-    """This is a hack to get the same XLA optimized code as `jax.nn.sigmoid`.
-
-    TODO: remove this function when jax tracer issue is fixed.
-    https://github.com/google/jax/issues/8171
-    """
-    out = 1 / (1 + jnp.exp(-x))
-    grad = out * (1 - out)
-    grad_path = jax.lax.stop_gradient(grad) * x
-    no_grad_path = jax.lax.stop_gradient(-grad_path + out)
-    return grad_path + no_grad_path
-
-
 class LSTM(RNN):
     """Long Short Term Memory (LSTM) RNN module."""
 
@@ -106,9 +92,9 @@ class LSTM(RNN):
         xh = jnp.concatenate((x, state.hidden), axis=-1)
         gated = self.fc(xh)
         i, g, f, o = jnp.split(gated, 4, axis=-1)
-        f = _sigmoid(f + self.forget_gate_bias)
-        c = f * state.cell + _sigmoid(i) * jnp.tanh(g)
-        h = _sigmoid(o) * jnp.tanh(c)
+        f = jax.nn.sigmoid(f + self.forget_gate_bias)
+        c = f * state.cell + jax.nn.sigmoid(i) * jnp.tanh(g)
+        h = jax.nn.sigmoid(o) * jnp.tanh(c)
         return LSTMState(h, c), h
 
     def __repr__(self):
@@ -174,7 +160,7 @@ class GRU(RNN):
         """
         hidden = state.hidden
         xh = jnp.concatenate((x, hidden), axis=-1)
-        zr = _sigmoid(self.xh_zr_fc(xh))
+        zr = jax.nn.sigmoid(self.xh_zr_fc(xh))
         z, r = jnp.split(zr, 2, axis=-1)
 
         xrh = jnp.concatenate((x, r * hidden), axis=-1)
