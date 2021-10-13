@@ -51,7 +51,7 @@ class Module(BaseModule):
     register_module = register_modules
 
     def copy(self: T) -> T:
-        """Return a copy of current module."""
+        """Return a copy of the current module."""
         leaves, treedef = jax.tree_flatten(self)
         return jax.tree_unflatten(treedef, leaves)
 

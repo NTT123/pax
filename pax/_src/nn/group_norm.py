@@ -37,7 +37,7 @@ class GroupNorm(Module):
 
     This applies group normalization to the x. This involves splitting the
     channels into groups before calculating the mean and variance. The default
-    behaviour is to compute the mean and variance over the spatial dimensions and
+    behavior is to compute the mean and variance over the spatial dimensions and
     the grouped channels. The mean and variance will never be computed over the
     created groups axis.
 

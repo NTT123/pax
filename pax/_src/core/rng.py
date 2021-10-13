@@ -34,7 +34,7 @@ def seed_rng_key(seed: int) -> None:
     """Set ``state._seed = seed`` and reset ``state._rng_key`` to ``None``.
 
     Arguments:
-        seed: an interger seed.
+        seed: an integer seed.
     """
     assert isinstance(seed, int)
     RNG_STATE._seed = seed

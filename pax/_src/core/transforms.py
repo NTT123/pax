@@ -112,10 +112,10 @@ def update_pytree(mod: T, *, other: T) -> T:
 
 
 def update_parameters(mod: T, *, params: T) -> T:
-    """Return a module which uses trainable parameters in `params`."""
+    """Return a module that uses trainable parameters in `params`."""
     return update_pytree(mod, other=select_parameters(params))
 
 
 def update_states(mod: T, *, states: T) -> T:
-    """Return a module which uses non-trainable states in `states`."""
+    """Return a module that uses non-trainable states in `states`."""
     return update_pytree(mod, other=select_states(states))

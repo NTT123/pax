@@ -24,7 +24,7 @@ def pure(func, static_argnums: Optional[Union[Sequence[int], int]] = None):
 
     Any modification on the copy will not affect the original inputs.
 
-    **Note**: only functions that wrapped by `pax.pure` are allowed to modify PAX's Modules.
+    **Note**: only functions that are wrapped by `pax.pure` are allowed to modify PAX's Modules.
 
     Example:
 

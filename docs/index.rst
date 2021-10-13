@@ -52,7 +52,6 @@ To install the latest version::
    notebooks/training
    notebooks/understanding
    notebooks/jax_transformations
-   notebooks/limitations
    notebooks/performance
 
 

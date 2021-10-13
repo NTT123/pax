@@ -10,7 +10,7 @@ from ..core.rng import KeyArray, next_rng_key
 
 
 class Embed(Module):
-    """Embed module maps interger values to real vectors.
+    """Embed module maps integer values to real vectors.
     The embedded vectors are trainable.
     """
 

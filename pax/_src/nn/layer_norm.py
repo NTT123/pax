@@ -45,7 +45,7 @@ class LayerNorm(Module):
         """Constructs a LayerNorm module.
 
         Arguments:
-            num_channels: Interger, size of the last dimension. The data format is ``[N, ..., C]``.
+            num_channels: Integer, size of the last dimension. The data format is ``[N, ..., C]``.
             axis: Integer, list of integers, or slice indicating which axes to normalize over.
             create_scale: Bool, defines whether to create a trainable scale per channel applied after the normalization.
             create_offset: Bool, defines whether to create a trainable offset per channel applied after normalization and scaling.
