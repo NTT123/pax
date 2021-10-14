@@ -381,3 +381,16 @@ def test_append_module_list():
     n = pax.nn.Sequential(pax.nn.Linear(3, 3))
     n.replace(modules=n.modules + (pax.nn.Linear(4, 4),))
     n.scan_bugs()
+
+
+def test_set_attribute_kind():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.a = jnp.array(0)
+            self.b = jnp.array(0.0)
+            self.set_attribute_kind(a=pax.S, b=pax.P)
+
+    m = M()
+    assert m._pax.name_to_kind["a"] == pax.S
+    assert m._pax.name_to_kind["b"] == pax.P

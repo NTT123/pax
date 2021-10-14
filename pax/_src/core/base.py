@@ -76,7 +76,7 @@ class PaxFieldKind(Enum):
     STATE: int = 1
     PARAMETER: int = 2
     MODULE: int = 3
-    OTHERS: int = -1
+    UNKNOWN: int = -1
 
 
 class PaxModuleInfo(NamedTuple):
@@ -189,22 +189,8 @@ class BaseModule(metaclass=ModuleMetaclass):
             )
 
         super().__setattr__(name, value)
-
-        # If `value` contains Module's instances only, it is registered as MODULE.
-        module_leaves, _ = jax.tree_flatten(
-            value, is_leaf=lambda x: isinstance(x, BaseModule)
-        )
-        all_modules = all(isinstance(mod, BaseModule) for mod in module_leaves)
-        if (
-            value is not None
-            and len(module_leaves) > 0
-            and name not in self._pax.name_to_kind
-            and (isinstance(value, BaseModule) or all_modules)
-        ):
-            self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
-
-        # scan the new field for bugs.
-        self._scan_fields(fields=(name,))
+        if name not in self._pax.name_to_kind:
+            self.find_and_register_submodules()
 
     def __delattr__(self, name: str) -> None:
         self._assert_mutability()
@@ -264,7 +250,7 @@ class BaseModule(metaclass=ModuleMetaclass):
 
         for name in fields:
             value = getattr(self, name)
-            kind = self._pax.name_to_kind.get(name, PaxFieldKind.OTHERS)
+            kind = self._pax.name_to_kind.get(name, PaxFieldKind.UNKNOWN)
             mods, _ = jax.tree_flatten(
                 value, is_leaf=lambda x: isinstance(x, BaseModule)
             )
@@ -280,7 +266,7 @@ class BaseModule(metaclass=ModuleMetaclass):
                         )
 
             # Check if a pytree attribute contains non-ndarray values.
-            if kind != PaxFieldKind.OTHERS:
+            if kind != PaxFieldKind.UNKNOWN:
                 for leaf in leaves:
                     if not isinstance(leaf, (np.ndarray, jnp.ndarray)):
                         raise ValueError(
@@ -300,7 +286,7 @@ class BaseModule(metaclass=ModuleMetaclass):
                             f"(type={leaf.dtype}, value={leaf})."
                         )
 
-            if kind == PaxFieldKind.OTHERS:
+            if kind == PaxFieldKind.UNKNOWN:
                 # if a field contains empty pytree
                 leaves, _ = jax.tree_flatten(
                     value, is_leaf=lambda x: isinstance(x, BaseModule)
@@ -320,7 +306,7 @@ class BaseModule(metaclass=ModuleMetaclass):
                     if isinstance(leaf, (np.ndarray, jnp.ndarray)):
                         raise ValueError(
                             f"Unregistered field `{self}.{name}` ({kind}) contains a ndarray. "
-                            f"Consider registering it using `self.register_*` methods."
+                            f"Consider registering it using `self.set_kind` or `self.register_*` methods."
                         )
 
             # Check if an unregistered (or PARAMETER) field contains pax.Module instances
@@ -377,6 +363,16 @@ class BaseModule(metaclass=ModuleMetaclass):
 
         self._update_name_to_kind_dict(name, kind)
         setattr(self, name, value)
+
+    def set_attribute_kind(self, **kwargs):
+        """Example:
+
+        >>> self.set_kind(weight=pax.P, counter=pax.S)
+        """
+        for name, kind in kwargs.items():
+            if not hasattr(self, name):
+                raise AttributeError(f"Attribute `{name}` does not exist.")
+            self._update_name_to_kind_dict(name, kind)
 
     def apply(self: T, apply_fn) -> T:
         """Apply a function to all submodules.

@@ -21,9 +21,10 @@ class Linear(pax.Module):
     def __init__(self):
         super().__init__()
 
-        self.register_parameter("weight", jax.random.normal(pax.next_rng_key(), (1,)))
-        self.register_parameter("bias", jax.random.normal(pax.next_rng_key(), (1,)))
-        self.register_state("counter", jnp.array(0))
+        self.weight = jax.random.normal(pax.next_rng_key(), (1,))
+        self.bias = jax.random.normal(pax.next_rng_key(), (1,))
+        self.counter = jnp.array(0)
+        self.set_attribute_kind(weight=pax.P, bias=pax.P, counter=pax.S)
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         self.counter = self.counter + 1

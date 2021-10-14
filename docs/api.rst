@@ -16,7 +16,7 @@ PAX's Module
    .. autoattribute:: STATE
    .. autoattribute:: PARAMETER
    .. autoattribute:: MODULE
-   .. autoattribute:: OTHERS
+   .. autoattribute:: UNKNOWN
 
 
 Purify functions and methods
