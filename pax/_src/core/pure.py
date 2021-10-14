@@ -21,7 +21,6 @@ def _get_all_submodules(value):
 
 def pure(
     func: Callable,
-    /,
     static_argnums: Optional[Union[Sequence[int], int]] = None,
     check_leaks: bool = True,
 ) -> Callable:
