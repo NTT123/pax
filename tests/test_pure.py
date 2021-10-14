@@ -1,4 +1,5 @@
 from functools import partial
+from typing import Any
 
 import jax
 import pax
@@ -38,6 +39,8 @@ def test_rng_unchanged():
 
 def test_deepcopy():
     class C(object):
+        c: int
+
         def __init__(self):
             self.c = 0
 
@@ -47,6 +50,8 @@ def test_deepcopy():
         return x
 
     class M(pax.Module):
+        c: C
+
         def __init__(self):
             self.c = C()
 
@@ -59,6 +64,8 @@ def test_deepcopy():
 
 def test_deep_compare_1():
     class C(object):
+        c: int
+
         def __init__(self):
             self.c = 0
 
@@ -67,6 +74,8 @@ def test_deep_compare_1():
         return x
 
     class M(pax.Module):
+        c: C
+
         def __init__(self):
             self.c = C()
 
@@ -78,10 +87,12 @@ def test_deep_compare_1():
 
 def test_deep_compare_2():
     class C(object):
+        c: int
+
         def __init__(self):
             self.c = 0
 
-        def __eq__(self, o: object) -> bool:
+        def __eq__(self, o: C) -> bool:
             return self.c == o.c
 
     @pax.pure
@@ -89,6 +100,11 @@ def test_deep_compare_2():
         return x
 
     class M(pax.Module):
+        f: Any
+        g: Any
+        j: Any
+        c: C
+
         def __init__(self):
             self.f = jax.nn.relu
             self.g = jax.nn.sigmoid
