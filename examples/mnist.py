@@ -88,16 +88,15 @@ test_data = load_dataset("test").shuffle(10 * batch_size).batch(batch_size)
 
 
 def save_ckpt(epoch: int, model: pax.Module, path: Path):
-    model = jax.tree_map(lambda x: jax.device_get(x), model)
-    leaves, treedef = jax.tree_flatten(model)
-    del treedef
+    model = jax.device_get(model)
+    leaves = jax.tree_leaves(model)
     with open(path, "wb") as f:
         pickle.dump({"epoch": epoch, "leaves": leaves}, f)
 
 
 def load_ckpt(model, path: Path):
     """Load model from saved tree leaves"""
-    leaves, treedef = jax.tree_flatten(model)
+    treedef = jax.tree_structure(model)
     with open(path, "rb") as f:
         dic = pickle.load(f)
     return dic["epoch"], jax.tree_unflatten(treedef, dic["leaves"])

@@ -8,8 +8,8 @@ import jax
 import jax.numpy as jnp
 import jmp
 
-from .base import allow_mutation
 from .module import Module
+from .threading_local import allow_mutation
 
 TreeDef = Any
 

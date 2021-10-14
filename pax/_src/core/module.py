@@ -5,7 +5,8 @@ from typing import Any, Optional, TypeVar
 import jax
 import jax.tree_util
 
-from .base import BaseModule, PaxFieldKind, allow_mutation
+from .base import BaseModule, PaxFieldKind
+from .threading_local import allow_mutation
 from .transforms import (
     enable_eval_mode,
     enable_train_mode,

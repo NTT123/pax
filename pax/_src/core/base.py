@@ -5,9 +5,7 @@
 # which is under MIT License.
 
 import functools
-import threading
 from collections import OrderedDict
-from contextlib import contextmanager
 from copy import deepcopy
 from enum import Enum
 from types import MappingProxyType
@@ -30,50 +28,21 @@ import jax.numpy as jnp
 import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
-from jaxlib.xla_extension import CompiledFunction
+from jaxlib.xla_extension import CompiledFunction  # pylint: disable=no-name-in-module
 
-from .rng import get_rng_state, set_rng_state
+from .threading_local import (
+    add_mutable_module,
+    allow_mutation,
+    is_deep_copy_enabled,
+    is_inside_pure_function,
+    is_mutable,
+)
 
 T = TypeVar("T", bound="BaseModule")
 M = TypeVar("M")
 TreeDef = Any
 
-
-STATE = threading.local()
-STATE.enable_deep_copy = False
-STATE.inside_pure_function = False
-STATE.mutable_module_id_list = ()
-
-
-@contextmanager
-def enable_deep_copy():
-    r"""A context manager that turns on deepcopy mode."""
-    prev = STATE.enable_deep_copy
-    STATE.enable_deep_copy = True
-    try:
-        yield
-    finally:
-        STATE.enable_deep_copy = prev
-
-
-@contextmanager
-def allow_mutation(modules):
-    r"""A context manager that turns on mutability."""
-    if not isinstance(modules, (tuple, list)):
-        modules = (modules,)
-    modules = tuple([id(mod) for mod in modules])
-
-    prev = STATE.mutable_module_id_list
-    prev_inside = STATE.inside_pure_function
-    prev_rng_state = get_rng_state()
-    try:
-        STATE.inside_pure_function = True
-        STATE.mutable_module_id_list = modules
-        yield
-    finally:
-        STATE.mutable_module_id_list = prev
-        STATE.inside_pure_function = prev_inside
-        set_rng_state(prev_rng_state)
+KeyArray = Union[Any, jnp.ndarray]
 
 
 @jax.tree_util.register_pytree_node_class
@@ -129,8 +98,8 @@ class ModuleMetaclass(type):
         module = cls.__new__(cls, *args, **kwargs)  # type: ignore
 
         # if a module is created inside a `pure` function, it is mutable.
-        if STATE.inside_pure_function:
-            STATE.mutable_module_id_list = (id(module),) + STATE.mutable_module_id_list
+        if is_inside_pure_function():
+            add_mutable_module(module)
             cls.__init__(module, *args, **kwargs)
             module.find_and_register_submodules()
         else:
@@ -188,7 +157,7 @@ class BaseModule(metaclass=ModuleMetaclass):
         super().__setattr__("_pax", self._pax._replace(name=name))
 
     def _assert_mutability(self):
-        if id(self) not in STATE.mutable_module_id_list:
+        if not is_mutable(self):
             raise ValueError(
                 "Cannot modify a module in immutable mode.\n"
                 "Please do this computation inside a function decorated by `pax.pure`."
@@ -251,7 +220,7 @@ class BaseModule(metaclass=ModuleMetaclass):
         aux = dict(self.__dict__)
         children = [aux.pop(name) for name in self._pax.name_to_kind]
 
-        if STATE.enable_deep_copy:
+        if is_deep_copy_enabled():
             leaves, treedef = jax.tree_flatten(aux)
             new_leaves = []
             black_list = (jax.custom_jvp, functools.partial, CompiledFunction)
@@ -281,8 +250,8 @@ class BaseModule(metaclass=ModuleMetaclass):
         module_dict.update(zip(module._pax.name_to_kind, children))
 
         # if a module is created inside a `pure` function, it is mutable.
-        if STATE.inside_pure_function:
-            STATE.mutable_module_id_list = (id(module),) + STATE.mutable_module_id_list
+        if is_inside_pure_function():
+            add_mutable_module(module)
 
         return module
 
