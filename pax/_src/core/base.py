@@ -153,6 +153,8 @@ class BaseModule(metaclass=ModuleMetaclass):
     the pytree and the kind of the tree part (parameter, state, module, etc.).
     """
 
+    __slots__ = ("_pax",)
+
     _pax: PaxModuleInfo
 
     def __new__(cls: Type[T], *args, **kwargs) -> T:
@@ -162,11 +164,17 @@ class BaseModule(metaclass=ModuleMetaclass):
         del args, kwargs
 
         obj = object.__new__(cls)
-        obj.__dict__["_pax"] = PaxModuleInfo(
-            name=None,
-            training=True,
-            name_to_kind=MappingProxyType(OrderedDict()),
+        super(BaseModule, obj).__setattr__(
+            "_pax",
+            PaxModuleInfo(
+                name=None,
+                training=True,
+                name_to_kind=MappingProxyType(OrderedDict()),
+            ),
         )
+
+        if obj.__slots__ != ("_pax",):
+            raise ValueError("`__slots__` is not supported by PAX modules.")
 
         # scan class attributes for unregistered modules and ndarray's.
         obj._scan_fields(obj.__class__.__dict__)
@@ -233,7 +241,9 @@ class BaseModule(metaclass=ModuleMetaclass):
             raise ValueError("Cannot delete a pytree attribute.")
         super().__delattr__(name)
 
-    def tree_flatten(self) -> Tuple[List[jnp.ndarray], Mapping[str, Any]]:
+    def tree_flatten(
+        self,
+    ) -> Tuple[List[jnp.ndarray], Tuple[Mapping[str, Any], PaxModuleInfo]]:
         """Convert a module to ``(children, treedef)``."""
 
         aux = dict(self.__dict__)
@@ -254,12 +264,14 @@ class BaseModule(metaclass=ModuleMetaclass):
 
             aux = jax.tree_unflatten(treedef, leaves)
 
-        return children, aux
+        return children, (aux, self._pax)
 
     @classmethod
-    def tree_unflatten(cls, aux, children):
+    def tree_unflatten(cls, aux_pax, children):
         """Recreate a module from its ``(children, treedef)``."""
+        aux, _pax = aux_pax
         module = object.__new__(cls)
+        super(BaseModule, module).__setattr__("_pax", _pax)
         module_dict = module.__dict__
         module_dict.update(aux)
         # don't have to copy `name_to_kind` anymore, speed thing up!

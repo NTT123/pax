@@ -1,18 +1,25 @@
 """PAX mechanisms to make PAX method pure."""
 
+from collections.abc import Callable
 from functools import partial
 from types import MethodType
-from typing import Callable, Union
+from typing import Tuple, TypeVar
+
+from typing_extensions import ParamSpec  # type: ignore
 
 from .module import Module
 from .pure import pure
 
+O = TypeVar("O")
+T = TypeVar("T", bound=Module)
+P = ParamSpec("P")
+
 
 def module_and_value(
-    module_or_method: Union[Module, Callable],
+    module_or_method: Callable[P, O],
     static_argnums=None,
     check_leaks: bool = True,
-):
+) -> Callable[P, Tuple[T, O]]:
     """Return a pure function that executes a module's method.
 
     This pure function also returns the updated input module in the output.

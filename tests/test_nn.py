@@ -904,3 +904,22 @@ def test_sigmoid():
     x = jnp.linspace(-50, 50, 1000)
     s = jax.jit(jax.vmap(jax.grad(jax.nn.sigmoid)))
     np.testing.assert_array_equal(_sigmoid(x), s(x))
+
+
+def test_slot():
+    class M(pax.Module):
+        __slots__ = ()
+
+    with pytest.raises(ValueError):
+        m = M()
+
+
+def test_ema_eval():
+    x = jnp.ones((3, 3))
+    ema = pax.nn.EMA(x, 0.0, True)
+    y = ema.eval()(x)
+    np.testing.assert_array_equal(x, y)
+
+    x0 = jnp.zeros((3, 3))
+    ema, y = pax.module_and_value(ema)(x0)
+    np.testing.assert_array_equal(y, jnp.zeros_like(x))

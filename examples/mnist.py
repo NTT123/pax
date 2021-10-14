@@ -1,7 +1,6 @@
 """train a handwritten digit classifier."""
 
 import pickle
-from functools import partial
 from pathlib import Path
 from typing import List, Mapping, Tuple
 
@@ -10,7 +9,7 @@ import jax.numpy as jnp
 import opax
 import pax
 import tensorflow_datasets as tfds
-from opax.transform import GradientTransformation
+from opax import GradientTransformation
 from tqdm.auto import tqdm
 
 Batch = Mapping[str, jnp.ndarray]
@@ -39,7 +38,7 @@ class ConvNet(pax.Module):
         self.layers = layers
         self.output = pax.nn.Conv2D(32, 10, 3, padding="VALID")
 
-    def __call__(self, x: jnp.ndarray):
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         for conv, bn in self.layers:
             x = bn(conv(x))
             x = jax.nn.relu(x)

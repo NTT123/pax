@@ -14,12 +14,16 @@ K = TypeVar("K", bound=BaseModule)
 O = TypeVar("O", bound=BaseModule)
 
 
+def _update_pax(mod, _pax):
+    super(BaseModule, mod).__setattr__("_pax", _pax)
+    return mod
+
+
 def enable_train_mode(mod: T) -> T:
     """Return a module in training mode."""
 
     def _train_apply_fn(mod: T) -> T:
-        mod.__dict__["_pax"] = mod._pax._replace(training=True)
-        return mod
+        return _update_pax(mod, mod._pax._replace(training=True))
 
     return mod.apply(_train_apply_fn)
 
@@ -28,8 +32,7 @@ def enable_eval_mode(mod: T) -> T:
     """Return a module in evaluation mode."""
 
     def _eval_apply_fn(mod: T) -> T:
-        mod.__dict__["_pax"] = mod._pax._replace(training=False)
-        return mod
+        return _update_pax(mod, mod._pax._replace(training=False))
 
     return mod.apply(_eval_apply_fn)
 
@@ -46,10 +49,8 @@ def freeze_parameters(mod: T) -> T:
                 new_name_to_kind[name] = kind
 
         # use proxy to avoid any side effects
-        mod.__dict__["_pax"] = mod._pax._replace(
-            name_to_kind=MappingProxyType(new_name_to_kind)
-        )
-        return mod
+        _pax = mod._pax._replace(name_to_kind=MappingProxyType(new_name_to_kind))
+        return _update_pax(mod, _pax)
 
     return mod.apply(_freeze_apply_fn)
 

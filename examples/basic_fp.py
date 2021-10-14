@@ -25,13 +25,13 @@ class Linear(pax.Module):
         self.register_parameter("bias", jax.random.normal(pax.next_rng_key(), (1,)))
         self.register_state("counter", jnp.array(0))
 
-    def __call__(self, x):
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         self.counter = self.counter + 1
         x = self.weight * x + self.bias
         return x
 
 
-def loss_fn(model: Linear, x, y):
+def loss_fn(model: Linear, x: jnp.ndarray, y: jnp.ndarray):
     model, y_hat = pax.module_and_value(model)(x)
     loss = jnp.mean(jnp.square(y_hat - y))
     return loss, (loss, model)
