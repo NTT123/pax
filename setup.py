@@ -16,7 +16,7 @@ def _get_version():
 __version__ = _get_version()
 URL = "https://github.com/ntt123/pax"
 
-install_requires = ["jax>=0.2.21", "jmp>=0.0.2", "typing_extensions>=3.10.0.2"]
+install_requires = ["jax>=0.2.21", "jmp>=0.0.2", "typing_extensions>=3.10.0"]
 setup_requires = []
 tests_requires = [
     "chex",
@@ -25,8 +25,6 @@ tests_requires = [
     "opax",
     "pytest",
     "pytype",
-    "tensorflow_datasets",
-    "tensorflow",
     "tqdm",
 ]
 
