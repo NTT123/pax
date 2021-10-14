@@ -13,6 +13,7 @@ T = TypeVar("T", bound=Module)
 
 def module_and_value(
     module_or_method: Callable[..., O],
+    /,
     static_argnums=None,
     check_leaks: bool = True,
 ) -> Callable[..., Tuple[T, O]]:

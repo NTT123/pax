@@ -4,6 +4,7 @@
 # https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
 # which is under MIT License.
 
+import functools
 import threading
 from collections import OrderedDict
 from contextlib import contextmanager
@@ -252,17 +253,17 @@ class BaseModule(metaclass=ModuleMetaclass):
         if STATE.enable_deep_copy:
             leaves, treedef = jax.tree_flatten(aux)
             new_leaves = []
+            black_list = (jax.custom_jvp, functools.partial)
             for leaf in leaves:
                 try:
-                    new_leaf = deepcopy(leaf)
-                    if new_leaf == leaf:
-                        new_leaves.append(new_leaf)
-                    else:
+                    if isinstance(leaf, black_list):
                         new_leaves.append(leaf)
+                    else:
+                        new_leaf = deepcopy(leaf)
+                        new_leaves.append(new_leaf)
                 except TypeError:
                     new_leaves.append(leaf)
-
-            aux = jax.tree_unflatten(treedef, leaves)
+            aux = jax.tree_unflatten(treedef, new_leaves)
 
         return children, (aux, self._pax)
 
