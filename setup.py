@@ -1,18 +1,20 @@
+"""Setup PAX3 package."""
+
 from setuptools import find_namespace_packages, setup
 
 
 def _get_version():
-    with open("pax/__init__.py") as fp:
-        for line in fp:
+    with open("pax/__init__.py", encoding="utf-8") as file:
+        for line in file:
             if line.startswith("__version__"):
-                g = {}
-                exec(line, g)  # pylint: disable=exec-used
-                return g["__version__"]
+                _globals = {}
+                exec(line, _globals)  # pylint: disable=exec-used
+                return _globals["__version__"]
         raise ValueError("`__version__` not defined in `pax/__init__.py`")
 
 
 __version__ = _get_version()
-url = "https://github.com/ntt123/pax"
+URL = "https://github.com/ntt123/pax"
 
 install_requires = ["jax>=0.2.21", "jmp>=0.0.2"]
 setup_requires = []
@@ -32,10 +34,10 @@ setup(
     name="pax3",
     version=__version__,
     description="A stateful pytree library for training neural networks.",
-    long_description=open("README.md").read(),
+    long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     author="Thông Nguyễn",
-    url=url,
+    url=URL,
     keywords=[
         "deep-learning",
         "jax",

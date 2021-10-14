@@ -20,7 +20,7 @@
 
 A `pax.Module` object has two sides:
 
-* It is a _normal_ python object which can be modified and called (it has ``__call__`` method).
+* It is a _normal_ python object which can be modified and called.
 * It is a _pytree_ object whose leaves are `ndarray`'s.
 
 ``pax.Module`` object manages the pytree and executes functions that depend on the pytree. As a pytree object, it can be input and output to JAX functions running on CPU/GPU/TPU cores.
@@ -82,8 +82,8 @@ There are few noteworthy points in the above example:
 
 * ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
 * ``counter`` is registered as a non-trainable state using ``register_state`` method.
-* ``pax.module_and_value`` transforms `model.__call__` to a 
-  pure function which returns the updated model in its output.
+* ``pax.module_and_value`` transforms `model.__call__` into a 
+  pure function that returns the updated model in its output.
 * ``loss_fn`` returns the updated `model` in the output.
 * ``allow_int=True`` to compute gradients with respect to integer ndarray leaf `counter`.
 
@@ -139,7 +139,7 @@ print(net.counter) # increased by 1
 
 It is a good practice to keep functions decorated by `pax.pure` as small as possible.
 
-PAX provides the function `pax.module_and_value` that converts a module's method to a pure function. The pure function also returns the updated module in its output. For example:
+PAX provides the function `pax.module_and_value` that transforms a module's method into a pure function. The pure function also returns the updated module in its output. For example:
 
 ```python
 net = Counter(3)
@@ -148,7 +148,7 @@ net, y = pax.module_and_value(net)(0)
 print(net.counter) # 4
 ```
 
-In this example, `pax.module_and_value` converts `net.__call__` to a pure function which returns the updated `net` in its output.
+In this example, `pax.module_and_value` transforms `net.__call__` into a pure function which returns the updated `net` in its output.
 
 
 ## PAX and other libraries <a id="paxandfriends"></a>
@@ -213,7 +213,7 @@ PAX has its optimizers implemented in a separate library [opax](https://github.c
 
 ## Module transformations<a id="transformations"></a>
 
-A module transformation is a pure function that inputs PAX's modules and outputs PAX's modules.
+A module transformation is a pure function that transforms PAX modules into new PAX modules.
 A PAX program can be seen as a series of module transformations.
 
 PAX provides several module transformations:
@@ -221,7 +221,7 @@ PAX provides several module transformations:
 - `pax.select_{parameters,states}`: select parameter/state leaves.
 - `pax.update_{parameters,states}`: updates module's parameters/states.
 - `pax.enable_{train,eval}_mode`: turn on/off training mode.
-- `pax.freeze_parameters`: freeze trainable parameters.
+- `pax.(un)freeze_parameters`: freeze/unfreeze trainable parameters.
 - `pax.apply_mp_policy`: apply a mixed-precision policy.
 
 

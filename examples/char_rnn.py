@@ -174,7 +174,7 @@ losses = 0.0
 tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")
 for step in tr:
     batch = next(tfdata)
-    # (num_devices,) is for jax.pmap, (steps_per_update,) is for pax.utils.scan
+    # (num_devices,) is for jax.pmap, (steps_per_update,) is for pax.scan
     batch = jnp.reshape(batch, (num_devices, steps_per_update, -1) + batch.shape[1:])
     net, optimizer, loss = update_fn(net, optimizer, batch)
     losses = losses + loss

@@ -22,7 +22,7 @@ from ._src.core.rng import next_rng_key, seed_rng_key
 from ._src.nn.dropout import dropout
 from ._src.utils import build_update_fn, grad_parameters, scan
 
-__version__ = "0.4.0"
+__version__ = "0.4.1-dev0"
 
 __all__ = [
     "apply_mp_policy",
