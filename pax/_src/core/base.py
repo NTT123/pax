@@ -306,7 +306,7 @@ class BaseModule(metaclass=ModuleMetaclass):
                     if isinstance(leaf, (np.ndarray, jnp.ndarray)):
                         raise ValueError(
                             f"Unregistered field `{self}.{name}` ({kind}) contains a ndarray. "
-                            f"Consider registering it using `self.set_kind` or `self.register_*` methods."
+                            f"Consider registering it using `self.set_attribute_kind` or `self.register_*` methods."
                         )
 
             # Check if an unregistered (or PARAMETER) field contains pax.Module instances
@@ -367,7 +367,7 @@ class BaseModule(metaclass=ModuleMetaclass):
     def set_attribute_kind(self, **kwargs):
         """Example:
 
-        >>> self.set_kind(weight=pax.P, counter=pax.S)
+        >>> self.set_attribute_kind(weight=pax.P, counter=pax.S)
         """
         for name, kind in kwargs.items():
             if not hasattr(self, name):
