@@ -3,7 +3,7 @@ from typing import Any, Generic, List, TypeVar
 
 import jax
 import jax.numpy as jnp
-from jaxlib.xla_extension import PyTreeDef
+from jaxlib.xla_extension import PyTreeDef  # pylint: disable=no-name-in-module
 
 from .module import Module
 from .transforms import select_parameters, select_states, update_pytree
