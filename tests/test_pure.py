@@ -2,6 +2,7 @@ from functools import partial
 from typing import Any
 
 import jax
+import jax.numpy as jnp
 import pax
 import pytest
 from numpy.testing import assert_array_equal
@@ -92,7 +93,7 @@ def test_deep_compare_2():
         def __init__(self):
             self.c = 0
 
-        def __eq__(self, o: C) -> bool:
+        def __eq__(self, o) -> bool:
             return self.c == o.c
 
     @pax.pure
@@ -109,6 +110,7 @@ def test_deep_compare_2():
             self.f = jax.nn.relu
             self.g = jax.nn.sigmoid
             self.j = partial(jax.nn.leaky_relu, negative_slope=0.2)
+            self.h = jnp.tanh
             self.c = C()
 
     m = M()

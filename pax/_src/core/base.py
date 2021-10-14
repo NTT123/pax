@@ -30,6 +30,7 @@ import jax.numpy as jnp
 import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
+from jaxlib.xla_extension import CompiledFunction
 
 from .rng import get_rng_state, set_rng_state
 
@@ -253,7 +254,7 @@ class BaseModule(metaclass=ModuleMetaclass):
         if STATE.enable_deep_copy:
             leaves, treedef = jax.tree_flatten(aux)
             new_leaves = []
-            black_list = (jax.custom_jvp, functools.partial)
+            black_list = (jax.custom_jvp, functools.partial, CompiledFunction)
             for leaf in leaves:
                 try:
                     if isinstance(leaf, black_list):
