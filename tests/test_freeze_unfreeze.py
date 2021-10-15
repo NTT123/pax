@@ -29,7 +29,7 @@ def test_freeze_mapping_proxy():
 def test_freeze_twice():
     a = pax.nn.Linear(2, 2)
     # with pytest.raises(ValueError):
-    b = pax.freeze_parameters(pax.freeze_parameters(a))
+    _ = pax.freeze_parameters(pax.freeze_parameters(a))
 
 
 def test_freeze_unfreeze():

@@ -1,3 +1,5 @@
+"""Initializers"""
+
 from typing import Any, Callable, Sequence
 
 import jax

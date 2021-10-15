@@ -34,6 +34,6 @@ def test_mp_policy_method_name():
 
     m = pax.apply_mp_policy(m, mp_policy=p)
     x = jnp.zeros((4, 3))
-    y = m(x)  # ok
+    _ = m(x)  # ok
 
-    y = m.inference(x)
+    _ = m.inference(x)

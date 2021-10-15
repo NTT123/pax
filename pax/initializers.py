@@ -1,10 +1,19 @@
 """Public initializers."""
 
 from ._src.initializers import (
-    zeros,
     ones,
-    truncated_normal,
-    random_uniform,
-    variance_scaling,
     random_normal,
+    random_uniform,
+    truncated_normal,
+    variance_scaling,
+    zeros,
+)
+
+__all__ = (
+    "ones",
+    "random_normal",
+    "random_uniform",
+    "truncated_normal",
+    "variance_scaling",
+    "zeros",
 )

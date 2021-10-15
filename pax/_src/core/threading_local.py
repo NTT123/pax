@@ -15,6 +15,8 @@ KeyArray = Union[Any, jnp.ndarray]
 
 
 class PaxThreadingLocalState(threading.local):
+    """Manage all thread local states used by PAX"""
+
     __slots__ = [
         "_enable_deep_copy",
         "_inside_pure_function",
@@ -38,15 +40,19 @@ class PaxThreadingLocalState(threading.local):
         self._rng_key = None
 
     def is_inside_pure_function(self):
+        """are we inside a function decorated by `pax.pure`"""
         return self._inside_pure_function
 
     def is_deep_copy_enabled(self):
+        """use deepcopy to copy modules"""
         return self._enable_deep_copy
 
     def add_mutable_module(self, module):
+        """add `module` to mutable list"""
         self._mutable_module_id_list = (id(module),) + self._mutable_module_id_list
 
     def is_mutable(self, module):
+        """Is `module` mutable?"""
         return id(module) in self._mutable_module_id_list
 
     @contextmanager

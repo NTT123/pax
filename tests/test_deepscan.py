@@ -48,7 +48,7 @@ def test_assign_int_to_param():
             self.register_parameter("a", np.array([3, 1], dtype=np.int32))
 
     with pytest.raises(ValueError):
-        m = M()
+        _ = M()
 
 
 def test_assign_int_to_param_deepscan():
@@ -58,7 +58,7 @@ def test_assign_int_to_param_deepscan():
             self.a = np.array([3, 1], dtype=np.int32)
 
     with pytest.raises(ValueError):
-        m = M()
+        _ = M()
         # m = pax.freeze_parameters(m)
         # d = OrderedDict(m.name_to_kind)
         # d["a"] = pax.module.PaxKind.PARAMETER
