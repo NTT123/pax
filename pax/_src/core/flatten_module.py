@@ -15,7 +15,7 @@ K = TypeVar("K", bound=Module)
 O = TypeVar("O", bound=Module)
 
 
-class flatten_module(Module, Generic[T]):
+class flatten_module(Module, Generic[T]):  # pylint: disable=invalid-name
     """Flatten a module.
 
     Flatten all parameters and states to lists of `ndarray`'s."""

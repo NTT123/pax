@@ -27,14 +27,14 @@ class RngSeq(Module):
         """
         super().__init__()
         if rng_key is not None:
-            _rng_key = rng_key
+            rng_key_ = rng_key
         elif seed is not None:
-            _rng_key = jax.random.PRNGKey(seed)
+            rng_key_ = jax.random.PRNGKey(seed)
         else:
-            _rng_key = rng.next_rng_key()
+            rng_key_ = rng.next_rng_key()
 
-        if isinstance(_rng_key, (np.ndarray, jnp.ndarray)):
-            self.register_state("_rng_key", _rng_key)
+        if isinstance(rng_key_, (np.ndarray, jnp.ndarray)):
+            self.register_state("_rng_key", rng_key_)
         else:
             raise ValueError("Impossible")
 
@@ -52,11 +52,11 @@ class RngSeq(Module):
         Arguments:
             num_keys: return more than one key.
         """
-        _rng_key, *rng_keys = jax.random.split(self._rng_key, num_keys + 1)
+        new_rng_key, *rng_keys = jax.random.split(self._rng_key, num_keys + 1)
 
         # only update internal state in `train` mode.
         if self.training:
-            self._rng_key = _rng_key
+            self._rng_key = new_rng_key
         if num_keys == 1:
             return rng_keys[0]
         else:

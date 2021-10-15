@@ -28,8 +28,13 @@ class Lambda(Module):
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         if self.name is not None:
             name = self.name
-        elif self.func == jax.nn.relu:
-            name = "relu"
+        elif isinstance(self.func, jax.custom_jvp) and hasattr(self.func, "fun"):
+            if hasattr(self.func.fun, "__name__"):
+                name = self.func.fun.__name__
+            else:
+                name = f"{self.func.fun}"
+        elif hasattr(self.func, "__name__"):
+            name = self.func.__name__
         else:
             name = f"{self.func}"
         output = f"x => {name}(x)"

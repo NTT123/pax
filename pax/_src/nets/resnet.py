@@ -2,6 +2,8 @@
 # https://github.com/deepmind/dm-haiku/blob/main/haiku/_src/nets/resnet.py
 # which is under Apache License, Version 2.0.
 
+"""Resnet Modules."""
+
 from typing import Sequence, Tuple
 
 import jax
@@ -13,6 +15,7 @@ from ..nn import BatchNorm2D, Conv2D, Linear, max_pool
 
 
 class ResnetBlock(Module):
+    """ResnetBlock"""
 
     layers: Sequence[Tuple[Conv2D, BatchNorm2D]]
 
@@ -116,6 +119,8 @@ class ResnetBlock(Module):
 
 
 class BlockGroup(Module):
+    """Group of Blocks."""
+
     def __init__(
         self,
         in_channels: int,
@@ -156,6 +161,7 @@ def check_length(length, value, name):
 
 
 class ResNet(Module):
+    """A generic ResNet module."""
 
     CONFIGS = {
         18: {
@@ -217,7 +223,7 @@ class ResNet(Module):
         logits_config.setdefault("w_init", initializers.zeros)
 
         initial_conv_config = dict(initial_conv_config or {})
-        initial_conv_config.setdefault("in_features", 3)
+        initial_conv_config.setdefault("in_features", input_channels)
         initial_conv_config.setdefault("out_features", 64)
         initial_conv_config.setdefault("kernel_shape", 7)
         initial_conv_config.setdefault("stride", 2)

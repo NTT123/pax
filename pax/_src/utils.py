@@ -46,13 +46,13 @@ def grad_parameters(
         out = fun(mod, *args, **kwargs)
         return out
 
-    _grad_fn = jax.grad(_fun, *args, **kwargs)
+    grad_fn_ = jax.grad(_fun, *args, **kwargs)
 
     def grad_fn(mod: T, *args, **kwargs) -> Tuple[T, C]:
         if not isinstance(mod, Module):
             raise ValueError("Expecting a PAX's Module at the first argument.")
 
-        out = _grad_fn(mod.parameters(), mod, *args, **kwargs)
+        out = grad_fn_(mod.parameters(), mod, *args, **kwargs)
         return out
 
     return grad_fn
@@ -82,6 +82,7 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
     >>> net, optimizer, loss = update_fn(net, optimizer, x, y)
     """
 
+    # pylint: disable=import-outside-toplevel
     from opax import apply_updates, transform_gradients
 
     def _update_fn(model: T, optimizer: O, *inputs, **kwinputs) -> Tuple[T, O, Any]:

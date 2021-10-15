@@ -29,7 +29,6 @@ from ..core.rng import KeyArray, next_rng_key
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Group normalization implementation for Haiku."""
 
 
 class GroupNorm(Module):
@@ -187,14 +186,6 @@ class GroupNorm(Module):
                 f"was channels={channels}, groups={self.groups}"
             )
 
-        rank = x.ndim
-        dtype = x.dtype
-        if self.channel_index == -1:
-            params_shape = (x.shape[-1],)
-        else:
-            assert self.channel_index == 1
-            params_shape = (x.shape[1],) + (1,) * (rank - 2)
-
         if self.create_scale:
             scale = self.scale
 
@@ -221,6 +212,7 @@ class GroupNorm(Module):
         return x
 
     def _compute_shape_and_axis(self, x: jnp.ndarray, channels: int):
+        """Make it compatible with haiku code."""
         rank = x.ndim
 
         # Turns slice into list of axis

@@ -18,7 +18,7 @@ K = TypeVar("K", bound=Module)
 O = TypeVar("O", bound=Module)
 
 
-class apply_mp_policy(Module, Generic[T]):
+class apply_mp_policy(Module, Generic[T]):  # pylint: disable=invalid-name
     """Convert a module to a mixed-precision module."""
 
     _module: T
@@ -59,19 +59,22 @@ class apply_mp_policy(Module, Generic[T]):
 
         if not inspect.ismethod(f):
             raise ValueError(
-                f"Accessing a non-method attribute `{name}` of a mixed-precision module is not allowed."
+                f"Accessing a non-method attribute `{name}` "
+                f"of a mixed-precision module is not allowed."
             )
 
         if isinstance(f, FunctionType):
             raise ValueError(
-                f"Calling a static method `{name}` is not supported for mixed-precision modules."
+                f"Calling a static method `{name}` "
+                f"is not supported for mixed-precision modules."
             )
 
         f = getattr(self._module.__class__, name)
 
         if inspect.ismethod(f):
             raise ValueError(
-                f"Calling a class method `{name}` is not supported for mixed-precision modules."
+                f"Calling a class method `{name}` "
+                f"is not supported for mixed-precision modules."
             )
 
         def _fn(*args, **kwargs):

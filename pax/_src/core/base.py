@@ -56,8 +56,9 @@ class EmptyNode(Tuple):
         return (), None
 
     @classmethod
-    def tree_unflatten(cls, _, __):
+    def tree_unflatten(cls, aux, children):
         """Unflatten empty node."""
+        del aux, children
         return EmptyNode()
 
 
@@ -225,9 +226,9 @@ class BaseModule(metaclass=BaseModuleMetaclass):
     @classmethod
     def tree_unflatten(cls, aux_pax, children):
         """Recreate a module from its ``(children, treedef)``."""
-        aux, _pax = aux_pax
+        aux, pax_info = aux_pax
         module = object.__new__(cls)
-        super(BaseModule, module).__setattr__("_pax", _pax)
+        super(BaseModule, module).__setattr__("_pax", pax_info)
         module_dict = module.__dict__
         module_dict.update(aux)
         # don't have to copy `name_to_kind` anymore, speed thing up!
@@ -261,8 +262,8 @@ class BaseModule(metaclass=BaseModuleMetaclass):
                 for mod in mods:
                     if not isinstance(mod, BaseModule):
                         raise ValueError(
-                            f"Field `{self}.{name}` (kind={kind}, value={value}) contains a non-module leaf "
-                            f"(type={type(mod)}, value={mod})."
+                            f"Field `{self}.{name}` (kind={kind}, value={value}) "
+                            f"contains a non-module leaf (type={type(mod)}, value={mod})."
                         )
 
             # Check if a pytree attribute contains non-ndarray values.
@@ -305,8 +306,9 @@ class BaseModule(metaclass=BaseModuleMetaclass):
                 for leaf in leaves:
                     if isinstance(leaf, (np.ndarray, jnp.ndarray)):
                         raise ValueError(
-                            f"Unregistered field `{self}.{name}` ({kind}) contains a ndarray. "
-                            f"Consider registering it using `self.set_attribute_kind` or `self.register_*` methods."
+                            f"Unregistered field `{self}.{name}` ({kind}) contains a ndarray."
+                            f" Consider registering it using `self.set_attribute_kind`"
+                            f" or `self.register_*` methods."
                         )
 
             # Check if an unregistered (or PARAMETER) field contains pax.Module instances

@@ -70,7 +70,7 @@ class PaxThreadingLocalState(threading.local):
         r"""A context manager that turns on mutability."""
         if not isinstance(modules, (tuple, list)):
             modules = (modules,)
-        modules = tuple([id(mod) for mod in modules])
+        modules = tuple(id(mod) for mod in modules)
 
         prev = self._mutable_module_id_list
         prev_inside = self._inside_pure_function

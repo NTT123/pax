@@ -51,3 +51,5 @@ def assert_structure_equal(tree_a: T, tree_b: T):
         test_case.assertDictEqual(
             vars(tree_a_w_none_leaves), vars(tree_b_w_none_leaves)
         )
+
+    return has_error

@@ -14,8 +14,8 @@ K = TypeVar("K", bound=BaseModule)
 O = TypeVar("O", bound=BaseModule)
 
 
-def _update_pax(mod, _pax):
-    super(BaseModule, mod).__setattr__("_pax", _pax)
+def _update_pax(mod, pax_info):
+    super(BaseModule, mod).__setattr__("_pax", pax_info)
     return mod
 
 
@@ -53,8 +53,8 @@ def freeze_parameters(mod: T) -> T:
 
         # use proxy to avoid any side effects
         # pylint: disable=protected-access
-        _pax = mod._pax._replace(name_to_kind=MappingProxyType(new_name_to_kind))
-        return _update_pax(mod, _pax)
+        pax_info = mod._pax._replace(name_to_kind=MappingProxyType(new_name_to_kind))
+        return _update_pax(mod, pax_info)
 
     return mod.apply(_freeze_apply_fn)
 

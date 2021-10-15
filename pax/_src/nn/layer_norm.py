@@ -47,9 +47,12 @@ class LayerNorm(Module):
         Arguments:
             num_channels: Integer, size of the last dimension. The data format is ``[N, ..., C]``.
             axis: Integer, list of integers, or slice indicating which axes to normalize over.
-            create_scale: Bool, defines whether to create a trainable scale per channel applied after the normalization.
-            create_offset: Bool, defines whether to create a trainable offset per channel applied after normalization and scaling.
-            eps: Small epsilon to avoid division by zero variance. Defaults ``1e-5``, as in the paper and Sonnet.
+            create_scale: Bool, defines whether to create a trainable scale
+              per channel applied after the normalization.
+            create_offset: Bool, defines whether to create a trainable offset
+              per channel applied after normalization and scaling.
+            eps: Small epsilon to avoid division by zero variance.
+              Defaults ``1e-5``, as in the paper and Sonnet.
             scale_init: Optional initializer for gain (aka scale). By default, one.
             offset_init: Optional initializer for bias (aka offset). By default, zero.
             rng_key: RNG key.
