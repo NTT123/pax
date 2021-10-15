@@ -70,8 +70,8 @@ class flatten_module(Module, Generic[T]):
         original_module_repr = self.unflatten().__repr__()
         return f"Flatten({original_module_repr})"
 
-    def eval(self: T) -> T:
+    def eval(self):
         raise RuntimeError("Not supported for a flatten module.")
 
-    def train(self: T) -> T:
+    def train(self):
         raise RuntimeError("Not supported for a flatten module.")

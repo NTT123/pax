@@ -10,7 +10,7 @@ def test_mutate_new_module_list():
     b.lst = []
     b.lst.append(pax.nn.Linear(4, 4))
     b.find_and_register_submodules()
-    assert b._pax.name_to_kind["lst"] == pax.PaxFieldKind.MODULE
+    assert b._pax.name_to_kind["lst"] == pax.PaxKind.MODULE
 
 
 def test_mp_policy_method_name():

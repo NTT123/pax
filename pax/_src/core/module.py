@@ -5,7 +5,7 @@ from typing import Any, Optional, TypeVar
 import jax
 import jax.tree_util
 
-from .base import BaseModule, PaxFieldKind
+from .base import BaseModule, PaxKind
 from .threading_local import allow_mutation
 from .transforms import (
     enable_eval_mode,
@@ -33,19 +33,16 @@ class Module(BaseModule):
         return self._pax.name
 
     def register_parameter(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.PARAMETER`` in the ``name_to_kind`` dictionary."""
-        self.register_subtree(name, value, PaxFieldKind.PARAMETER)
+        """Register a parameter."""
+        self.register_subtree(name, value, PaxKind.PARAMETER)
 
     def register_state(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.STATE`` in the ``name_to_kind`` dictionary."""
-        self.register_subtree(name, value, PaxFieldKind.STATE)
+        """Register a state."""
+        self.register_subtree(name, value, PaxKind.STATE)
 
     def register_modules(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.MODULE`` in the ``name_to_kind`` dictionary."""
-        self.register_subtree(name, value, PaxFieldKind.MODULE)
+        """Register a module subtree."""
+        self.register_subtree(name, value, PaxKind.MODULE)
 
     register_parameters = register_parameter
     register_states = register_state
@@ -90,8 +87,8 @@ class Module(BaseModule):
 
         def _scan_apply_fn(mod: T) -> T:
             assert isinstance(mod, Module)
-            mod._scan_fields(mod.__class__.__dict__)
-            mod._scan_fields(mod.__dict__)
+            mod._scan_fields(mod.__class__.__dict__.keys())
+            mod._scan_fields(mod.__dict__.keys())
             return mod
 
         self.apply(_scan_apply_fn)

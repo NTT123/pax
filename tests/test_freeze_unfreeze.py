@@ -10,8 +10,8 @@ def test_freeze_really_working():
         pax.nn.Linear(5, 5),
     )
     b = pax.freeze_parameters(a)
-    assert b[0]._pax.name_to_kind["weight"] == pax.PaxFieldKind.STATE
-    assert a[0]._pax.name_to_kind["weight"] == pax.PaxFieldKind.PARAMETER
+    assert b[0]._pax.name_to_kind["weight"] == pax.PaxKind.STATE
+    assert a[0]._pax.name_to_kind["weight"] == pax.PaxKind.PARAMETER
 
 
 def test_freeze_mapping_proxy():

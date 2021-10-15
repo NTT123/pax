@@ -10,7 +10,7 @@ PAX's Module
    :inherited-members:
    :members:
 
-.. autoclass:: PaxFieldKind
+.. autoclass:: PaxKind
    :members:
    
    .. autoattribute:: STATE

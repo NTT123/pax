@@ -46,4 +46,6 @@ setup(
     packages=find_namespace_packages(exclude=["examples", "tests"]),
     extras_require={"test": tests_requires},
     python_requires=">=3.7",
+    include_package_data=True,
+    zip_safe=False,
 )
