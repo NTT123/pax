@@ -23,6 +23,7 @@ def enable_train_mode(mod: T) -> T:
     """Return a module in training mode."""
 
     def _train_apply_fn(mod: T) -> T:
+        # pylint: disable=protected-access
         return _update_pax(mod, mod._pax._replace(training=True))
 
     return mod.apply(_train_apply_fn)
@@ -32,6 +33,7 @@ def enable_eval_mode(mod: T) -> T:
     """Return a module in evaluation mode."""
 
     def _eval_apply_fn(mod: T) -> T:
+        # pylint: disable=protected-access
         return _update_pax(mod, mod._pax._replace(training=False))
 
     return mod.apply(_eval_apply_fn)
@@ -42,13 +44,15 @@ def freeze_parameters(mod: T) -> T:
 
     def _freeze_apply_fn(mod: T) -> T:
         new_name_to_kind = OrderedDict()
-        for name, kind in mod._pax.name_to_kind.items():
+        # pylint: disable=protected-access
+        for (name, kind) in mod._pax.name_to_kind.items():
             if kind == PaxKind.PARAMETER:
                 new_name_to_kind[name] = PaxKind.STATE
             else:
                 new_name_to_kind[name] = kind
 
         # use proxy to avoid any side effects
+        # pylint: disable=protected-access
         _pax = mod._pax._replace(name_to_kind=MappingProxyType(new_name_to_kind))
         return _update_pax(mod, _pax)
 
@@ -78,7 +82,8 @@ def select_kind(mod: T, *, kind: PaxKind) -> T:
         none_list = [PaxKind.STATE]
 
     def _select_apply_fn(mod: T) -> T:
-        for name, kind in mod._pax.name_to_kind.items():
+        # pylint: disable=protected-access
+        for (name, kind) in mod._pax.name_to_kind.items():
             if kind in none_list:
                 value = getattr(mod, name)
                 none_v = jax.tree_map(lambda _: EmptyNode(), value)

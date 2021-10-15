@@ -10,7 +10,9 @@ def test_freeze_really_working():
         pax.nn.Linear(5, 5),
     )
     b = pax.freeze_parameters(a)
+    # pylint: disable=protected-access
     assert b[0]._pax.name_to_kind["weight"] == pax.PaxKind.STATE
+    # pylint: disable=protected-access
     assert a[0]._pax.name_to_kind["weight"] == pax.PaxKind.PARAMETER
 
 
@@ -20,6 +22,7 @@ def test_freeze_mapping_proxy():
         pax.nn.Linear(5, 5),
     )
     b = pax.freeze_parameters(a)
+    # pylint: disable=protected-access
     assert isinstance(b._pax.name_to_kind, MappingProxyType), "expecting a proxy map"
 
 
@@ -39,6 +42,7 @@ def test_freeze_unfreeze():
 
     b = pax.freeze_parameters(a)
     c = pax.unfreeze_parameters(b, origin=a)
+    # pylint: disable=protected-access
     assert a[0]._pax.name_to_kind is c[0]._pax.name_to_kind
 
 

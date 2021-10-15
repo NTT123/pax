@@ -11,6 +11,7 @@ def test_list_of_mod():
             self.a = [pax.nn.Linear(3, 3)]
 
     m = M()
+    # pylint: disable=protected-access
     m._pax.name_to_kind["a"] == pax.PaxKind.MODULE
 
 
@@ -23,6 +24,7 @@ def test_assigned_field_an_array():
 
     # no error because we will automatically assign `a` to kind PARAMETER
     m = M()
+    # pylint: disable=protected-access
     assert m._pax.name_to_kind["a"] == pax.PaxKind.PARAMETER
 
     class N(pax.Module):
@@ -35,6 +37,7 @@ def test_assigned_field_an_array():
     # no error because we will automatically assign `a` to kind PARAMETER
     n.register_parameter("b", jnp.array([1, 2, 3], dtype=jnp.float32))
 
+    # pylint: disable=protected-access
     assert n._pax.name_to_kind["b"] == pax.PaxKind.PARAMETER
 
 

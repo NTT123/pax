@@ -28,7 +28,9 @@ import jax.numpy as jnp
 import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
-from jaxlib.xla_extension import CompiledFunction  # pylint: disable=no-name-in-module
+
+# pylint: disable=no-name-in-module
+from jaxlib.xla_extension import CompiledFunction
 
 from .threading_local import (
     add_mutable_module,
@@ -230,6 +232,7 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         module_dict.update(aux)
         # don't have to copy `name_to_kind` anymore, speed thing up!
         # md["name_to_kind"] = OrderedDict(module.name_to_kind)
+        # pylint: disable=protected-access
         module_dict.update(zip(module._pax.name_to_kind, children))
 
         # if a module is created inside a `pure` function, it is mutable.
