@@ -1,7 +1,7 @@
 """PAX package."""
 
-from . import initializers, nets, nn, utils
-from ._src.core import (
+from pax import initializers, nets, nn, utils
+from pax._src.core import (
     Module,
     PaxKind,
     apply_mp_policy,
@@ -18,9 +18,9 @@ from ._src.core import (
     update_parameters,
     update_states,
 )
-from ._src.core.rng import next_rng_key, seed_rng_key
-from ._src.nn.dropout import dropout
-from ._src.utils import build_update_fn, grad_parameters, scan
+from pax._src.core.rng import next_rng_key, seed_rng_key
+from pax._src.nn.dropout import dropout
+from pax._src.utils import build_update_fn, grad_parameters, scan
 
 STATE = PaxKind.STATE
 PARAMETER = PaxKind.PARAMETER
