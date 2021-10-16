@@ -2,7 +2,7 @@
 
 from functools import partial
 from types import MethodType
-from typing import Callable, Optional, Sequence, Tuple, TypeVar
+from typing import Callable, Optional, Sequence, Tuple, TypeVar, Union
 
 from .module import Module
 from .pure import pure
@@ -13,7 +13,7 @@ T = TypeVar("T", bound=Module)
 
 def module_and_value(
     module_or_method: Callable[..., O],
-    static_argnums : Optional[Sequence[int]]=None,
+    static_argnums: Optional[Union[int, Sequence[int]]] = None,
     check_leaks: bool = True,
 ) -> Callable[..., Tuple[T, O]]:
     """Return a pure function that executes a module's method.

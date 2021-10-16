@@ -26,7 +26,7 @@ def _get_all_submodules(value):
 
 def pure(
     func: Callable,
-    static_argnums: Optional[Union[Sequence[int], int]] = None,
+    static_argnums: Optional[Union[int, Sequence[int]]] = None,
     check_leaks: bool = True,
 ) -> Callable:
     """Make a function pure by copying the inputs.
