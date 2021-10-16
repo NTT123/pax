@@ -6,6 +6,7 @@
 
 import functools
 from collections import OrderedDict
+from contextlib import contextmanager
 from copy import deepcopy
 from enum import Enum
 from types import MappingProxyType
@@ -85,6 +86,7 @@ class PaxModuleInfo(NamedTuple):
     name: Optional[str]
     training: bool
     name_to_kind: Mapping[str, PaxKind]
+    default_kind: PaxKind
 
     def __repr__(self) -> str:
         nodes = ", ".join([f"{k}:{v.name}" for k, v in self.name_to_kind.items()])
@@ -141,6 +143,7 @@ class BaseModule(metaclass=BaseModuleMetaclass):
                 name=None,
                 training=True,
                 name_to_kind=MappingProxyType(OrderedDict()),
+                default_kind=PaxKind.UNKNOWN,
             ),
         )
 
@@ -190,6 +193,9 @@ class BaseModule(metaclass=BaseModuleMetaclass):
 
         super().__setattr__(name, value)
         if name not in self._pax.name_to_kind:
+            if self._pax.default_kind != PaxKind.UNKNOWN:
+                self._update_name_to_kind_dict(name, self._pax.default_kind)
+
             self.find_and_register_submodules()
 
     def __delattr__(self, name: str) -> None:
@@ -197,6 +203,28 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         if name in self._pax.name_to_kind:
             raise ValueError("Cannot delete a pytree attribute.")
         super().__delattr__(name)
+
+    def _update_default_kind(self, kind: PaxKind):
+        self._assert_mutability()
+        new_pax_info = self._pax._replace(default_kind=kind)
+        super(BaseModule, self).__setattr__("_pax", new_pax_info)
+
+    @contextmanager
+    def default_kind(self, kind: PaxKind):
+        prev = self._pax.default_kind
+        try:
+            self._update_default_kind(kind)
+            yield
+        finally:
+            self._update_default_kind(prev)
+
+    def add_parameters(self):
+        """Add new attributes as trainable parameters"""
+        return self.default_kind(PaxKind.PARAMETER)
+
+    def add_states(self):
+        """Add new attributes as non-trainable states."""
+        return self.default_kind(PaxKind.STATE)
 
     def tree_flatten(
         self,
