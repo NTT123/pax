@@ -1,6 +1,6 @@
 """Public nn modules."""
 
-from ._src.nn import (
+from pax._src.nn import (
     EMA,
     GRU,
     LSTM,

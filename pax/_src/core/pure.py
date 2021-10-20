@@ -26,7 +26,7 @@ def _get_all_submodules(value):
 
 def pure(
     func: Callable,
-    static_argnums: Optional[Union[Sequence[int], int]] = None,
+    static_argnums: Optional[Union[int, Sequence[int]]] = None,
     check_leaks: bool = True,
 ) -> Callable:
     """Make a function pure by copying the inputs.
@@ -51,6 +51,14 @@ def pure(
     >>> f = add_list(f)
     >>> print(f.a_list)
     []
+
+    Arguments:
+        func: A function.
+        static_argnums: a list of static arguments.
+        check_leaks: enable jax leak checking.
+
+    Returns:
+        A pure function.
     """
 
     rng_state = get_rng_state()

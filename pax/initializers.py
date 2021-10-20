@@ -1,6 +1,6 @@
 """Public initializers."""
 
-from ._src.initializers import (
+from pax._src.initializers import (
     ones,
     random_normal,
     random_uniform,
