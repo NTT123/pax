@@ -54,7 +54,7 @@ def data_loader(
     while True:
         left = random.randint(4, logmel.shape[0] - n_frames - 8)
         right = left + n_frames
-        cond = logmel[(left - 4) : (right + 4)]  # padding purposes
+        cond = logmel[(left - 3) : (right + 3)]  # padding purposes
         x = mu_wav[left * hop_length : right * hop_length + 1]
         batch.append((cond, x))
         if len(batch) == batch_size:

@@ -10,14 +10,10 @@ class UpsamplingNetwork(pax.Module):
             n_mels, 512, 3, padding="VALID", with_bias=False
         )
         self.input_bn = pax.nn.BatchNorm1D(512, True, True, 0.99)
-        self.dilated_conv_1 = pax.nn.Conv1D(
-            512, 512, 2, 1, rate=2, padding="VALID", with_bias=False
-        )
-        self.dilated_bn_1 = pax.nn.BatchNorm1D(512, True, True, 0.99)
-        self.dilated_conv_2 = pax.nn.Conv1D(
-            512, 512, 2, 1, rate=4, padding="VALID", with_bias=False
-        )
-        self.dilated_bn_2 = pax.nn.BatchNorm1D(512, True, True, 0.99)
+        self.conv_1 = pax.nn.Conv1D(512, 512, 3, padding="VALID", with_bias=False)
+        self.bn_1 = pax.nn.BatchNorm1D(512, True, True, 0.99)
+        self.conv_2 = pax.nn.Conv1D(512, 512, 3, padding="VALID", with_bias=False)
+        self.bn_2 = pax.nn.BatchNorm1D(512, True, True, 0.99)
 
         self.upsample_conv_1 = pax.nn.Conv1DTranspose(
             512, 512, kernel_shape=1, stride=2, padding="SAME", with_bias=False
@@ -39,10 +35,10 @@ class UpsamplingNetwork(pax.Module):
 
     def __call__(self, mel):
         x = jax.nn.relu(self.input_bn(self.input_conv(mel)))
-        res_1 = jax.nn.relu(self.dilated_bn_1(self.dilated_conv_1(x)))
+        res_1 = jax.nn.relu(self.bn_1(self.conv_1(x)))
         x = x[:, 1:-1] + res_1
-        res_2 = jax.nn.relu(self.dilated_bn_2(self.dilated_conv_2(x)))
-        x = x[:, 2:-2] + res_2
+        res_2 = jax.nn.relu(self.bn_2(self.conv_2(x)))
+        x = x[:, 1:-1] + res_2
 
         x = jax.nn.relu(self.upsample_bn_1(self.upsample_conv_1(x)))
         x = jax.nn.relu(self.upsample_bn_2(self.upsample_conv_2(x)))
