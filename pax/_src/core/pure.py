@@ -1,6 +1,7 @@
 """PAX mechanisms to make PAX functions pure."""
 
 import functools
+import gc
 from types import MethodType
 from typing import Callable, Optional, Sequence, Union
 
@@ -76,6 +77,7 @@ def pure(
 
     @functools.wraps(func)
     def _f(*args, **kwargs):
+        gc.collect()
         with jax.check_tracer_leaks(check_leaks):
             _ = [m.scan_bugs() for m in get_modules((func, args, kwargs))]
 
@@ -119,11 +121,13 @@ def pure(
                     return out
 
             # leak check
+            gc.collect()
             _run(args, kwargs, eval_shape=True)
-
             # real run
+            gc.collect()
             out = _run(args, kwargs, eval_shape=False)
             _ = [m.scan_bugs() for m in get_modules(out)]
+            gc.collect()
             return out
 
     return _f
