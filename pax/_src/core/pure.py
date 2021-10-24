@@ -77,57 +77,55 @@ def pure(
 
     @functools.wraps(func)
     def _f(*args, **kwargs):
-        gc.collect()
-        with jax.check_tracer_leaks(check_leaks):
-            _ = [m.scan_bugs() for m in get_modules((func, args, kwargs))]
+        _ = [m.scan_bugs() for m in get_modules((func, args, kwargs))]
 
-            # support calling method
-            if isinstance(func, MethodType):
-                args = (func.__self__, *args)
-                unbound_func = func.__func__
-            # or calling a module
-            elif isinstance(func, BaseModule) and callable(func):
-                args = (func, *args)
-                unbound_func = func.__call__.__func__
-            elif callable(func):
-                unbound_func = func
-            else:
-                raise ValueError("Not supported")
+        # support calling method
+        if isinstance(func, MethodType):
+            args = (func.__self__, *args)
+            unbound_func = func.__func__
+        # or calling a module
+        elif isinstance(func, BaseModule) and callable(func):
+            args = (func, *args)
+            unbound_func = func.__call__.__func__
+        elif callable(func):
+            unbound_func = func
+        else:
+            raise ValueError("Not supported")
 
+        args = list(args)
+        args_copy = tuple(args)
+        for i in static_argnums:
+            args[i] = None
+        args = tuple(args)
+
+        def no_leak_func(*args, **kwargs):
             args = list(args)
-            args_copy = tuple(args)
             for i in static_argnums:
-                args[i] = None
+                args[i] = args_copy[i]
             args = tuple(args)
-
-            def no_leak_func(*args, **kwargs):
-                args = list(args)
-                for i in static_argnums:
-                    args[i] = args_copy[i]
-                args = tuple(args)
-                set_rng_state(rng_state)
-                out = unbound_func(*args, **kwargs)
-                set_rng_state(rng_state)
-                return out
-
-            def _run(args, kwargs, eval_shape: bool = False):
-                args, kwargs = _deepcopy((args, kwargs))
-                modules = _get_all_submodules((args, kwargs))
-                with allow_mutation(modules):
-                    if eval_shape:
-                        out = jax.eval_shape(no_leak_func, *args, **kwargs)
-                    else:
-                        out = no_leak_func(*args, **kwargs)
-                    return out
-
-            # leak check
-            gc.collect()
-            _run(args, kwargs, eval_shape=True)
-            # real run
-            gc.collect()
-            out = _run(args, kwargs, eval_shape=False)
-            _ = [m.scan_bugs() for m in get_modules(out)]
+            set_rng_state(rng_state)
+            out = unbound_func(*args, **kwargs)
+            set_rng_state(rng_state)
             gc.collect()
             return out
+
+        def _run(args, kwargs, eval_shape: bool = False):
+            args, kwargs = _deepcopy((args, kwargs))
+            modules = _get_all_submodules((args, kwargs))
+            with allow_mutation(modules):
+                gc.collect()
+                if eval_shape:
+                    out = jax.eval_shape(no_leak_func, *args, **kwargs)
+                else:
+                    out = no_leak_func(*args, **kwargs)
+                return out
+
+        with jax.check_tracer_leaks(check_leaks):
+            # leak check
+            _run(args, kwargs, eval_shape=True)
+            # real run
+            out = _run(args, kwargs, eval_shape=False)
+        _ = [m.scan_bugs() for m in get_modules(out)]
+        return out
 
     return _f
