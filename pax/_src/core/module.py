@@ -3,6 +3,7 @@
 from typing import Any, Optional, TypeVar
 
 import jax
+import jax.numpy as jnp
 import jax.tree_util
 
 from .base import BaseModule, PaxKind
@@ -79,6 +80,27 @@ class Module(BaseModule):
                 setattr(mod, name, value)
             mod.find_and_register_submodules()
 
+        mod.scan_bugs()
+        return mod
+
+    # inspired by patrick-kidger/equinox `tree_at`
+    def replace_node(self: T, node: jnp.ndarray, value: jnp.ndarray) -> T:
+        """Replace a node of the pytree by a new value.
+
+        Example:
+
+        >>> mod = pax.nn.Sequential(
+        ...     pax.nn.Linear(2,2),
+        ...     jax.nn.relu
+        ... )
+        >>> mod = mod.replace_node(mod[0].weight, jnp.zeros((2, 3)))
+        >>> print(mod[0].weight.shape)
+        (2, 3)
+        """
+        leaves, tree_def = jax.tree_flatten(self, is_leaf=lambda x: x is node)
+        # replace `node` by value
+        new_leaves = [value if v is node else v for v in leaves]
+        mod: T = jax.tree_unflatten(tree_def, new_leaves)
         mod.scan_bugs()
         return mod
 

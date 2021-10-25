@@ -45,12 +45,10 @@ def convert_bn(bn, name=None):
     assert pax_bn.ema_mean.averages.shape == running_mean.shape
     assert pax_bn.ema_var.averages.shape == running_var.shape
 
-    return pax_bn.replace(
-        scale=weight,
-        offset=bias,
-        ema_mean=pax_bn.ema_mean.replace(averages=running_mean),
-        ema_var=pax_bn.ema_var.replace(averages=running_var),
-    )
+    pax_bn = pax_bn.replace(scale=weight, offset=bias)
+    pax_bn = pax_bn.replace_node(pax_bn.ema_mean.averages, running_mean)
+    pax_bn = pax_bn.replace_node(pax_bn.ema_var.averages, running_var)
+    return pax_bn
 
 
 def convert_basic_block(block):

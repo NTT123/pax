@@ -394,3 +394,17 @@ def test_set_attribute_kind():
     m = M()
     assert m._pax.name_to_kind["a"] == pax.S
     assert m._pax.name_to_kind["b"] == pax.P
+
+
+def test_replace_leaf():
+    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(2, 3))
+    a = a.replace_node(a[0].weight, jnp.zeros((3, 2)))
+    assert a[0].weight.shape == (3, 2)
+
+
+def test_replace_node():
+    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(2, 3))
+    relu = pax.nn.Lambda(jax.nn.relu)
+    a = a.replace_node(a[1], relu)
+    assert a[1] is relu
+    print(a.summary())
