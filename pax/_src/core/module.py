@@ -98,6 +98,11 @@ class Module(BaseModule):
         (2, 3)
         """
         leaves, tree_def = jax.tree_flatten(self, is_leaf=lambda x: x is node)
+        count = sum(1 if x is node else 0 for x in leaves)
+
+        if count != 1:
+            raise ValueError(f"The node `{node}` appears {count} times in the module.")
+
         # replace `node` by value
         new_leaves = [value if v is node else v for v in leaves]
         mod: T = jax.tree_unflatten(tree_def, new_leaves)

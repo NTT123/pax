@@ -408,3 +408,18 @@ def test_replace_node():
     a = a.replace_node(a[1], relu)
     assert a[1] is relu
     print(a.summary())
+
+
+def test_replace_no_node():
+    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(2, 3))
+    relu = pax.nn.Lambda(jax.nn.relu)
+    with pytest.raises(ValueError):
+        a = a.replace_node(3, relu)
+
+
+def test_replace_two_node():
+    fc = pax.nn.Linear(2, 3)
+    a = pax.nn.Sequential(fc, fc)
+    relu = pax.nn.Lambda(jax.nn.relu)
+    with pytest.raises(ValueError):
+        a = a.replace_node(fc, relu)
