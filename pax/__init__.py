@@ -1,30 +1,35 @@
 """PAX package."""
 
-from . import initializers, nets, nn, utils
-from ._src.core import (
+from pax import initializers, nets, nn, utils
+from pax._src.core import (
     Module,
-    PaxFieldKind,
+    PaxKind,
     apply_mp_policy,
     assert_structure_equal,
     enable_eval_mode,
     enable_train_mode,
     flatten_module,
     freeze_parameters,
-    pure,
     module_and_value,
+    pure,
     select_parameters,
     select_states,
     unfreeze_parameters,
     update_parameters,
     update_states,
 )
-from ._src.core.rng import next_rng_key, seed_rng_key
-from ._src.nn.dropout import dropout
-from ._src.utils import build_update_fn, grad_parameters, scan
+from pax._src.core.rng import next_rng_key, seed_rng_key
+from pax._src.nn.dropout import dropout
+from pax._src.utils import build_update_fn, grad_parameters, scan
 
-__version__ = "0.4.0"
+STATE = PaxKind.STATE
+PARAMETER = PaxKind.PARAMETER
+P = PaxKind.PARAMETER
+S = PaxKind.STATE
 
-__all__ = [
+__version__ = "0.4.1"
+
+__all__ = (
     "apply_mp_policy",
     "assert_structure_equal",
     "build_update_fn",
@@ -35,13 +40,13 @@ __all__ = [
     "freeze_parameters",
     "grad_parameters",
     "initializers",
+    "module_and_value",
     "Module",
     "nets",
     "next_rng_key",
     "nn",
-    "PaxFieldKind",
+    "PaxKind",
     "pure",
-    "module_and_value",
     "scan",
     "seed_rng_key",
     "select_parameters",
@@ -50,7 +55,7 @@ __all__ = [
     "update_parameters",
     "update_states",
     "utils",
-]
+)
 
 try:
     del _src  # pylint: disable=undefined-variable

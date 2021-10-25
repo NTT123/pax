@@ -3,7 +3,7 @@ from typing import Any, Generic, List, TypeVar
 
 import jax
 import jax.numpy as jnp
-from jaxlib.xla_extension import PyTreeDef
+from jaxlib.xla_extension import PyTreeDef  # pylint: disable=no-name-in-module
 
 from .module import Module
 from .transforms import select_parameters, select_states, update_pytree
@@ -15,7 +15,7 @@ K = TypeVar("K", bound=Module)
 O = TypeVar("O", bound=Module)
 
 
-class flatten_module(Module, Generic[T]):
+class flatten_module(Module, Generic[T]):  # pylint: disable=invalid-name
     """Flatten a module.
 
     Flatten all parameters and states to lists of `ndarray`'s."""
@@ -70,8 +70,8 @@ class flatten_module(Module, Generic[T]):
         original_module_repr = self.unflatten().__repr__()
         return f"Flatten({original_module_repr})"
 
-    def eval(self: T) -> T:
+    def eval(self):
         raise RuntimeError("Not supported for a flatten module.")
 
-    def train(self: T) -> T:
+    def train(self):
         raise RuntimeError("Not supported for a flatten module.")

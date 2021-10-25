@@ -1,7 +1,6 @@
 """train a handwritten digit classifier."""
 
 import pickle
-from functools import partial
 from pathlib import Path
 from typing import List, Mapping, Tuple
 
@@ -10,7 +9,7 @@ import jax.numpy as jnp
 import opax
 import pax
 import tensorflow_datasets as tfds
-from opax.transform import GradientTransformation
+from opax import GradientTransformation
 from tqdm.auto import tqdm
 
 Batch = Mapping[str, jnp.ndarray]
@@ -39,7 +38,7 @@ class ConvNet(pax.Module):
         self.layers = layers
         self.output = pax.nn.Conv2D(32, 10, 3, padding="VALID")
 
-    def __call__(self, x: jnp.ndarray):
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         for conv, bn in self.layers:
             x = bn(conv(x))
             x = jax.nn.relu(x)
@@ -89,16 +88,15 @@ test_data = load_dataset("test").shuffle(10 * batch_size).batch(batch_size)
 
 
 def save_ckpt(epoch: int, model: pax.Module, path: Path):
-    model = jax.tree_map(lambda x: jax.device_get(x), model)
-    leaves, treedef = jax.tree_flatten(model)
-    del treedef
+    model = jax.device_get(model)
+    leaves = jax.tree_leaves(model)
     with open(path, "wb") as f:
         pickle.dump({"epoch": epoch, "leaves": leaves}, f)
 
 
 def load_ckpt(model, path: Path):
     """Load model from saved tree leaves"""
-    leaves, treedef = jax.tree_flatten(model)
+    treedef = jax.tree_structure(model)
     with open(path, "rb") as f:
         dic = pickle.load(f)
     return dic["epoch"], jax.tree_unflatten(treedef, dic["leaves"])

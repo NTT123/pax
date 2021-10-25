@@ -1,11 +1,13 @@
 """EMA module."""
 
-from typing import Any, Optional
+from typing import Any, Optional, TypeVar
 
 import jax
 import jax.numpy as jnp
 
 from ..core import Module
+
+T = TypeVar("T")
 
 
 class EMA(Module):
@@ -34,20 +36,22 @@ class EMA(Module):
         else:
             self.debias = None
 
-    def __call__(self, xs):
+    def __call__(self, xs: T) -> T:
         """Return the ema of `xs`. Also, update internal states."""
-        if self.debias is not None:
-            cond = self.debias > 0
+
+        if self.training:
+            if self.debias is not None:
+                cond = self.debias > 0
+                self.averages = jax.tree_map(
+                    lambda a, x: jnp.where(cond, a, x), self.averages, xs
+                )
+
+                self.debias = jnp.array(1.0)
+
             self.averages = jax.tree_map(
-                lambda a, x: jnp.where(cond, a, x), self.averages, xs
+                lambda a, x: a * self.decay_rate + x * (1 - self.decay_rate),
+                self.averages,
+                xs,
             )
-
-            self.debias = jnp.array(1.0)
-
-        self.averages = jax.tree_map(
-            lambda a, x: a * self.decay_rate + x * (1 - self.decay_rate),
-            self.averages,
-            xs,
-        )
 
         return self.averages

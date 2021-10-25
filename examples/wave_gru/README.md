@@ -1,9 +1,7 @@
 ## Introduction
 
-This example is an implementation of [Lyra](https://github.com/google/lyra) WaveGRU network. There are two big differences:
-
-* We predict the 8-bit mu-compressed waveform instead of the raw 16-bit waveform.
-* The `UpsamplingNetwork` can look ahead into the future, hence it cannot be used in the online/streaming mode.
+This example is an implementation of [Lyra](https://github.com/google/lyra) WaveGRU network.
+However, we predict the 8-bit mu-compressed waveform instead of the raw 16-bit waveform.
 
 
 ## Data preparation

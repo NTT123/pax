@@ -122,10 +122,12 @@ class Conv(Module):
             dimension_numbers,
         )
 
-        if self.with_bias:
+        if self.bias is not None:
             if self.data_format == "NCHW":
+                # pylint: disable=unsubscriptable-object
                 x = x + self.bias[None, :, None, None]
             elif self.data_format == "NCW":
+                # pylint: disable=unsubscriptable-object
                 x = x + self.bias[None, :, None]
             elif self.data_format[-1] == "C":
                 x = x + self.bias

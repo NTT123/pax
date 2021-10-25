@@ -13,8 +13,8 @@ from pax import Module
 def test_pax_next_rng_key():
     # seed 42
     pax.seed_rng_key(42)
-    # assert pax.rng.state._rng_key is None
-    # assert pax.rng.state._seed == 42
+    # assert pax.rng.RNG_STATE.rng_key is None
+    # assert pax.rng.RNG_STATE.rng_seed == 42
     expected_rng = jnp.array([0, 42], dtype=jnp.uint32)
     rng1 = pax.next_rng_key()
     expected_rng_1, rng_internal = jax.random.split(expected_rng)
@@ -381,3 +381,45 @@ def test_append_module_list():
     n = pax.nn.Sequential(pax.nn.Linear(3, 3))
     n.replace(modules=n.modules + (pax.nn.Linear(4, 4),))
     n.scan_bugs()
+
+
+def test_set_attribute_kind():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.a = jnp.array(0)
+            self.b = jnp.array(0.0)
+            self.set_attribute_kind(a=pax.S, b=pax.P)
+
+    m = M()
+    assert m._pax.name_to_kind["a"] == pax.S
+    assert m._pax.name_to_kind["b"] == pax.P
+
+
+def test_replace_leaf():
+    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(2, 3))
+    a = a.replace_node(a[0].weight, jnp.zeros((3, 2)))
+    assert a[0].weight.shape == (3, 2)
+
+
+def test_replace_node():
+    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(2, 3))
+    relu = pax.nn.Lambda(jax.nn.relu)
+    a = a.replace_node(a[1], relu)
+    assert a[1] is relu
+    print(a.summary())
+
+
+def test_replace_no_node():
+    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(2, 3))
+    relu = pax.nn.Lambda(jax.nn.relu)
+    with pytest.raises(ValueError):
+        a = a.replace_node(3, relu)
+
+
+def test_replace_two_node():
+    fc = pax.nn.Linear(2, 3)
+    a = pax.nn.Sequential(fc, fc)
+    relu = pax.nn.Lambda(jax.nn.relu)
+    with pytest.raises(ValueError):
+        a = a.replace_node(fc, relu)

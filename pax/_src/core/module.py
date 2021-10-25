@@ -3,9 +3,11 @@
 from typing import Any, Optional, TypeVar
 
 import jax
+import jax.numpy as jnp
 import jax.tree_util
 
-from .base import BaseModule, PaxFieldKind, allow_mutation
+from .base import BaseModule, PaxKind
+from .threading_local import allow_mutation
 from .transforms import (
     enable_eval_mode,
     enable_train_mode,
@@ -32,19 +34,16 @@ class Module(BaseModule):
         return self._pax.name
 
     def register_parameter(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.PARAMETER`` in the ``name_to_kind`` dictionary."""
-        self.register_subtree(name, value, PaxFieldKind.PARAMETER)
+        """Register a parameter."""
+        self.register_subtree(name, value, PaxKind.PARAMETER)
 
     def register_state(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.STATE`` in the ``name_to_kind`` dictionary."""
-        self.register_subtree(name, value, PaxFieldKind.STATE)
+        """Register a state."""
+        self.register_subtree(name, value, PaxKind.STATE)
 
     def register_modules(self, name: str, value: Any):
-        """Register ``value`` as an attribute of the object under the name ``name`` and
-        assign its kind to ``PaxFieldKind.MODULE`` in the ``name_to_kind`` dictionary."""
-        self.register_subtree(name, value, PaxFieldKind.MODULE)
+        """Register a module subtree."""
+        self.register_subtree(name, value, PaxKind.MODULE)
 
     register_parameters = register_parameter
     register_states = register_state
@@ -84,13 +83,41 @@ class Module(BaseModule):
         mod.scan_bugs()
         return mod
 
+    # inspired by patrick-kidger/equinox `tree_at`
+    def replace_node(self: T, node: jnp.ndarray, value: jnp.ndarray) -> T:
+        """Replace a node of the pytree by a new value.
+
+        Example:
+
+        >>> mod = pax.nn.Sequential(
+        ...     pax.nn.Linear(2,2),
+        ...     jax.nn.relu
+        ... )
+        >>> mod = mod.replace_node(mod[0].weight, jnp.zeros((2, 3)))
+        >>> print(mod[0].weight.shape)
+        (2, 3)
+        """
+        leaves, tree_def = jax.tree_flatten(self, is_leaf=lambda x: x is node)
+        count = sum(1 if x is node else 0 for x in leaves)
+
+        if count != 1:
+            raise ValueError(f"The node `{node}` appears {count} times in the module.")
+
+        # replace `node` by value
+        new_leaves = [value if v is node else v for v in leaves]
+        mod: T = jax.tree_unflatten(tree_def, new_leaves)
+        mod.scan_bugs()
+        return mod
+
     def scan_bugs(self: T) -> T:
         """Scan the module for potential bugs."""
 
         def _scan_apply_fn(mod: T) -> T:
             assert isinstance(mod, Module)
-            mod._scan_fields(mod.__class__.__dict__)
-            mod._scan_fields(mod.__dict__)
+            # pylint: disable=protected-access
+            mod._scan_fields(mod.__class__.__dict__.keys())
+            # pylint: disable=protected-access
+            mod._scan_fields(mod.__dict__.keys())
             return mod
 
         self.apply(_scan_apply_fn)

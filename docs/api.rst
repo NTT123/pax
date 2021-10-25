@@ -10,13 +10,13 @@ PAX's Module
    :inherited-members:
    :members:
 
-.. autoclass:: PaxFieldKind
+.. autoclass:: PaxKind
    :members:
    
    .. autoattribute:: STATE
    .. autoattribute:: PARAMETER
    .. autoattribute:: MODULE
-   .. autoattribute:: OTHERS
+   .. autoattribute:: UNKNOWN
 
 
 Purify functions and methods

@@ -10,7 +10,8 @@ def test_mutate_new_module_list():
     b.lst = []
     b.lst.append(pax.nn.Linear(4, 4))
     b.find_and_register_submodules()
-    assert b._pax.name_to_kind["lst"] == pax.PaxFieldKind.MODULE
+    # pylint: disable=protected-access
+    assert b._pax.name_to_kind["lst"] == pax.PaxKind.MODULE
 
 
 def test_mp_policy_method_name():
@@ -33,6 +34,6 @@ def test_mp_policy_method_name():
 
     m = pax.apply_mp_policy(m, mp_policy=p)
     x = jnp.zeros((4, 3))
-    y = m(x)  # ok
+    _ = m(x)  # ok
 
-    y = m.inference(x)
+    _ = m.inference(x)

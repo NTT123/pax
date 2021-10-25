@@ -2,17 +2,20 @@
 
 from functools import partial
 from types import MethodType
-from typing import Callable, Union
+from typing import Callable, Optional, Sequence, Tuple, TypeVar, Union
 
 from .module import Module
 from .pure import pure
 
+O = TypeVar("O")
+T = TypeVar("T", bound=Module)
+
 
 def module_and_value(
-    module_or_method: Union[Module, Callable],
-    static_argnums=None,
+    module_or_method: Callable[..., O],
+    static_argnums: Optional[Union[int, Sequence[int]]] = None,
     check_leaks: bool = True,
-):
+) -> Callable[..., Tuple[T, O]]:
     """Return a pure function that executes a module's method.
 
     This pure function also returns the updated input module in the output.
@@ -26,9 +29,11 @@ def module_and_value(
 
     Arguments:
         module_or_method: Either a PAX module or a method of a PAX module.
+        static_argnums: a list of static arguments.
+        check_leaks: enable jax leak checking.
 
     Returns:
-        a pure function.
+        A pure function.
     """
     if isinstance(module_or_method, MethodType):  # a method
         mod = module_or_method.__self__

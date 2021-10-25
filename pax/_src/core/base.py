@@ -4,7 +4,7 @@
 # https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
 # which is under MIT License.
 
-import threading
+import functools
 from collections import OrderedDict
 from contextlib import contextmanager
 from copy import deepcopy
@@ -13,11 +13,11 @@ from types import MappingProxyType
 from typing import (
     Any,
     Dict,
+    Iterable,
     List,
     Mapping,
     NamedTuple,
     Optional,
-    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -30,48 +30,19 @@ import jax.tree_util
 import numpy as np
 from jax.dtypes import issubdtype as isdt
 
-from .rng import get_rng_state, set_rng_state
+# pylint: disable=no-name-in-module
+from jaxlib.xla_extension import CompiledFunction
+
+from .threading_local import (
+    add_mutable_module,
+    allow_mutation,
+    is_deep_copy_enabled,
+    is_inside_pure_function,
+    is_mutable,
+)
 
 T = TypeVar("T", bound="BaseModule")
 M = TypeVar("M")
-TreeDef = Any
-
-
-STATE = threading.local()
-STATE.enable_deep_copy = False
-STATE.inside_pure_function = False
-STATE.mutable_module_id_list = ()
-
-
-@contextmanager
-def enable_deep_copy():
-    r"""A context manager that turns on deepcopy mode."""
-    prev = STATE.enable_deep_copy
-    STATE.enable_deep_copy = True
-    try:
-        yield
-    finally:
-        STATE.enable_deep_copy = prev
-
-
-@contextmanager
-def allow_mutation(modules):
-    r"""A context manager that turns on mutability."""
-    if not isinstance(modules, (tuple, list)):
-        modules = (modules,)
-    modules = tuple([id(mod) for mod in modules])
-
-    prev = STATE.mutable_module_id_list
-    prev_inside = STATE.inside_pure_function
-    prev_rng_state = get_rng_state()
-    try:
-        STATE.inside_pure_function = True
-        STATE.mutable_module_id_list = modules
-        yield
-    finally:
-        STATE.mutable_module_id_list = prev
-        STATE.inside_pure_function = prev_inside
-        set_rng_state(prev_rng_state)
 
 
 @jax.tree_util.register_pytree_node_class
@@ -86,13 +57,14 @@ class EmptyNode(Tuple):
         return (), None
 
     @classmethod
-    def tree_unflatten(cls, _, __):
+    def tree_unflatten(cls, aux, children):
         """Unflatten empty node."""
+        del aux, children
         return EmptyNode()
 
 
-class PaxFieldKind(Enum):
-    """``PaxFieldKind`` lists all supported attribute kinds in ``pax.Module``.
+class PaxKind(Enum):
+    """``PaxKind`` lists all supported attribute kinds in ``pax.Module``.
 
     An attribute will be considered as part of the pytree structure
     if its kind is one of ``STATE``, ``PARAMETER``, ``MODULE``.
@@ -105,7 +77,7 @@ class PaxFieldKind(Enum):
     STATE: int = 1
     PARAMETER: int = 2
     MODULE: int = 3
-    OTHERS: int = -1
+    UNKNOWN: int = -1
 
 
 class PaxModuleInfo(NamedTuple):
@@ -113,22 +85,23 @@ class PaxModuleInfo(NamedTuple):
 
     name: Optional[str]
     training: bool
-    name_to_kind: Mapping[str, PaxFieldKind]
+    name_to_kind: Mapping[str, PaxKind]
+    default_kind: PaxKind
 
     def __repr__(self) -> str:
         nodes = ", ".join([f"{k}:{v.name}" for k, v in self.name_to_kind.items()])
         return f"PaxModuleInfo[name={self.name}, training={self.training}, nodes={{{nodes}}}]"
 
 
-class ModuleMetaclass(type):
-    """Metaclass for `Module`."""
+class BaseModuleMetaclass(type):
+    """Metaclass for `BaseModule`."""
 
     def __call__(cls: Type[T], *args, **kwargs) -> T:
         module = cls.__new__(cls, *args, **kwargs)  # type: ignore
 
         # if a module is created inside a `pure` function, it is mutable.
-        if STATE.inside_pure_function:
-            STATE.mutable_module_id_list = (id(module),) + STATE.mutable_module_id_list
+        if is_inside_pure_function():
+            add_mutable_module(module)
             cls.__init__(module, *args, **kwargs)
             module.find_and_register_submodules()
         else:
@@ -137,11 +110,11 @@ class ModuleMetaclass(type):
                 module.find_and_register_submodules()
 
         # scan module after initialization for potential bugs
-        module._scan_fields(module.__dict__)
+        module._scan_fields(module.__dict__.keys())
         return module
 
 
-class BaseModule(metaclass=ModuleMetaclass):
+class BaseModule(metaclass=BaseModuleMetaclass):
     """BaseModule manages all information related to the pytree.
 
     There are two important methods:
@@ -153,6 +126,8 @@ class BaseModule(metaclass=ModuleMetaclass):
     the pytree and the kind of the tree part (parameter, state, module, etc.).
     """
 
+    __slots__ = ("_pax",)
+
     _pax: PaxModuleInfo
 
     def __new__(cls: Type[T], *args, **kwargs) -> T:
@@ -162,11 +137,18 @@ class BaseModule(metaclass=ModuleMetaclass):
         del args, kwargs
 
         obj = object.__new__(cls)
-        obj.__dict__["_pax"] = PaxModuleInfo(
-            name=None,
-            training=True,
-            name_to_kind=MappingProxyType(OrderedDict()),
+        super(BaseModule, obj).__setattr__(
+            "_pax",
+            PaxModuleInfo(
+                name=None,
+                training=True,
+                name_to_kind=MappingProxyType(OrderedDict()),
+                default_kind=PaxKind.UNKNOWN,
+            ),
         )
+
+        if obj.__slots__ != ("_pax",):
+            raise ValueError("`__slots__` is not supported by PAX modules.")
 
         # scan class attributes for unregistered modules and ndarray's.
         obj._scan_fields(obj.__class__.__dict__)
@@ -178,7 +160,7 @@ class BaseModule(metaclass=ModuleMetaclass):
         super().__setattr__("_pax", self._pax._replace(name=name))
 
     def _assert_mutability(self):
-        if id(self) not in STATE.mutable_module_id_list:
+        if not is_mutable(self):
             raise ValueError(
                 "Cannot modify a module in immutable mode.\n"
                 "Please do this computation inside a function decorated by `pax.pure`."
@@ -200,7 +182,7 @@ class BaseModule(metaclass=ModuleMetaclass):
 
         - Setting `_pax` is forbidden.
         - If `value` is a pytree of modules and `name` is not in `name_to_kind`,
-          its kind will be `PaxFieldKind.MODULE`.
+          its kind will be `PaxKind.MODULE`.
         """
         self._assert_mutability()
 
@@ -210,22 +192,11 @@ class BaseModule(metaclass=ModuleMetaclass):
             )
 
         super().__setattr__(name, value)
+        if name not in self._pax.name_to_kind:
+            if self._pax.default_kind != PaxKind.UNKNOWN:
+                self._update_name_to_kind_dict(name, self._pax.default_kind)
 
-        # If `value` contains Module's instances only, it is registered as MODULE.
-        module_leaves, _ = jax.tree_flatten(
-            value, is_leaf=lambda x: isinstance(x, BaseModule)
-        )
-        all_modules = all(isinstance(mod, BaseModule) for mod in module_leaves)
-        if (
-            value is not None
-            and len(module_leaves) > 0
-            and name not in self._pax.name_to_kind
-            and (isinstance(value, BaseModule) or all_modules)
-        ):
-            self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
-
-        # scan the new field for bugs.
-        self._scan_fields(fields=(name,))
+            self.find_and_register_submodules()
 
     def __delattr__(self, name: str) -> None:
         self._assert_mutability()
@@ -233,42 +204,69 @@ class BaseModule(metaclass=ModuleMetaclass):
             raise ValueError("Cannot delete a pytree attribute.")
         super().__delattr__(name)
 
-    def tree_flatten(self) -> Tuple[List[jnp.ndarray], Mapping[str, Any]]:
+    def _update_default_kind(self, kind: PaxKind):
+        self._assert_mutability()
+        new_pax_info = self._pax._replace(default_kind=kind)
+        super(BaseModule, self).__setattr__("_pax", new_pax_info)
+
+    @contextmanager
+    def default_kind(self, kind: PaxKind):
+        prev = self._pax.default_kind
+        try:
+            self._update_default_kind(kind)
+            yield
+        finally:
+            self._update_default_kind(prev)
+
+    def add_parameters(self):
+        """Add new attributes as trainable parameters"""
+        return self.default_kind(PaxKind.PARAMETER)
+
+    def add_states(self):
+        """Add new attributes as non-trainable states."""
+        return self.default_kind(PaxKind.STATE)
+
+    def tree_flatten(
+        self,
+    ) -> Tuple[List[jnp.ndarray], Tuple[Mapping[str, Any], PaxModuleInfo]]:
         """Convert a module to ``(children, treedef)``."""
 
         aux = dict(self.__dict__)
         children = [aux.pop(name) for name in self._pax.name_to_kind]
 
-        if STATE.enable_deep_copy:
+        if is_deep_copy_enabled():
             leaves, treedef = jax.tree_flatten(aux)
             new_leaves = []
+            black_list = (jax.custom_jvp, functools.partial, CompiledFunction)
             for leaf in leaves:
                 try:
-                    new_leaf = deepcopy(leaf)
-                    if new_leaf == leaf:
-                        new_leaves.append(new_leaf)
-                    else:
+                    if isinstance(leaf, black_list):
                         new_leaves.append(leaf)
+                    else:
+                        new_leaf = deepcopy(leaf)
+                        new_leaves.append(new_leaf)
                 except TypeError:
                     new_leaves.append(leaf)
+            aux = jax.tree_unflatten(treedef, new_leaves)
 
-            aux = jax.tree_unflatten(treedef, leaves)
-
-        return children, aux
+        return children, (aux, self._pax)
 
     @classmethod
-    def tree_unflatten(cls, aux, children):
+    def tree_unflatten(cls, aux_pax, children):
         """Recreate a module from its ``(children, treedef)``."""
+        aux, pax_info = aux_pax
         module = object.__new__(cls)
+        super(BaseModule, module).__setattr__("_pax", pax_info)
         module_dict = module.__dict__
         module_dict.update(aux)
         # don't have to copy `name_to_kind` anymore, speed thing up!
         # md["name_to_kind"] = OrderedDict(module.name_to_kind)
+        # pylint: disable=protected-access
         module_dict.update(zip(module._pax.name_to_kind, children))
 
         # if a module is created inside a `pure` function, it is mutable.
-        if STATE.inside_pure_function:
-            STATE.mutable_module_id_list = (id(module),) + STATE.mutable_module_id_list
+        if is_inside_pure_function():
+            add_mutable_module(module)
 
         return module
 
@@ -276,28 +274,28 @@ class BaseModule(metaclass=ModuleMetaclass):
         """Any subclass of ``Module`` is also registered as pytree."""
         jax.tree_util.register_pytree_node_class(cls)
 
-    def _scan_fields(self, fields: Sequence[str]):
+    def _scan_fields(self, fields: Iterable[str]):
         """Scan fields for *potential* bugs."""
 
         for name in fields:
             value = getattr(self, name)
-            kind = self._pax.name_to_kind.get(name, PaxFieldKind.OTHERS)
+            kind = self._pax.name_to_kind.get(name, PaxKind.UNKNOWN)
             mods, _ = jax.tree_flatten(
                 value, is_leaf=lambda x: isinstance(x, BaseModule)
             )
             leaves = jax.tree_leaves(value)
 
             # Check if a MODULE attribute contains non-module leafs.
-            if kind == PaxFieldKind.MODULE:
+            if kind == PaxKind.MODULE:
                 for mod in mods:
                     if not isinstance(mod, BaseModule):
                         raise ValueError(
-                            f"Field `{self}.{name}` (kind={kind}, value={value}) contains a non-module leaf "
-                            f"(type={type(mod)}, value={mod})."
+                            f"Field `{self}.{name}` (kind={kind}, value={value}) "
+                            f"contains a non-module leaf (type={type(mod)}, value={mod})."
                         )
 
             # Check if a pytree attribute contains non-ndarray values.
-            if kind != PaxFieldKind.OTHERS:
+            if kind != PaxKind.UNKNOWN:
                 for leaf in leaves:
                     if not isinstance(leaf, (np.ndarray, jnp.ndarray)):
                         raise ValueError(
@@ -306,7 +304,7 @@ class BaseModule(metaclass=ModuleMetaclass):
                         )
 
             # Check if a PARAMETER attribute contains non-differentiable ndarray's.
-            if kind == PaxFieldKind.PARAMETER:
+            if kind == PaxKind.PARAMETER:
                 for leaf in leaves:
                     if hasattr(leaf, "dtype") and not (
                         isdt(leaf.dtype, jnp.complexfloating)
@@ -317,7 +315,7 @@ class BaseModule(metaclass=ModuleMetaclass):
                             f"(type={leaf.dtype}, value={leaf})."
                         )
 
-            if kind == PaxFieldKind.OTHERS:
+            if kind == PaxKind.UNKNOWN:
                 # if a field contains empty pytree
                 leaves, _ = jax.tree_flatten(
                     value, is_leaf=lambda x: isinstance(x, BaseModule)
@@ -336,12 +334,13 @@ class BaseModule(metaclass=ModuleMetaclass):
                 for leaf in leaves:
                     if isinstance(leaf, (np.ndarray, jnp.ndarray)):
                         raise ValueError(
-                            f"Unregistered field `{self}.{name}` ({kind}) contains a ndarray. "
-                            f"Consider registering it using `self.register_*` methods."
+                            f"Unregistered field `{self}.{name}` ({kind}) contains a ndarray."
+                            f" Consider registering it using `self.set_attribute_kind`"
+                            f" or `self.register_*` methods."
                         )
 
             # Check if an unregistered (or PARAMETER) field contains pax.Module instances
-            if kind not in [PaxFieldKind.MODULE, PaxFieldKind.STATE]:
+            if kind not in [PaxKind.MODULE, PaxKind.STATE]:
                 for mod in mods:
                     if isinstance(mod, BaseModule):
                         raise ValueError(
@@ -386,14 +385,25 @@ class BaseModule(metaclass=ModuleMetaclass):
         for name, value in vars(self).items():
             if name not in self._pax.name_to_kind:
                 if all_module_leaves(value):
-                    self._update_name_to_kind_dict(name, PaxFieldKind.MODULE)
+                    self._update_name_to_kind_dict(name, PaxKind.MODULE)
 
-    def register_subtree(self, name: str, value, kind: PaxFieldKind):
+    def register_subtree(self, name: str, value, kind: PaxKind):
+        """Assign `value` to attribute `name` and register its kind as `kind`."""
         if hasattr(self, name):
             raise RuntimeError("Cannot register an existing attribute")
 
         self._update_name_to_kind_dict(name, kind)
         setattr(self, name, value)
+
+    def set_attribute_kind(self, **kwargs):
+        """Example:
+
+        >>> self.set_attribute_kind(weight=pax.P, counter=pax.S)
+        """
+        for name, kind in kwargs.items():
+            if not hasattr(self, name):
+                raise AttributeError(f"Attribute `{name}` does not exist.")
+            self._update_name_to_kind_dict(name, kind)
 
     def apply(self: T, apply_fn) -> T:
         """Apply a function to all submodules.
@@ -411,7 +421,7 @@ class BaseModule(metaclass=ModuleMetaclass):
             else:
                 return mod_or_ndarray
 
-        submodules = self.submodules()
+        submodules: List[BaseModule] = self.submodules()
         new_self = jax.tree_map(
             rec_fn,
             self,
@@ -427,7 +437,7 @@ class BaseModule(metaclass=ModuleMetaclass):
         module_subtrees = [
             getattr(self, name)
             for name, kind in self._pax.name_to_kind.items()
-            if kind == PaxFieldKind.MODULE
+            if kind == PaxKind.MODULE
         ]
 
         is_module = lambda x: isinstance(x, BaseModule)
@@ -443,7 +453,8 @@ class BaseModule(metaclass=ModuleMetaclass):
 
         Example:
 
-        >>> print(pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4)).summary())
+        >>> net = pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4))
+        >>> print(net.summary())
         Sequential
         ├── Linear[in_dim=2, out_dim=3, with_bias=True]
         ├── x => relu(x)
@@ -455,7 +466,7 @@ class BaseModule(metaclass=ModuleMetaclass):
             raise ValueError(
                 f"The `{self.__class__}.__repr__` method returns a `None` value."
             )
-        submodules = self.submodules()
+        submodules: List[BaseModule] = self.submodules()
 
         def indent(lines: List[str], start_string) -> List[str]:
             return [start_string + l for l in lines]

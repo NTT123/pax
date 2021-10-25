@@ -11,7 +11,8 @@ def test_list_of_mod():
             self.a = [pax.nn.Linear(3, 3)]
 
     m = M()
-    m._pax.name_to_kind["a"] == pax.PaxFieldKind.MODULE
+    # pylint: disable=protected-access
+    m._pax.name_to_kind["a"] == pax.PaxKind.MODULE
 
 
 @pax.pure
@@ -23,7 +24,8 @@ def test_assigned_field_an_array():
 
     # no error because we will automatically assign `a` to kind PARAMETER
     m = M()
-    assert m._pax.name_to_kind["a"] == pax.PaxFieldKind.PARAMETER
+    # pylint: disable=protected-access
+    assert m._pax.name_to_kind["a"] == pax.PaxKind.PARAMETER
 
     class N(pax.Module):
         def __init__(self):
@@ -35,7 +37,8 @@ def test_assigned_field_an_array():
     # no error because we will automatically assign `a` to kind PARAMETER
     n.register_parameter("b", jnp.array([1, 2, 3], dtype=jnp.float32))
 
-    assert n._pax.name_to_kind["b"] == pax.PaxFieldKind.PARAMETER
+    # pylint: disable=protected-access
+    assert n._pax.name_to_kind["b"] == pax.PaxKind.PARAMETER
 
 
 def test_assign_int_to_param():
@@ -45,7 +48,7 @@ def test_assign_int_to_param():
             self.register_parameter("a", np.array([3, 1], dtype=np.int32))
 
     with pytest.raises(ValueError):
-        m = M()
+        _ = M()
 
 
 def test_assign_int_to_param_deepscan():
@@ -55,10 +58,10 @@ def test_assign_int_to_param_deepscan():
             self.a = np.array([3, 1], dtype=np.int32)
 
     with pytest.raises(ValueError):
-        m = M()
+        _ = M()
         # m = pax.freeze_parameters(m)
         # d = OrderedDict(m.name_to_kind)
-        # d["a"] = pax.module.PaxFieldKind.PARAMETER
+        # d["a"] = pax.module.PaxKind.PARAMETER
         # m.__dict__["name_to_kind"] = MappingProxyType(d)
         # m = pax.scan_bugs(m)
 
