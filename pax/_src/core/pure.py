@@ -99,6 +99,7 @@ def pure(
         args = tuple(args)
 
         def no_leak_func(*args, **kwargs):
+            gc.collect()
             args = list(args)
             for i in static_argnums:
                 args[i] = args_copy[i]
@@ -113,7 +114,6 @@ def pure(
             args, kwargs = _deepcopy((args, kwargs))
             modules = _get_all_submodules((args, kwargs))
             with allow_mutation(modules):
-                gc.collect()
                 if eval_shape:
                     out = jax.eval_shape(no_leak_func, *args, **kwargs)
                 else:
