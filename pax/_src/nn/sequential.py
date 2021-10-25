@@ -1,9 +1,11 @@
 """Sequential module."""
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TypeVar
 
 from ..core import Module
 from .lambda_module import Lambda
+
+T = TypeVar("T", bound=Module)
 
 
 class Sequential(Module):
@@ -37,11 +39,11 @@ class Sequential(Module):
             x = f(x)
         return x
 
-    def __getitem__(self, index: int) -> Module:
+    def __getitem__(self, index: int) -> T:
         """Get an item from the `modules` list."""
         return self.modules[index]
 
-    def set(self, index: int, value: Module):
+    def set(self: T, index: int, value) -> T:
         """Set an item to the `modules` list."""
         if not isinstance(value, Module):
             value = Lambda(value)
