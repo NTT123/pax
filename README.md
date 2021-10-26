@@ -91,11 +91,9 @@ There are few noteworthy points in the above example:
 
 ### `pax.pure`
 
-Let "PAX function" mean functions whose inputs contain PAX modules.
+It is a good practice to keep functions of PAX modules pure (no side effects).
 
-It is a good practice to make PAX functions pure (no side effects).
-
-Even though PAX modules are stateful objects, the modifications of PAX module's internal states are restricted. 
+Following this practice, the modifications of PAX module's internal states are restricted.
 Only PAX functions decorated by `pax.pure` are allowed to modify PAX modules.
 
 ```python
@@ -139,7 +137,7 @@ print(net.counter) # increased by 1
 
 It is a good practice to keep functions decorated by `pax.pure` as small as possible.
 
-PAX provides the function `pax.module_and_value` that transforms a module's method into a pure function. The pure function also returns the updated module in its output. For example:
+PAX provides the `pax.module_and_value` function that transforms a module's method into a pure function. The pure function also returns the updated module in its output. For example:
 
 ```python
 net = Counter(3)
@@ -150,6 +148,33 @@ print(net.counter) # 4
 
 In this example, `pax.module_and_value` transforms `net.__call__` into a pure function which returns the updated `net` in its output.
 
+
+### Replacing parts
+
+PAX provides utility methods to modify a module in a functional way.
+
+The `replace` method creates a new module with attributes replaced. 
+For example, to replace `weight` and `bias` of a `Linear` module:
+
+```python
+fc = pax.nn.Linear(2, 2)
+fc = fc.replace(weight=jnp.ones((2,2)), bias=jnp.zeros((2,)))
+```
+
+The `replace_node` method replaces a pytree node of a module:
+
+```python
+f = pax.nn.Sequential(
+    pax.nn.Linear(2, 3),
+    pax.nn.Linear(3, 4),
+)
+
+f = f.replace_node(f[-1], pax.nn.Linear(3, 5))
+print(f.summary())
+# Sequential
+# ├── Linear[in_dim=2, out_dim=3, with_bias=True]
+# └── Linear[in_dim=3, out_dim=5, with_bias=True]
+```
 
 ## PAX and other libraries <a id="paxandfriends"></a>
 
