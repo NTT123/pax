@@ -35,23 +35,22 @@ class Linear(pax.Module):
 
 
 def loss_fn(model: Linear, x: jnp.ndarray, y: jnp.ndarray):
-    model, y_hat = pax.module_and_value(model)(x)
+    model, y_hat = model @ x
     loss = jnp.mean(jnp.square(y_hat - y))
-    return loss, (loss, model)
+    return loss, model
 
 
 @jax.jit
 def train_step(model: Linear, optimizer: GradientTransformation, x, y):
-    grads, (loss, model) = pax.grad_parameters(loss_fn, has_aux=True)(model, x, y)
-    updates, optimizer = opax.transform_gradients(grads, optimizer, model.parameters())
-    new_params = opax.apply_updates(model.parameters(), updates)
-    model = model.update_parameters(new_params)
+    grads, model, loss = pax.grad_mod_val(loss_fn)(model, x, y)
+    optimizer, updates = optimizer @ (grads, ~model)
+    model |= opax.apply_updates(~model, updates)
     return model, optimizer, loss
 
 
 net = Linear()
 print(net.summary())
-opt = opax.adam(1e-1)(net.parameters())
+opt = opax.adam(1e-1)(~net)
 
 
 for step in range(10):

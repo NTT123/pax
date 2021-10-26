@@ -14,11 +14,17 @@ from .threading_local import (
     get_rng_state,
     set_rng_state,
 )
-from .utils import get_modules
+
+
+def _get_modules(tree):
+    "Return a list of modules in the pytree `tree`."
+    modules = jax.tree_flatten(tree, is_leaf=lambda x: isinstance(x, BaseModule))[0]
+    modules = [m for m in modules if isinstance(m, BaseModule)]
+    return modules
 
 
 def _get_all_submodules(value):
-    submods = get_modules(value)
+    submods = _get_modules(value)
     out = list(submods)
     for mod in submods:
         out.extend(_get_all_submodules(mod.submodules()))
@@ -77,7 +83,7 @@ def pure(
 
     @functools.wraps(func)
     def _f(*args, **kwargs):
-        _ = [m.scan_bugs() for m in get_modules((func, args, kwargs))]
+        _ = [m.scan_bugs() for m in _get_modules((func, args, kwargs))]
 
         # support calling method
         if isinstance(func, MethodType):
@@ -125,7 +131,7 @@ def pure(
             _run(args, kwargs, eval_shape=True)
             # real run
             out = _run(args, kwargs, eval_shape=False)
-        _ = [m.scan_bugs() for m in get_modules(out)]
+        _ = [m.scan_bugs() for m in _get_modules(out)]
         return out
 
     return _f
