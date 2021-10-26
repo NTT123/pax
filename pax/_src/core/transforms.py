@@ -104,7 +104,7 @@ def select_states(mod: T) -> T:
 
 
 def update_pytree(mod: T, *, other: T) -> T:
-    """Use non-EmptyNode leaves from others"""
+    """Use non-EmptyNode leaves from other."""
 
     def _select_fn(leaf_x, leaf_y):
         if isinstance(leaf_y, EmptyNode):
@@ -112,8 +112,8 @@ def update_pytree(mod: T, *, other: T) -> T:
         else:
             return leaf_y
 
-    new_mod = jax.tree_map(_select_fn, mod, other)
-    new_mod = jax.tree_unflatten(jax.tree_structure(mod), jax.tree_leaves(new_mod))
+    is_empty = lambda x: isinstance(x, EmptyNode)
+    new_mod = jax.tree_map(_select_fn, mod, other, is_leaf=is_empty)
     return new_mod
 
 

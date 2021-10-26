@@ -51,3 +51,6 @@ class Sequential(Module):
         modules = list(self.modules)
         modules[index] = value
         return super().replace(modules=tuple(modules))
+
+    def __rshift__(self, other: Module):
+        return Sequential(*self.modules, other)

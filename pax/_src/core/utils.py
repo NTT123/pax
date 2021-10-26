@@ -10,13 +10,6 @@ from .module import Module
 T = TypeVar("T", bound=Module)
 
 
-def get_modules(tree):
-    "Return a list of modules in the pytree `tree`."
-    modules = jax.tree_flatten(tree, is_leaf=lambda x: isinstance(x, Module))[0]
-    modules = [m for m in modules if isinstance(m, Module)]
-    return modules
-
-
 def assert_structure_equal(tree_a: T, tree_b: T):
     """Assert that the two pytrees are structurally the same.
 
