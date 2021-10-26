@@ -58,6 +58,22 @@ def grad_parameters(
     return grad_fn
 
 
+def grad_mod_val(func: Callable[..., jnp.ndarray]):
+    def func_return_mod_val(params, module: T, *args, **kwargs):
+        module |= params
+        output, module = func(module, *args, **kwargs)
+        return output, (module, output)
+
+    grad_fn = jax.grad(func_return_mod_val, has_aux=True)
+
+    @functools.wraps(grad_fn)
+    def new_grad_fn(module: T, *args, **kwargs) -> Tuple[T, T, jnp.ndarray]:
+        grads, (module, loss) = grad_fn(~module, module, *args, **kwargs)
+        return grads, module, loss
+
+    return new_grad_fn
+
+
 def build_update_fn(loss_fn, *, scan_mode: bool = False):
     """Build a simple update function.
 

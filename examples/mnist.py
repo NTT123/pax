@@ -1,6 +1,7 @@
 """train a handwritten digit classifier."""
 
 import pickle
+from functools import partial
 from pathlib import Path
 from typing import List, Mapping, Tuple
 
@@ -30,30 +31,26 @@ class ConvNet(pax.Module):
 
     def __init__(self):
         super().__init__()
-        layers = []
+        self.layers = pax.nn.Sequential()
         for i in range(5):
-            conv = pax.nn.Conv2D((1 if i == 0 else 32), 32, 6, padding="VALID")
-            bn = pax.nn.BatchNorm2D(32, True, True, 0.9)
-            layers.append((conv, bn))
-        self.layers = layers
-        self.output = pax.nn.Conv2D(32, 10, 3, padding="VALID")
+            self.layers >>= pax.nn.Conv2D((1 if i == 0 else 32), 32, 6, padding="VALID")
+            self.layers >>= pax.nn.BatchNorm2D(32, True, True, 0.9)
+            self.layers >>= jax.nn.relu
+        self.layers >>= pax.nn.Conv2D(32, 10, 3, padding="VALID")
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
-        for conv, bn in self.layers:
-            x = bn(conv(x))
-            x = jax.nn.relu(x)
-        x = self.output(x)
+        x = self.layers(x)
         return jnp.squeeze(x, (1, 2))
 
 
 def loss_fn(model: ConvNet, batch: Batch):
     x = batch["image"].astype(jnp.float32) / 255
     target = batch["label"]
-    model, logits = pax.module_and_value(model)(x)
+    model, logits = model % x
     log_pr = jax.nn.log_softmax(logits, axis=-1)
     log_pr = jnp.sum(jax.nn.one_hot(target, log_pr.shape[-1]) * log_pr, axis=-1)
     loss = -jnp.mean(log_pr)
-    return loss, (loss, model)
+    return loss, model
 
 
 @jax.jit
@@ -64,8 +61,9 @@ def test_loss_fn(model: ConvNet, batch: Batch):
 
 @jax.jit
 def update_fn(model: ConvNet, optimizer: GradientTransformation, batch: Batch):
-    grads, (loss, model) = jax.grad(loss_fn, has_aux=True, allow_int=True)(model, batch)
-    model, optimizer = opax.apply_gradients(model, optimizer, grads=grads)
+    grads, model, loss = pax.grad_mod_val(loss_fn)(model, batch)
+    optimizer, updates = optimizer % (grads, model.parameters())
+    model |= (~model).map(jax.lax.sub, updates)
     return model, optimizer, loss
 
 
