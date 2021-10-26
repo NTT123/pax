@@ -63,11 +63,10 @@ def train(
     wave_gru = WaveGRU(n_mels, hidden_dim)
     print(wave_gru.summary())
 
-    params = wave_gru.parameters()
     optimizer = opax.chain(
         opax.clip_by_global_norm(max_global_norm),
         opax.adam(learning_rate),
-    )(params)
+    )(~wave_gru)
 
     split_loader = partial(
         data_loader,

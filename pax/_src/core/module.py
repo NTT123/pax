@@ -1,18 +1,20 @@
 """PAX module."""
 
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
 
 from .base import BaseModule, PaxKind
+from .module_and_value import module_and_value
 from .threading_local import allow_mutation
 from .transforms import (
     enable_eval_mode,
     enable_train_mode,
     select_parameters,
     update_parameters,
+    update_pytree,
 )
 
 T = TypeVar("T", bound="Module")
@@ -122,3 +124,21 @@ class Module(BaseModule):
 
         self.apply(_scan_apply_fn)
         return self
+
+    def __mod__(self: T, args: Union[Any, Tuple]) -> Tuple[T, Any]:
+        assert callable(self)
+
+        if isinstance(args, tuple):
+            return module_and_value(self)(*args)
+        else:
+            return module_and_value(self)(args)
+
+    def __or__(self: T, other: T) -> T:
+        """Merge two modules. Note: a | b  != b | a."""
+        return update_pytree(self, other=other)
+
+    def __invert__(self: T) -> T:
+        return self.parameters()
+
+    def map(self, func, *mods):
+        return jax.tree_map(func, self, *mods)

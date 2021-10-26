@@ -4,11 +4,11 @@ from functools import partial
 from types import MethodType
 from typing import Callable, Optional, Sequence, Tuple, TypeVar, Union
 
-from .module import Module
+from .base import BaseModule
 from .pure import pure
 
 O = TypeVar("O")
-T = TypeVar("T", bound=Module)
+T = TypeVar("T", bound=BaseModule)
 
 
 def module_and_value(
@@ -38,14 +38,14 @@ def module_and_value(
     if isinstance(module_or_method, MethodType):  # a method
         mod = module_or_method.__self__
         func = module_or_method.__func__
-    elif isinstance(module_or_method, Module):  # a module
+    elif isinstance(module_or_method, BaseModule):  # a module
         mod = module_or_method
         assert hasattr(mod, "__call__"), "Expecting a callable module."
         func = module_or_method.__call__.__func__
     else:
         raise ValueError("Expecting a module or a module's method.")
 
-    assert isinstance(mod, Module), "Expecting a PAX module."
+    assert isinstance(mod, BaseModule), "Expecting a PAX module."
 
     if static_argnums is not None:
         if isinstance(static_argnums, int):
