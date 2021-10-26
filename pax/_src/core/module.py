@@ -142,3 +142,11 @@ class Module(BaseModule):
 
     def __invert__(self: T) -> T:
         return self.parameters()
+
+    def __sub__(self: T, other: T) -> T:
+        assert jax.tree_structure(self) == jax.tree_structure(other)
+        return jax.tree_map(lambda s, o: s - o, self, other)
+
+    def __floordiv__(self: T, func) -> Tuple[T, T, jnp.ndarray]:
+        value, grads = jax.value_and_grad(func, has_aux=True, allow_int=True)(self)
+        return value, ~grads
