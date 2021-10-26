@@ -137,7 +137,7 @@ print(net.counter) # increased by 1
 
 It is a good practice to keep functions decorated by `pax.pure` as small as possible.
 
-PAX provides the function `pax.module_and_value` that transforms a module's method into a pure function. The pure function also returns the updated module in its output. For example:
+PAX provides the `pax.module_and_value` function that transforms a module's method into a pure function. The pure function also returns the updated module in its output. For example:
 
 ```python
 net = Counter(3)
@@ -153,7 +153,7 @@ In this example, `pax.module_and_value` transforms `net.__call__` into a pure fu
 
 PAX provides utility methods to modify a module in a functional way.
 
-The method `replace` creates a new module with attributes replaced. 
+The `replace` method creates a new module with attributes replaced. 
 For example, to replace `weight` and `bias` of a `Linear` module:
 
 ```python
@@ -161,7 +161,7 @@ fc = pax.nn.Linear(2, 2)
 fc = fc.replace(weight=jnp.ones((2,2)), bias=jnp.zeros((2,)))
 ```
 
-The method `replace_node` replaces a pytree node of a module:
+The `replace_node` method replaces a pytree node of a module:
 
 ```python
 f = pax.nn.Sequential(
