@@ -1,6 +1,4 @@
 """PAX and functional programming."""
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import opax
@@ -44,9 +42,9 @@ def loss_fn(model: Linear, x: jnp.ndarray, y: jnp.ndarray):
 
 @jax.jit
 def train_step(model: Linear, optimizer: GradientTransformation, x, y):
-    (loss, model), grads = model // partial(loss_fn, x=x, y=y)
+    grads, model, loss = pax.grad_mod_val(loss_fn)(model, x, y)
     optimizer, updates = optimizer @ (grads, ~model)
-    model |= ~model - updates
+    model |= opax.apply_updates(~model, updates)
     return model, optimizer, loss
 
 
