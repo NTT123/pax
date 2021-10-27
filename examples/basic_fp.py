@@ -35,7 +35,7 @@ class Linear(pax.Module):
 
 
 def loss_fn(model: Linear, x: jnp.ndarray, y: jnp.ndarray):
-    model, y_hat = model @ x
+    model, y_hat = model % x
     loss = jnp.mean(jnp.square(y_hat - y))
     return loss, model
 
@@ -43,7 +43,7 @@ def loss_fn(model: Linear, x: jnp.ndarray, y: jnp.ndarray):
 @jax.jit
 def train_step(model: Linear, optimizer: GradientTransformation, x, y):
     grads, model, loss = pax.grad_mod_val(loss_fn)(model, x, y)
-    optimizer, updates = optimizer @ (grads, ~model)
+    optimizer, updates = optimizer % (grads, ~model)
     model |= opax.apply_updates(~model, updates)
     return model, optimizer, loss
 
