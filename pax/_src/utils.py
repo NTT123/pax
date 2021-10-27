@@ -59,6 +59,9 @@ def grad_parameters(
 
 
 def grad_mod_val(func: Callable[..., jnp.ndarray]):
+    """Transform a function to its gradient function that
+    also returns the input module and the scalar output."""
+
     def func_return_mod_val(params, module: T, *args, **kwargs):
         module |= params
         output, module = func(module, *args, **kwargs)
@@ -72,6 +75,22 @@ def grad_mod_val(func: Callable[..., jnp.ndarray]):
         return grads, module, loss
 
     return new_grad_fn
+
+
+def apply_gradients(grads: T) -> Callable[[T, O], Tuple[T, O]]:
+    """Apply gradients to update model and optimizer.
+
+    Example:
+
+    >>> model, optimizer = pax.apply_gradients(grads)(model, optimizer)
+    """
+
+    def apply_fn(model: T, optimizer: O) -> Tuple[T, O]:
+        optimizer, updates = optimizer % (grads, ~model)
+        model = model | (~model).map(jax.lax.sub, updates)
+        return model, optimizer
+
+    return apply_fn
 
 
 def build_update_fn(loss_fn, *, scan_mode: bool = False):

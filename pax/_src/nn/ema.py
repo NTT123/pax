@@ -1,13 +1,11 @@
 """EMA module."""
 
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional
 
 import jax
 import jax.numpy as jnp
 
 from ..core import Module
-
-T = TypeVar("T")
 
 
 class EMA(Module):
@@ -36,7 +34,7 @@ class EMA(Module):
         else:
             self.debias = None
 
-    def __call__(self, xs: T) -> T:
+    def __call__(self, xs):
         """Return the ema of `xs`. Also, update internal states."""
 
         if self.training:

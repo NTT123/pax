@@ -12,7 +12,6 @@ from .threading_local import allow_mutation
 from .transforms import (
     enable_eval_mode,
     enable_train_mode,
-    select_kind,
     select_parameters,
     update_parameters,
     update_pytree,
@@ -126,7 +125,7 @@ class Module(BaseModule):
         self.apply(_scan_apply_fn)
         return self
 
-    def __mod__(self: T, args: Union[Any, Tuple]) -> T:
+    def __mod__(self: T, args: Union[Any, Tuple]) -> Tuple[T, Any]:
         assert callable(self)
 
         if isinstance(args, tuple):
@@ -134,7 +133,7 @@ class Module(BaseModule):
         else:
             return module_and_value(self)(args)
 
-    def __ior__(self: T, other: T) -> T:
+    def __or__(self: T, other: T) -> T:
         return update_pytree(self, other=other)
 
     def __invert__(self: T) -> T:
