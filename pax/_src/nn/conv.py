@@ -11,11 +11,11 @@ import jax.numpy as jnp
 import numpy as np
 
 from .. import initializers
-from ..core import Module
+from ..core import ParameterModule
 from ..core.rng import KeyArray, next_rng_key
 
 
-class Conv(Module):
+class Conv(ParameterModule):
     """Convolution Base Class."""
 
     weight: jnp.ndarray
@@ -88,13 +88,13 @@ class Conv(Module):
             fan_in = np.prod(w_shape[:-1])
             w_init = initializers.truncated_normal(stddev=1.0 / np.sqrt(fan_in))
 
-        self.register_parameter("weight", w_init(w_shape, jnp.float32, w_rng_key))
+        self.weight = w_init(w_shape, jnp.float32, w_rng_key)
 
         if with_bias:
             if b_init is None:
                 b_init = initializers.zeros
             b_shape = [out_features]
-            self.register_parameter("bias", b_init(b_shape, jnp.float32, b_rng_key))
+            self.bias = b_init(b_shape, jnp.float32, b_rng_key)
         else:
             self.bias = None
 
@@ -290,7 +290,7 @@ class Conv2D(Conv):
         )
 
 
-class ConvTranspose(Module):
+class ConvTranspose(ParameterModule):
     """Convolution Transpose Base Class."""
 
     weight: jnp.ndarray
@@ -356,9 +356,9 @@ class ConvTranspose(Module):
         if b_init is None:
             b_init = initializers.zeros
 
-        self.register_parameter("weight", w_init(w_shape, jnp.float32, w_rng_key))
+        self.weight = w_init(w_shape, jnp.float32, w_rng_key)
         b_shape = [out_features]
-        self.register_parameter("bias", b_init(b_shape, jnp.float32, b_rng_key))
+        self.bias = b_init(b_shape, jnp.float32, b_rng_key)
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         assert len(x.shape) == len(self.kernel_format)
