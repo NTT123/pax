@@ -6,10 +6,10 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from ..core import Module, rng
+from ..core import StateModule, rng
 
 
-class RngSeq(Module):
+class RngSeq(StateModule):
     """A module which generates an infinite sequence of rng keys."""
 
     _rng_key: rng.KeyArray
@@ -34,7 +34,7 @@ class RngSeq(Module):
             rng_key_ = rng.next_rng_key()
 
         if isinstance(rng_key_, (np.ndarray, jnp.ndarray)):
-            self.register_state("_rng_key", rng_key_)
+            self._rng_key = rng_key_
         else:
             raise ValueError("Impossible")
 

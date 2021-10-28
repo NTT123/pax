@@ -6,7 +6,7 @@ import jax.numpy as jnp
 from jaxlib.xla_extension import PyTreeDef  # pylint: disable=no-name-in-module
 
 from .module import Module
-from .transforms import select_parameters, select_states, update_pytree
+from .transforms import select_parameters, select_states
 
 TreeDef = Any
 
@@ -51,8 +51,7 @@ class flatten_module(Module, Generic[T]):  # pylint: disable=invalid-name
         params = jax.tree_unflatten(self.params_treedef, self.params_leaves)
         states = jax.tree_unflatten(self.states_treedef, self.states_leaves)
         module = jax.tree_unflatten(self.module_treedef, [0] * self.num_leaves)
-        module = update_pytree(module, other=params)
-        module = update_pytree(module, other=states)
+        module = module | params | states
         return module
 
     def __call__(self, *args, **kwargs):

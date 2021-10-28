@@ -3,7 +3,9 @@
 from pax import initializers, nets, nn, utils
 from pax._src.core import (
     Module,
+    ParameterModule,
     PaxKind,
+    StateModule,
     apply_mp_policy,
     assert_structure_equal,
     enable_eval_mode,
@@ -33,7 +35,7 @@ PARAMETER = PaxKind.PARAMETER
 P = PaxKind.PARAMETER
 S = PaxKind.STATE
 
-__version__ = "0.4.2.dev0"
+__version__ = "0.4.2.dev1"
 
 __all__ = (
     "apply_gradients",
@@ -53,12 +55,14 @@ __all__ = (
     "nets",
     "next_rng_key",
     "nn",
+    "ParameterModule",
     "PaxKind",
     "pure",
     "scan",
     "seed_rng_key",
     "select_parameters",
     "select_states",
+    "StateModule",
     "unfreeze_parameters",
     "update_parameters",
     "update_states",
