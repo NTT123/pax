@@ -7,11 +7,11 @@ import jax.numpy as jnp
 import numpy as np
 
 from .. import initializers
-from ..core import Module
+from ..core import ParameterModule
 from ..core.rng import KeyArray, next_rng_key
 
 
-class Linear(Module):
+class Linear(ParameterModule):
     """A linear transformation is applied over the last dimension of the input."""
 
     weight: jnp.ndarray
@@ -51,11 +51,9 @@ class Linear(Module):
             w_init = initializers.truncated_normal(stddev=1.0 / np.sqrt(self.in_dim))
         b_init = initializers.zeros
         rng_key_w, rng_key_b = jax.random.split(rng_key)
-        self.register_parameter(
-            "weight", w_init((in_dim, out_dim), jnp.float32, rng_key_w)
-        )
+        self.weight = w_init((in_dim, out_dim), jnp.float32, rng_key_w)
         if self.with_bias:
-            self.register_parameter("bias", b_init((out_dim,), jnp.float32, rng_key_b))
+            self.bias = b_init((out_dim,), jnp.float32, rng_key_b)
 
     def __call__(self, x: np.ndarray) -> jnp.ndarray:
         """Applies a linear transformation to the inputs along the last dimension.

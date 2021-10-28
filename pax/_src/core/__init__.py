@@ -1,5 +1,6 @@
 """PAX Module"""
 
+from .auto_modules import ParameterModule, StateModule
 from .flatten_module import flatten_module
 from .mixed_precision import apply_mp_policy
 from .module import Module, PaxKind
