@@ -1,8 +1,10 @@
 import pax
 import jax.numpy as jnp
 from dataclasses import dataclass
+import jax
 
 
+# Just like a NamedTuple?
 @dataclass
 class Linear(pax.ParameterModule):
     weight: jnp.ndarray
@@ -17,3 +19,5 @@ print(f.summary())
 x = jnp.array(0.5)
 y = f(x)
 print(x, y)
+
+print(jax.tree_flatten(f))

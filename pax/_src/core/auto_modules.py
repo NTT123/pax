@@ -1,4 +1,4 @@
-"""Module with trainable parameters only"""
+"""Modules with default kinds"""
 
 
 from typing import Type, TypeVar
