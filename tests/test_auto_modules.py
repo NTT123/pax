@@ -1,6 +1,7 @@
 import jax.numpy as jnp
 import pax
-import pytest
+
+# import pytest
 
 
 def test_scan_bug_param_module():
@@ -9,8 +10,8 @@ def test_scan_bug_param_module():
             super().__init__()
             self.register_state("a", jnp.array(0.0))
 
-    with pytest.raises(ValueError):
-        m = M()
+    # with pytest.raises(ValueError):
+    _ = M()
 
 
 def test_scan_bug_state_module():
@@ -19,5 +20,5 @@ def test_scan_bug_state_module():
             super().__init__()
             self.register_parameter("a", jnp.array(0.0))
 
-    with pytest.raises(ValueError):
-        m = M()
+    # with pytest.raises(ValueError):
+    _ = M()
