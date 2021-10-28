@@ -134,7 +134,7 @@ class Module(BaseModule):
             return module_and_value(self)(args)
 
     def __or__(self: T, other: T) -> T:
-        return update_pytree(self, other=other)
+        return update_pytree(self, other=other, or_mode=True)
 
     def __invert__(self: T) -> T:
         return self.parameters()

@@ -103,14 +103,23 @@ def select_states(mod: T) -> T:
     return select_kind(mod, kind=PaxKind.STATE)
 
 
-def update_pytree(mod: T, *, other: T) -> T:
-    """Use non-EmptyNode leaves from others"""
+def update_pytree(mod: T, *, other: T, or_mode=False) -> T:
+    """Use non-EmptyNode leaves from others
+
+    If `or_mode=True`, non-empty pairs must be the same object.
+    """
 
     def _select_fn(leaf_x, leaf_y):
         if isinstance(leaf_y, EmptyNode):
             return leaf_x
-        else:
+        elif isinstance(leaf_x, EmptyNode):
             return leaf_y
+        elif or_mode and id(leaf_x) == id(leaf_y):
+            return leaf_x
+        else:
+            raise ValueError(
+                "Two non-empty nodes must reference to the same object in `or_mode`"
+            )
 
     new_mod = jax.tree_map(_select_fn, mod, other)
     new_mod = jax.tree_unflatten(jax.tree_structure(mod), jax.tree_leaves(new_mod))
