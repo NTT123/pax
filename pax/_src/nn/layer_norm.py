@@ -17,11 +17,11 @@ import jax.numpy as jnp
 import numpy as np
 
 from .. import initializers
-from ..core import Module
+from ..core import ParameterModule
 from ..core.rng import KeyArray, next_rng_key
 
 
-class LayerNorm(Module):
+class LayerNorm(ParameterModule):
     """LayerNorm module.
     See: https://arxiv.org/abs/1607.06450.
     """
@@ -86,15 +86,11 @@ class LayerNorm(Module):
         rng_key = next_rng_key() if rng_key is None else rng_key
         rng1, rng2 = jax.random.split(rng_key)
         if create_scale:
-            self.register_parameter(
-                "scale", self.scale_init(param_shape, jnp.float32, rng1)
-            )
+            self.scale = self.scale_init(param_shape, jnp.float32, rng1)
         else:
             self.scale = None
         if create_offset:
-            self.register_parameter(
-                "offset", self.offset_init(param_shape, jnp.float32, rng2)
-            )
+            self.offset = self.offset_init(param_shape, jnp.float32, rng2)
         else:
             self.offset = None
 

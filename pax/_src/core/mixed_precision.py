@@ -79,11 +79,12 @@ class apply_mp_policy(Module, Generic[T]):  # pylint: disable=invalid-name
 
         def _fn(*args, **kwargs):
             """This method does four tasks:
+
             * Task 1: It casts all parameters and arguments to the "compute" data type.
             * Task 2: It calls the original module.
             * Task 3: It casts all the parameters back to the "param" data type.
-            However, if a parameter is NOT modified during the forward pass,
-            the original parameter will be reused to avoid a `cast` operation.
+              However, if a parameter is NOT modified during the forward pass,
+              the original parameter will be reused to avoid a `cast` operation.
             * Task 4: It casts the output to the "output" data type.
             """
             old_mod_clone = self._module.copy()

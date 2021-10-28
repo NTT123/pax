@@ -190,3 +190,5 @@ for step in tr:
         tr.write(
             f"[step {step}]  loss {loss:.3f}\nPrompt: {test_prompt}\n========\n{text}\n========"
         )
+
+del tfdata  # needed to avoid exception

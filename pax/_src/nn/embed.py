@@ -5,11 +5,11 @@ from typing import Optional
 import jax.numpy as jnp
 
 from .. import initializers
-from ..core import Module
+from ..core import ParameterModule
 from ..core.rng import KeyArray, next_rng_key
 
 
-class Embed(Module):
+class Embed(ParameterModule):
     """Embed module maps integer values to real vectors.
     The embedded vectors are trainable.
     """
@@ -49,7 +49,7 @@ class Embed(Module):
         if rng_key is None:
             rng_key = next_rng_key()
 
-        self.register_parameter("weight", w_init(shape, jnp.float32, rng_key))
+        self.weight = w_init(shape, jnp.float32, rng_key)
 
     def __call__(self, x: jnp.ndarray):
         """Return embedded vectors indexed by ``x``."""

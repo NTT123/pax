@@ -194,7 +194,10 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         super().__setattr__(name, value)
         if name not in self._pax.name_to_kind:
             if self._pax.default_kind != PaxKind.UNKNOWN:
-                self._update_name_to_kind_dict(name, self._pax.default_kind)
+                leaves = jax.tree_leaves(value)
+                is_ndarray = lambda x: isinstance(x, (jnp.ndarray, np.ndarray))
+                if any(is_ndarray(x) for x in leaves):
+                    self._update_name_to_kind_dict(name, self._pax.default_kind)
 
             self.find_and_register_submodules()
 
@@ -334,7 +337,7 @@ class BaseModule(metaclass=BaseModuleMetaclass):
                 for leaf in leaves:
                     if isinstance(leaf, (np.ndarray, jnp.ndarray)):
                         raise ValueError(
-                            f"Unregistered field `{self}.{name}` ({kind}) contains a ndarray."
+                            f"Unregistered field `{self.__class__.__name__}.{name}` ({kind}) contains a ndarray."
                             f" Consider registering it using `self.set_attribute_kind`"
                             f" or `self.register_*` methods."
                         )

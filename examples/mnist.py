@@ -26,7 +26,7 @@ pax.seed_rng_key(42)
 class ConvNet(pax.Module):
     """ConvNet module."""
 
-    layers: List[Tuple[pax.nn.Conv2D, pax.nn.BatchNorm2D]]
+    layers: pax.nn.Sequential
     output: pax.nn.Conv2D
 
     def __init__(self):

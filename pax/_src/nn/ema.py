@@ -5,10 +5,10 @@ from typing import Any, Optional
 import jax
 import jax.numpy as jnp
 
-from ..core import Module
+from ..core import StateModule
 
 
-class EMA(Module):
+class EMA(StateModule):
     """Exponential Moving Average (EMA) Module"""
 
     averages: Any
@@ -25,12 +25,12 @@ class EMA(Module):
         """
 
         super().__init__()
-        self.register_states("averages", initial_value)
+        self.averages = initial_value
         self.decay_rate = decay_rate
         if debias:
             # avoid integer ndarray for `jax.grad` convenience,
             # e.g., no need to pass `allow_int=True` to `jax.grad`.
-            self.register_states("debias", jnp.array(0.0))
+            self.debias = jnp.array(0.0)
         else:
             self.debias = None
 

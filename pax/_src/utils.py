@@ -63,7 +63,7 @@ def grad_mod_val(func: Callable[..., jnp.ndarray]):
     also returns the input module and the scalar output."""
 
     def func_return_mod_val(params, module: T, *args, **kwargs):
-        module |= params
+        module = module.update_parameters(params)
         output, module = func(module, *args, **kwargs)
         return output, (module, output)
 

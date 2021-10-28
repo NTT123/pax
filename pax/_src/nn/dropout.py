@@ -5,7 +5,7 @@ from typing import Optional
 import jax
 import jax.numpy as jnp
 
-from ..core import Module
+from ..core import StateModule
 from ..core.rng import KeyArray, next_rng_key
 
 
@@ -24,7 +24,7 @@ def dropout(rng_key: KeyArray, dropout_rate: float, x: jnp.ndarray) -> jnp.ndarr
         return x
 
 
-class Dropout(Module):
+class Dropout(StateModule):
     """A Dropout Module.
 
     Dropout module stores an internal state ``rng_key``.
@@ -45,7 +45,7 @@ class Dropout(Module):
         assert 0 <= dropout_rate < 1.0
 
         self.dropout_rate = dropout_rate
-        self.register_state("rng_key", next_rng_key())
+        self.rng_key = next_rng_key()
 
     def __call__(self, x):
         """Dropout `x` randomly.
