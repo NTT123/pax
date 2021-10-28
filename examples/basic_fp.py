@@ -13,7 +13,6 @@ y = jax.random.normal(pax.next_rng_key(), (32, 1))
 
 
 class Linear(pax.Module):
-
     weight: jnp.ndarray
     bias: jnp.ndarray
     counter: jnp.ndarray
