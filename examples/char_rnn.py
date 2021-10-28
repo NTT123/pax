@@ -128,7 +128,7 @@ def update_step(model_and_optimizer: Tuple[LM, pax.Module], batch: jnp.ndarray):
 @partial(jax.pmap, axis_name="i")
 def update_fn(model, optimizer, multi_batch: jnp.ndarray):
     (model, optimizer), losses = pax.scan(update_step, (model, optimizer), multi_batch)
-    return model, optimizer, jnp.sum(losses)
+    return model, optimizer, jnp.mean(losses)
 
 
 net = LM(vocab_size=vocab_size, hidden_dim=hidden_dim)
@@ -170,23 +170,28 @@ tfdata = (
     .as_numpy_iterator()
 )
 
-losses = 0.0
+loss_accum = 0.0, 0
 tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")
 for step in tr:
     batch = next(tfdata)
     # (num_devices,) is for jax.pmap, (steps_per_update,) is for pax.scan
     batch = jnp.reshape(batch, (num_devices, steps_per_update, -1) + batch.shape[1:])
-    net, optimizer, loss = update_fn(net, optimizer, batch)
-    losses = losses + loss
+    net, optimizer, losses = update_fn(net, optimizer, batch)
+    loss_accum = (loss_accum[0] + jnp.mean(losses), loss_accum[1] + 1)
     if step % 1000 == 0:
-        loss = jnp.mean(losses) / (1000 if step > 0 else steps_per_update)
-        losses = 0.0
+        loss = loss_accum[0] / loss_accum[1]
+        loss_accum = 0.0, 0
         # eval on a single device
         eval_net = jax.tree_map(lambda x: x[0], net.eval())
         out = eval_net.inference(
-            prompt=tokenize(test_prompt), length=(100 if step < num_steps else 1000)
+            prompt=tokenize(test_prompt),
+            length=(100 if step < num_steps else 1000),
         )
         text = detokenize(out.tolist())
         tr.write(
-            f"[step {step}]  loss {loss:.3f}\nPrompt: {test_prompt}\n========\n{text}\n========"
+            f"[step {step}]  loss {loss:.3f}\n"
+            f"Prompt: {test_prompt}\n"
+            f"========\n"
+            f"{text}\n"
+            f"========"
         )
