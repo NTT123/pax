@@ -195,3 +195,5 @@ for step in tr:
             f"{text}\n"
             f"========"
         )
+
+del tfdata  # needed to avoid exception
