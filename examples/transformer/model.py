@@ -1,5 +1,5 @@
 import math
-from typing import List
+from typing import Sequence
 
 import jax.numpy as jnp
 import pax
@@ -55,13 +55,9 @@ class LM(pax.Module):
         logits = self.output(x)
         return logits
 
-    def inference(self, prompt: List[int] = [], length=1024, train_seq_len=256):
-        def step(prev, _):
-            inputs = prev
-            x = self.embed(inputs)
-            x = positional_encoding(x)
-            x = self.transformer(x)
-            logits = self.output(x)
+    def inference(self, prompt: Sequence[int] = (), length=1024, train_seq_len=256):
+        def step(inputs, _):
+            logits = self(inputs)
             x = jnp.argmax(logits[:, -1], axis=-1)
             next_inputs = jnp.concatenate((inputs[:, 1:], x[:, None]), axis=-1)
             return next_inputs, x

@@ -3,19 +3,17 @@
 import inspect
 import os
 from functools import partial
-from math import gamma
 from typing import Tuple
 
 import jax
 import jax.numpy as jnp
 import jax.tools.colab_tpu
-import numpy as np
 import opax
 import pax
-import tensorflow as tf
-from opax.transform import GradientTransformation
+from opax import GradientTransformation
 from tqdm.auto import tqdm
 
+from data import detokenize, make_data_loader, tokenize
 from model import LM
 
 
@@ -64,67 +62,19 @@ def loss_fn(model: LM, batch: jnp.ndarray):
     return loss, model
 
 
-def update_step(model_and_optim, batch: jnp.ndarray):
+def update_step(model_and_optim: Tuple[LM, GradientTransformation], batch: jnp.ndarray):
     model, optimizer = model_and_optim
     (loss, model), grads = pax.value_and_grad(loss_fn)(model, batch)
     grads = jax.lax.pmean(grads, axis_name="i")
-    return pax.apply_gradients(grads)(model, optimizer), loss
+    optimizer, updates = optimizer % (grads, ~model)
+    model = model | (~model).map(jax.lax.sub, updates)
+    return (model, optimizer), loss
 
 
 @partial(jax.pmap, axis_name="i")
 def update_fn(model: LM, optimizer: GradientTransformation, multi_batch: jnp.ndarray):
     (model, optimizer), losses = pax.scan(update_step, (model, optimizer), multi_batch)
     return model, optimizer, jnp.sum(losses)
-
-
-def tokenize(text):
-    t = [0] + [ord(c) for c in text]  # ASCII, 0 is the [START] token
-    return t
-
-
-def detokenize(tokens):
-    text = [chr(t) if t != 0 else "[START]" for t in tokens]
-    return "".join(text)
-
-
-def _device_put_sharded(sharded_tree, devices):
-    leaves, treedef = jax.tree_flatten(sharded_tree)
-    n = leaves[0].shape[0]
-    return jax.device_put_sharded(
-        [jax.tree_unflatten(treedef, [l[i] for l in leaves]) for i in range(n)], devices
-    )
-
-
-# Source: https://github.com/deepmind/dm-haiku/blob/8fad8c7503c5f56fa9ea9b53f71b7082704e3a3e/examples/imagenet/dataset.py#L163
-def double_buffer(ds):
-    """Keeps at least two batches on the accelerator.
-    The current GPU allocator design reuses previous allocations. For a training
-    loop this means batches will (typically) occupy the same region of memory as
-    the previous batch. An issue with this is that it means we cannot overlap a
-    host->device copy for the next batch until the previous step has finished and
-    the previous batch has been freed.
-    By double buffering we ensure that there are always two batches on the device.
-    This means that a given batch waits on the N-2'th step to finish and free,
-    meaning that it can allocate and copy the next batch to the accelerator in
-    parallel with the N-1'th step being executed.
-    Args:
-      ds: Iterable of batches of numpy arrays.
-    Yields:
-      Batches of sharded device arrays.
-    """
-    batch = None
-    devices = jax.devices()
-    for next_batch in ds:
-        assert next_batch is not None
-        next_batch = np.reshape(
-            next_batch, (num_devices, steps_per_update, -1) + next_batch.shape[1:]
-        )
-        next_batch = _device_put_sharded(next_batch, devices)
-        if batch is not None:
-            yield batch
-        batch = next_batch
-    if batch is not None:
-        yield batch
 
 
 def train():
@@ -135,32 +85,24 @@ def train():
         opax.adam(learning_rate),
     )(~net)
 
+    data = inspect.getsource(LM)  # a _true_ AGI learns about itself.
+    test_prompt = data[:20]
+    data_iter = make_data_loader(
+        data,
+        seq_len=seq_len,
+        batch_size=batch_size,
+        num_devices=num_devices,
+        steps_per_update=steps_per_update,
+    )
+
     # replicate on multiple devices
     net = jax.device_put_replicated(net, jax.devices())
     optimizer = jax.device_put_replicated(optimizer, jax.devices())
 
-    data = inspect.getsource(LM)  # a _true_ AGI learns about itself.
-    data_token = tokenize(data)
-    test_prompt = data[:20]
-    data_token = [0] * seq_len + data_token
-
-    tfdata = (
-        tf.data.Dataset.from_tensors(data_token)
-        .repeat()
-        .map(
-            lambda x: tf.image.random_crop(x, [seq_len + 1]),
-            num_parallel_calls=tf.data.AUTOTUNE,
-        )
-        .batch(batch_size)
-        .prefetch(tf.data.AUTOTUNE)
-        .as_numpy_iterator()
-    )
-
-    tfdata = double_buffer(tfdata)
     total_losses = 0.0
     tr = tqdm(range(0, 1 + num_steps, steps_per_update), desc="training")
     for step in tr:
-        batch = next(tfdata)
+        batch = next(data_iter)
         # (num_devices,) is for jax.pmap, (steps_per_update,) is for pax.scan
         net, optimizer, loss = update_fn(net, optimizer, batch)
         total_losses = total_losses + loss
@@ -176,7 +118,11 @@ def train():
             )
             text = detokenize(out)
             tr.write(
-                f"[step {step}]  loss {loss:.3f}\nPrompt: {test_prompt}\n========\n{text}\n========"
+                f"[step {step}]  loss {loss:.3f}\n"
+                f"Prompt: {test_prompt}\n"
+                f"========\n"
+                f"{text}\n"
+                f"========"
             )
 
 

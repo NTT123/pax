@@ -1,3 +1,5 @@
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 import pax
@@ -45,13 +47,13 @@ class UpsamplingNetwork(pax.Module):
 class WaveGRU(pax.Module):
     def __init__(self, n_mels, hidden_dim, n_mu_bits=8):
         super().__init__()
+        self.n_mu_bits = n_mu_bits
+        self.hidden_dim = hidden_dim
 
         self.upsampling = UpsamplingNetwork(n_mels, hidden_dim)
         self.gru = pax.nn.GRU(hidden_dim, hidden_dim)
         self.logits = pax.nn.Linear(hidden_dim, 2 ** n_mu_bits)
-        self.hidden_dim = hidden_dim
         self.embed = pax.nn.Embed(2 ** n_mu_bits, hidden_dim)
-        self.n_mu_bits = n_mu_bits
 
     def __call__(self, inputs):
         logmel, wav = inputs
