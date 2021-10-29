@@ -142,7 +142,7 @@ class Module(BaseModule):
     def __invert__(self: T) -> T:
         return self.parameters()
 
-    def map(self, func, *mods):
+    def map(self: T, func, *mods) -> T:
         return jax.tree_map(func, self, *mods)
 
     def _repr(self, info: Optional[Dict[str, Any]] = None) -> str:
