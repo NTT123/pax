@@ -1,7 +1,7 @@
-"""Modules with default kinds"""
+"""Modules with automations."""
 
 
-from typing import Type, TypeVar
+from typing import Callable, Type, TypeVar
 
 from .base import PaxKind, allow_mutation
 from .module import Module
@@ -27,3 +27,45 @@ class StateModule(Module):
         with allow_mutation(module):
             module._update_default_kind(PaxKind.STATE)
         return module
+
+
+class AutoModule(Module):
+    """A module that auto creates a submodule when needed.
+
+
+    Example:
+
+    >>> @dataclass
+    ... class MLP(pax.AutoModule):
+    ...     features: Sequence[int]
+    ...
+    ...     def __call__(self, x):
+    ...         sizes = zip(self.features[:-1], self.features[1:])
+    ...         for i, (in_dim, out_dim) in enumerate(sizes):
+    ...             fc = self.get_or_create(f"fc_{i}", lambda: pax.nn.Linear(in_dim, out_dim))
+    ...             x = jax.nn.relu(fc(x))
+    ...         return x
+    ...
+    ...
+    >>> mlp, _ = MLP([1, 2, 3]) % jnp.ones((1, 1))
+    >>> print(mlp.summary())
+    MLP(features=[1, 2, 3])
+    ├── Linear[in_dim=1, out_dim=2, with_bias=True]
+    └── Linear[in_dim=2, out_dim=3, with_bias=True]
+    """
+
+    def get_or_create(self, name, create_fn: Callable[[], Module]):
+        """Create and register a new module when it is not an attribute of the module."""
+        if hasattr(self, name):
+            module = getattr(self, name)
+        else:
+            assert callable(create_fn), "Expect a callable function"
+            module = create_fn()
+            self.register_module(name, module)
+        return module
+
+    def parameters(self: T) -> T:
+        if len(self.submodules()) == 0:
+            raise ValueError("An empty auto module. Need to initialize it first!")
+
+        return super().parameters()

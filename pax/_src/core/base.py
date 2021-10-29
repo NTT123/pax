@@ -10,19 +10,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from enum import Enum
 from types import MappingProxyType
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Iterable, List, Mapping, NamedTuple, Tuple, Type, TypeVar
 
 import jax
 import jax.numpy as jnp
@@ -83,14 +71,13 @@ class PaxKind(Enum):
 class PaxModuleInfo(NamedTuple):
     """PAX Internal Data Structure."""
 
-    name: Optional[str]
     training: bool
     name_to_kind: Mapping[str, PaxKind]
     default_kind: PaxKind
 
     def __repr__(self) -> str:
         nodes = ", ".join([f"{k}:{v.name}" for k, v in self.name_to_kind.items()])
-        return f"PaxModuleInfo[name={self.name}, training={self.training}, nodes={{{nodes}}}]"
+        return f"PaxModuleInfo[training={self.training}, nodes={{{nodes}}}]"
 
 
 class BaseModuleMetaclass(type):
@@ -140,7 +127,6 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         super(BaseModule, obj).__setattr__(
             "_pax",
             PaxModuleInfo(
-                name=None,
                 training=True,
                 name_to_kind=MappingProxyType(OrderedDict()),
                 default_kind=PaxKind.UNKNOWN,
@@ -154,10 +140,6 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         obj._scan_fields(obj.__class__.__dict__)
 
         return obj
-
-    def __init__(self, name: Optional[str] = None):
-        """Initialize module's name."""
-        super().__setattr__("_pax", self._pax._replace(name=name))
 
     def _assert_mutability(self):
         if not is_mutable(self):
@@ -337,9 +319,9 @@ class BaseModule(metaclass=BaseModuleMetaclass):
                 for leaf in leaves:
                     if isinstance(leaf, (np.ndarray, jnp.ndarray)):
                         raise ValueError(
-                            f"Unregistered field `{self.__class__.__name__}.{name}` ({kind}) contains a ndarray."
-                            f" Consider registering it using `self.set_attribute_kind`"
-                            f" or `self.register_*` methods."
+                            f"Unregistered field `{self.__class__.__name__}.{name}`"
+                            f" ({kind}) contains a ndarray. Consider registering it using"
+                            f" `self.set_attribute_kind` or `self.register_*` methods."
                         )
 
             # Check if an unregistered (or PARAMETER) field contains pax.Module instances
@@ -446,56 +428,3 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         is_module = lambda x: isinstance(x, BaseModule)
         submods, _ = jax.tree_flatten(module_subtrees, is_leaf=is_module)
         return [v for v in submods if is_module(v)]
-
-    def summary(self, return_list: bool = False) -> Union[str, List[str]]:
-        """This is the default summary method.
-
-        Arguments:
-            return_list: return a list of lines instead of a joined string.
-
-
-        Example:
-
-        >>> net = pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4))
-        >>> print(net.summary())
-        Sequential
-        ├── Linear[in_dim=2, out_dim=3, with_bias=True]
-        ├── x => relu(x)
-        └── Linear[in_dim=3, out_dim=4, with_bias=True]
-        """
-
-        output = [self.__repr__()]
-        if output[0] is None:
-            raise ValueError(
-                f"The `{self.__class__}.__repr__` method returns a `None` value."
-            )
-        submodules: List[BaseModule] = self.submodules()
-
-        def indent(lines: List[str], start_string) -> List[str]:
-            return [start_string + l for l in lines]
-
-        for i, module in enumerate(submodules):
-            lines = module.summary(return_list=True)
-            if i + 1 < len(submodules):  # middle submodules
-                indented_lines = indent(lines[:1], "├── ") + indent(lines[1:], "│   ")
-            else:  # last submodule
-                indented_lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
-            output.extend(indented_lines)
-
-        if return_list:
-            return output
-        else:
-            return "\n".join(output)
-
-    def _repr(self, info: Optional[Dict[str, Any]] = None) -> str:
-        name = f"({self._pax.name}) " if self._pax.name is not None else ""
-        cls_name = self.__class__.__name__
-        if info is None:
-            return f"{name}{cls_name}"
-        else:
-            lst_info = [f"{k}={v}" for (k, v) in info.items() if v is not None]
-            str_info = ", ".join(lst_info)
-            return f"{name}{cls_name}[{str_info}]"
-
-    def __repr__(self) -> str:
-        return self._repr()

@@ -2,6 +2,7 @@
 
 from pax import initializers, nets, nn, utils
 from pax._src.core import (
+    AutoModule,
     Module,
     ParameterModule,
     PaxKind,
@@ -35,12 +36,13 @@ PARAMETER = PaxKind.PARAMETER
 P = PaxKind.PARAMETER
 S = PaxKind.STATE
 
-__version__ = "0.4.2.dev1"
+__version__ = "0.4.2.dev2"
 
 __all__ = (
     "apply_gradients",
     "apply_mp_policy",
     "assert_structure_equal",
+    "AutoModule",
     "build_update_fn",
     "dropout",
     "enable_eval_mode",
