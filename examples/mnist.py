@@ -62,8 +62,8 @@ def test_loss_fn(model: ConvNet, batch: Batch):
 @jax.jit
 def update_fn(model: ConvNet, optimizer: GradientTransformation, batch: Batch):
     grads, model, loss = pax.grad_mod_val(loss_fn)(model, batch)
-    optimizer, updates = optimizer % (grads, model.parameters())
-    model |= (~model).map(jax.lax.sub, updates)
+    optimizer, updates = optimizer % (grads, ~model)
+    model = model | (~model).map(jax.lax.sub, updates)
     return model, optimizer, loss
 
 
@@ -72,7 +72,7 @@ print(net.summary())
 optimizer = opax.chain(
     opax.clip_by_global_norm(1.0),
     opax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
-)(net.parameters())
+)(~net)
 
 
 def load_dataset(split: str):

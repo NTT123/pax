@@ -50,6 +50,7 @@ To install the latest version::
 
    notebooks/basics
    notebooks/training
+   notebooks/operators
    notebooks/understanding
    notebooks/jax_transformations
    notebooks/performance

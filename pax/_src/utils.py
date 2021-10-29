@@ -59,6 +59,9 @@ def grad_parameters(
 
 
 def grad_mod_val(func: Callable[..., jnp.ndarray]):
+    """Transform a function to its gradient function that
+    also returns the input module and the scalar output."""
+
     def func_return_mod_val(params, module: T, *args, **kwargs):
         module |= params
         output, module = func(module, *args, **kwargs)

@@ -20,7 +20,12 @@ from pax._src.core import (
 )
 from pax._src.core.rng import next_rng_key, seed_rng_key
 from pax._src.nn.dropout import dropout
-from pax._src.utils import build_update_fn, grad_mod_val, grad_parameters, scan
+from pax._src.utils import (
+    build_update_fn,
+    grad_mod_val,
+    grad_parameters,
+    scan,
+)
 
 STATE = PaxKind.STATE
 PARAMETER = PaxKind.PARAMETER
