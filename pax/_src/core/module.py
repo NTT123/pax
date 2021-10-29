@@ -1,6 +1,6 @@
 """PAX module."""
 
-from typing import Any, Optional, Tuple, TypeVar, Union
+from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
@@ -25,15 +25,17 @@ TreeDef = Any
 class Module(BaseModule):
     """The Module class."""
 
+    name: Optional[str] = None
+
+    def __init__(self, name: Optional[str] = None):
+        """Initializing name..."""
+        super().__init__()
+        self.name = name
+
     @property
     def training(self) -> bool:
         """If a module is in training mode."""
         return self._pax.training
-
-    @property
-    def name(self) -> Optional[str]:
-        """Return the name of the module."""
-        return self._pax.name
 
     def register_parameter(self, name: str, value: Any):
         """Register a parameter."""
@@ -142,3 +144,56 @@ class Module(BaseModule):
 
     def map(self, func, *mods):
         return jax.tree_map(func, self, *mods)
+
+    def _repr(self, info: Optional[Dict[str, Any]] = None) -> str:
+        name = f"({self.name}) " if self.name is not None else ""
+        cls_name = self.__class__.__name__
+        if info is None:
+            return f"{name}{cls_name}"
+        else:
+            lst_info = [f"{k}={v}" for (k, v) in info.items() if v is not None]
+            str_info = ", ".join(lst_info)
+            return f"{name}{cls_name}[{str_info}]"
+
+    def __repr__(self) -> str:
+        return self._repr()
+
+    def summary(self, return_list: bool = False) -> Union[str, List[str]]:
+        """This is the default summary method.
+
+        Arguments:
+            return_list: return a list of lines instead of a joined string.
+
+
+        Example:
+
+        >>> net = pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4))
+        >>> print(net.summary())
+        Sequential
+        ├── Linear[in_dim=2, out_dim=3, with_bias=True]
+        ├── x => relu(x)
+        └── Linear[in_dim=3, out_dim=4, with_bias=True]
+        """
+
+        output = [self.__repr__()]
+        if output[0] is None:
+            raise ValueError(
+                f"The `{self.__class__}.__repr__` method returns a `None` value."
+            )
+        submodules: List[Module] = self.submodules()
+
+        def indent(lines: List[str], start_string) -> List[str]:
+            return [start_string + l for l in lines]
+
+        for i, module in enumerate(submodules):
+            lines = module.summary(return_list=True)
+            if i + 1 < len(submodules):  # middle submodules
+                indented_lines = indent(lines[:1], "├── ") + indent(lines[1:], "│   ")
+            else:  # last submodule
+                indented_lines = indent(lines[:1], "└── ") + indent(lines[1:], "    ")
+            output.extend(indented_lines)
+
+        if return_list:
+            return output
+        else:
+            return "\n".join(output)

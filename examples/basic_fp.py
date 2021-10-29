@@ -20,12 +20,10 @@ class Linear(pax.Module):
     def __init__(self):
         super().__init__()
 
-        with self.add_parameters():
-            self.weight = jax.random.normal(pax.next_rng_key(), (1,))
-            self.bias = jax.random.normal(pax.next_rng_key(), (1,))
-
-        with self.add_states():
-            self.counter = jnp.array(0)
+        self.weight = jax.random.normal(pax.next_rng_key(), (1,))
+        self.bias = jax.random.normal(pax.next_rng_key(), (1,))
+        self.counter = jnp.array(0)
+        self.set_attribute_kind(weight=pax.P, bias=pax.P, counter=pax.S)
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         self.counter = self.counter + 1
@@ -41,9 +39,8 @@ def loss_fn(model: Linear, x: jnp.ndarray, y: jnp.ndarray):
 
 @jax.jit
 def train_step(model: Linear, optimizer: GradientTransformation, x, y):
-    grads, model, loss = pax.grad_mod_val(loss_fn)(model, x, y)
-    optimizer, updates = optimizer % (grads, ~model)
-    model = model | opax.apply_updates(~model, updates)
+    (loss, model), grads = pax.value_and_grad(loss_fn)(model, x, y)
+    model, optimizer = opax.apply_gradients(model, optimizer, grads)
     return model, optimizer, loss
 
 

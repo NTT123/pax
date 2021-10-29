@@ -12,6 +12,7 @@ GradientTransformation = Module
 T = TypeVar("T", bound=Module)
 O = TypeVar("O", bound=GradientTransformation)
 C = TypeVar("C")
+K = TypeVar("K")
 
 
 @functools.wraps(jax.grad)
@@ -58,23 +59,24 @@ def grad_parameters(
     return grad_fn
 
 
-def grad_mod_val(func: Callable[..., jnp.ndarray]):
-    """Transform a function to its gradient function that
-    also returns the input module and the scalar output."""
+def value_and_grad(func: Callable[..., K], has_aux=True):
+    """A PAX-compatible version of jax.value_and_grad.
 
-    def func_return_mod_val(params, module: T, *args, **kwargs):
-        module = module.update_parameters(params)
-        output, module = func(module, *args, **kwargs)
-        return output, (module, output)
 
-    grad_fn = jax.grad(func_return_mod_val, has_aux=True)
+    This version computes gradients w.r.t. trainable parameters of a PAX module.
+    It also set `has_aux=True` by default.
+    """
 
-    @functools.wraps(grad_fn)
-    def new_grad_fn(module: T, *args, **kwargs) -> Tuple[T, T, jnp.ndarray]:
-        grads, (module, loss) = grad_fn(~module, module, *args, **kwargs)
-        return grads, module, loss
+    def func_with_params(params: T, module: T, *args, **kwargs):
+        return func(module | params, *args, **kwargs)
 
-    return new_grad_fn
+    vag_fn = jax.value_and_grad(func_with_params, has_aux=has_aux)
+
+    @functools.wraps(vag_fn)
+    def new_vag_fn(module: T, *args, **kwargs) -> Tuple[K, T]:
+        return vag_fn(~module, module, *args, **kwargs)
+
+    return new_vag_fn
 
 
 def build_update_fn(loss_fn, *, scan_mode: bool = False):

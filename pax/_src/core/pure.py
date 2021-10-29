@@ -3,7 +3,7 @@
 import functools
 import gc
 from types import MethodType
-from typing import Callable, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 import jax
 
@@ -32,10 +32,10 @@ def _get_all_submodules(value):
 
 
 def pure(
-    func: Callable,
+    func,
     static_argnums: Optional[Union[int, Sequence[int]]] = None,
     check_leaks: bool = True,
-) -> Callable:
+):
     """Make a function pure by copying the inputs.
 
     Any modification on the copy will not affect the original inputs.
