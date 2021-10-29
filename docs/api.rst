@@ -12,17 +12,14 @@ PAX's Module
 
 
 .. autoclass:: ParameterModule
-   :inherited-members:
    :members:
 
 
 .. autoclass:: StateModule
-   :inherited-members:
    :members:
 
 
 .. autoclass:: AutoModule
-   :inherited-members:
    :members:
 
 
