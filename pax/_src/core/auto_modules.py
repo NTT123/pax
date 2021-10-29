@@ -47,13 +47,11 @@ class AutoModule(Module):
     ...         return x
     ...
     ...
-    >>> mlp, _ = MLP([1, 2, 3, 4, 5]) % jnp.ones((1, 1))
+    >>> mlp, _ = MLP([1, 2, 3]) % jnp.ones((1, 1))
     >>> print(mlp.summary())
-    MLP(features=[1, 2, 3, 4, 5])
+    MLP(features=[1, 2, 3])
     ├── Linear[in_dim=1, out_dim=2, with_bias=True]
-    ├── Linear[in_dim=2, out_dim=3, with_bias=True]
-    ├── Linear[in_dim=3, out_dim=4, with_bias=True]
-    └── Linear[in_dim=4, out_dim=5, with_bias=True]
+    └── Linear[in_dim=2, out_dim=3, with_bias=True]
     """
 
     def get_or_create(self, name, create_fn: Callable[[], Module]):

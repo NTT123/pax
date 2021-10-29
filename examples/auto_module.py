@@ -16,8 +16,9 @@ class MLP(pax.AutoModule):
     def __call__(self, x):
         sizes = zip(self.features[:-1], self.features[1:])
         for i, (in_dim, out_dim) in enumerate(sizes):
-            fc = self.get_or_create(f"fc_{i}", lambda: pax.nn.Linear(in_dim, out_dim))
-            x = jax.nn.leaky_relu(fc(x))
+            create_fn = lambda: pax.nn.Linear(in_dim, out_dim)
+            x = self.get_or_create(f"fc_{i}", create_fn)(x)
+            x = jax.nn.leaky_relu(x)
         return x
 
 
