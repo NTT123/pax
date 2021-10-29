@@ -61,7 +61,7 @@ def test_loss_fn(model: ConvNet, batch: Batch):
 
 @jax.jit
 def update_fn(model: ConvNet, optimizer: GradientTransformation, batch: Batch):
-    grads, model, loss = pax.grad_mod_val(loss_fn)(model, batch)
+    (loss, model), grads = pax.value_and_grad(loss_fn)(model, batch)
     optimizer, updates = optimizer % (grads, ~model)
     model = model | (~model).map(jax.lax.sub, updates)
     return model, optimizer, loss
