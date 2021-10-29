@@ -65,3 +65,9 @@ class AutoModule(Module):
             module = create_fn()
             self.register_module(name, module)
         return module
+
+    def parameters(self: T) -> T:
+        if len(self.submodules()) == 0:
+            raise ValueError("An empty auto module. Need to initialize it first!")
+
+        return super().parameters()
