@@ -1,3 +1,5 @@
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 import pax
@@ -7,29 +9,17 @@ class UpsamplingNetwork(pax.Module):
     def __init__(self, n_mels, num_output_channels):
         super().__init__()
         self.input_conv = pax.nn.Conv1D(n_mels, 512, 3, padding="VALID", with_bias=True)
-        self.dilated_conv_1 = pax.nn.Conv1D(
-            512, 512, 2, 1, rate=1, padding="VALID", with_bias=True
-        )
-        self.dilated_conv_2 = pax.nn.Conv1D(
-            512, 512, 2, 1, rate=2, padding="VALID", with_bias=True
-        )
-        self.dilated_conv_3 = pax.nn.Conv1D(
-            512, 512, 2, 1, rate=4, padding="VALID", with_bias=True
-        )
 
-        self.upsample_conv_1 = pax.nn.Conv1DTranspose(
-            512, 512, kernel_shape=4, stride=4, padding="SAME", with_bias=True
-        )
-        self.upsample_conv_2 = pax.nn.Conv1DTranspose(
-            512, 512, kernel_shape=2, stride=2, padding="SAME", with_bias=True
-        )
-        self.upsample_conv_3 = pax.nn.Conv1DTranspose(
-            512, 512, kernel_shape=2, stride=2, padding="SAME", with_bias=True
-        )
+        dilated_conv = partial(pax.nn.Conv1D, 512, 512, 2, padding="VALID")
+        self.dilated_conv_1 = dilated_conv(rate=1)
+        self.dilated_conv_2 = dilated_conv(rate=2)
+        self.dilated_conv_4 = dilated_conv(rate=4)
 
-        self.output_conv = pax.nn.Conv1D(
-            512, num_output_channels, kernel_shape=1, padding="VALID", with_bias=True
-        )
+        conv1d_transpose = partial(pax.nn.Conv1DTranspose, 512, 512, padding="SAME")
+        self.upsample_conv_1 = conv1d_transpose(kernel_shape=4, stride=4)
+        self.upsample_conv_2 = conv1d_transpose(kernel_shape=2, stride=2)
+        self.upsample_conv_3 = conv1d_transpose(kernel_shape=2, stride=2)
+        self.output_conv = pax.nn.Conv1D(512, num_output_channels, 1, padding="VALID")
 
     def __call__(self, mel):
         x = self.input_conv(mel)
@@ -57,13 +47,13 @@ class UpsamplingNetwork(pax.Module):
 class WaveGRU(pax.Module):
     def __init__(self, n_mels, hidden_dim, n_mu_bits=8):
         super().__init__()
+        self.n_mu_bits = n_mu_bits
+        self.hidden_dim = hidden_dim
 
         self.upsampling = UpsamplingNetwork(n_mels, hidden_dim)
         self.gru = pax.nn.GRU(hidden_dim, hidden_dim)
         self.logits = pax.nn.Linear(hidden_dim, 2 ** n_mu_bits)
-        self.hidden_dim = hidden_dim
         self.embed = pax.nn.Embed(2 ** n_mu_bits, hidden_dim)
-        self.n_mu_bits = n_mu_bits
 
     def __call__(self, inputs):
         logmel, wav = inputs
