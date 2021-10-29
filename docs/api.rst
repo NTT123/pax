@@ -10,6 +10,22 @@ PAX's Module
    :inherited-members:
    :members:
 
+
+.. autoclass:: ParameterModule
+   :inherited-members:
+   :members:
+
+
+.. autoclass:: StateModule
+   :inherited-members:
+   :members:
+
+
+.. autoclass:: AutoModule
+   :inherited-members:
+   :members:
+
+
 .. autoclass:: PaxKind
    :members:
    
