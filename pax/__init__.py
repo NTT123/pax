@@ -24,11 +24,10 @@ from pax._src.core import (
 from pax._src.core.rng import next_rng_key, seed_rng_key
 from pax._src.nn.dropout import dropout
 from pax._src.utils import (
-    apply_gradients,
     build_update_fn,
-    grad_mod_val,
     grad_parameters,
     scan,
+    value_and_grad,
 )
 
 STATE = PaxKind.STATE
@@ -39,7 +38,6 @@ S = PaxKind.STATE
 __version__ = "0.4.2.dev2"
 
 __all__ = (
-    "apply_gradients",
     "apply_mp_policy",
     "assert_structure_equal",
     "AutoModule",
@@ -49,7 +47,6 @@ __all__ = (
     "enable_train_mode",
     "flatten_module",
     "freeze_parameters",
-    "grad_mod_val",
     "grad_parameters",
     "initializers",
     "module_and_value",
@@ -69,6 +66,7 @@ __all__ = (
     "update_parameters",
     "update_states",
     "utils",
+    "value_and_grad",
 )
 
 try:

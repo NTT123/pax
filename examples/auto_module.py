@@ -30,8 +30,8 @@ def loss_fn(net: MLP, x, y):
 
 @jax.jit
 def update_fn(net, optimizer: opax.GradientTransformation, x, y):
-    grads, net, loss = pax.grad_mod_val(loss_fn)(net, x, y)
-    net, optimizer = pax.apply_gradients(grads)(net, optimizer)
+    (loss, net), grads = pax.value_and_grad(loss_fn)(net, x, y)
+    net, optimizer = opax.apply_gradients(net, optimizer, grads)
     return net, optimizer, loss
 
 
