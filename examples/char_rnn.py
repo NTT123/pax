@@ -121,7 +121,7 @@ def update_step(model_and_optimizer: Tuple[LM, pax.Module], batch: jnp.ndarray):
     model, optimizer = model_and_optimizer
     loss, grads = jax.value_and_grad(loss_fn)(model, batch)
     grads = jax.lax.pmean(grads, axis_name="i")
-    model, optimizer = pax.apply_gradients(grads)(model, optimizer)
+    model, optimizer = opax.apply_gradients(model, optimizer, grads=grads)
     return (model, optimizer), loss
 
 
