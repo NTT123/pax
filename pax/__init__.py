@@ -24,7 +24,6 @@ from pax._src.core import (
 from pax._src.core.rng import next_rng_key, seed_rng_key
 from pax._src.nn.dropout import dropout
 from pax._src.utils import (
-    apply_gradients,
     build_update_fn,
     grad_parameters,
     scan,
@@ -39,7 +38,6 @@ S = PaxKind.STATE
 __version__ = "0.4.2.dev2"
 
 __all__ = (
-    "apply_gradients",
     "apply_mp_policy",
     "assert_structure_equal",
     "AutoModule",
