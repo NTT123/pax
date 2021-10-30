@@ -14,8 +14,8 @@ y = jax.random.normal(pax.next_rng_key(), (32, 1))
 
 
 @dataclass
-class Linear(pax.ParameterModule):
-    """A Linear module"""
+class Linear(pax.LazyModule):
+    """A lazy Linear module"""
 
     in_dim: int
     out_dim: int
@@ -24,18 +24,22 @@ class Linear(pax.ParameterModule):
     weight: jnp.ndarray = field(init=False, repr=False)
     bias: Optional[jnp.ndarray] = field(init=False, repr=False)
 
-    def __post_init__(self):
-        self.weight = jax.random.normal(pax.next_rng_key(), (self.in_dim, self.out_dim))
-        if self.with_bias:
-            self.bias = jax.random.normal(pax.next_rng_key(), (self.out_dim,))
-        else:
-            self.bias = None
-
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
-        x = jnp.dot(x, self.weight)
+        weight = self.get_or_create_parameter(
+            "weight",
+            lambda: jax.random.normal(pax.next_rng_key(), (self.in_dim, self.out_dim)),
+        )
+        x = jnp.dot(x, weight)
         if self.with_bias:
-            x = x + self.bias
+            bias = self.get_or_create_parameter(
+                "bias",
+                lambda: jax.random.normal(pax.next_rng_key(), (self.out_dim,)),
+            )
+            x = x + bias
         return x
+
+    def __post_init__(self):
+        self(jnp.empty((1, self.in_dim)))
 
 
 fc = Linear(3, 4, name="fc1")

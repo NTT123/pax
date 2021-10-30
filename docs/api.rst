@@ -19,7 +19,7 @@ PAX's Module
    :members:
 
 
-.. autoclass:: AutoModule
+.. autoclass:: LazyModule
    :members:
 
 
