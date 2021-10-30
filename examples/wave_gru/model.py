@@ -13,7 +13,7 @@ class UpsamplingNetwork(pax.Module):
         dilated_conv = partial(pax.nn.Conv1D, 512, 512, 2, padding="VALID")
         self.dilated_conv_1 = dilated_conv(rate=1)
         self.dilated_conv_2 = dilated_conv(rate=2)
-        self.dilated_conv_4 = dilated_conv(rate=4)
+        self.dilated_conv_3 = dilated_conv(rate=4)
 
         conv1d_transpose = partial(pax.nn.Conv1DTranspose, 512, 512, padding="SAME")
         self.upsample_conv_1 = conv1d_transpose(kernel_shape=4, stride=4)
