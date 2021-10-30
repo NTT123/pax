@@ -1,11 +1,12 @@
-"""Modules with automations."""
+"""Utility Modules."""
 
 
 from typing import Callable, Type, TypeVar
 
+import jax
+
 from .base import PaxKind, allow_mutation
 from .module import Module
-
 
 T = TypeVar("T", bound=Module)
 O = TypeVar("O")
@@ -78,7 +79,7 @@ class LazyModule(Module):
         return self.get_or_create(name, create_fn=create_fn, kind=PaxKind.STATE)
 
     def parameters(self: T) -> T:
-        if len(self.submodules()) == 0:
-            raise ValueError("An empty auto module. Need to initialize it first!")
+        if len(jax.tree_leaves(self)) == 0:
+            raise ValueError("An empty lazy module. Please initialize it!")
 
         return super().parameters()
