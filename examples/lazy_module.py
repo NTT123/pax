@@ -15,7 +15,7 @@ y = jax.random.normal(pax.next_rng_key(), (32, 1))
 
 @dataclass
 class Linear(pax.LazyModule):
-    """A Lazy Linear module"""
+    """A lazy Linear module"""
 
     in_dim: int
     out_dim: int
