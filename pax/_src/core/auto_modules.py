@@ -70,9 +70,11 @@ class LazyModule(Module):
         return value
 
     def get_or_create_parameter(self, name, create_fn: Callable[[], O]) -> O:
+        """Get or create a trainable parameter."""
         return self.get_or_create(name, create_fn=create_fn, kind=PaxKind.PARAMETER)
 
     def get_or_create_state(self, name, create_fn: Callable[[], O]) -> O:
+        """Get or create a non-trainable state."""
         return self.get_or_create(name, create_fn=create_fn, kind=PaxKind.STATE)
 
     def parameters(self: T) -> T:
