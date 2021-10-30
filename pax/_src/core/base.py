@@ -381,7 +381,9 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         setattr(self, name, value)
 
     def set_attribute_kind(self, **kwargs):
-        """Example:
+        """Set PAX kind for one or many attributes.
+
+        Example:
 
         >>> self.set_attribute_kind(weight=pax.P, counter=pax.S)
         """

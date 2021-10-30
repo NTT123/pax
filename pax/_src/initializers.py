@@ -45,7 +45,7 @@ def ones(shape: Sequence[int], dtype: Any, rng_key=None):
 def truncated_normal(stddev: float = 1.0, mean: float = 0.0):
     """Initialize from truncated normal distribution."""
 
-    def _truncated_normal_init(shape, dtype, rng_key):
+    def _truncated_normal_init(shape, dtype, rng_key) -> jnp.ndarray:
         noise = jax.random.truncated_normal(
             key=rng_key, shape=shape, dtype=dtype, lower=-2.0, upper=2.0
         )
@@ -57,7 +57,7 @@ def truncated_normal(stddev: float = 1.0, mean: float = 0.0):
 def random_normal(stddev: float = 1.0, mean: float = 0.0):
     """Initialize from normal distribution."""
 
-    def _random_normal_init(shape, dtype, rng_key):
+    def _random_normal_init(shape, dtype, rng_key) -> jnp.ndarray:
         noise = jax.random.normal(key=rng_key, shape=shape, dtype=dtype)
         return noise * stddev + mean
 
@@ -67,7 +67,7 @@ def random_normal(stddev: float = 1.0, mean: float = 0.0):
 def random_uniform(minval=0.0, maxval=1.0):
     """Initialize from uniform distribution."""
 
-    def _random_uniform(shape, dtype, rng_key):
+    def _random_uniform(shape, dtype, rng_key) -> jnp.ndarray:
         return jax.random.uniform(
             rng_key, shape=shape, dtype=dtype, minval=minval, maxval=maxval
         )
@@ -110,7 +110,7 @@ def variance_scaling(
     ==============  ==============================================================
     """
 
-    def _variance_scaling_init(shape, dtype, rng_key):
+    def _variance_scaling_init(shape, dtype, rng_key) -> jnp.ndarray:
         fan_in, fan_out = _compute_fans(shape)
 
         if mode == "fan_in":
