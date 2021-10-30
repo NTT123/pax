@@ -2,7 +2,7 @@
 
 from pax import initializers, nets, nn, utils
 from pax._src.core import (
-    AutoModule,
+    LazyModule,
     Module,
     ParameterModule,
     PaxKind,
@@ -40,7 +40,7 @@ __version__ = "0.4.2.dev2"
 __all__ = (
     "apply_mp_policy",
     "assert_structure_equal",
-    "AutoModule",
+    "LazyModule",
     "build_update_fn",
     "dropout",
     "enable_eval_mode",

@@ -6,7 +6,9 @@ from typing import Callable, Type, TypeVar
 from .base import PaxKind, allow_mutation
 from .module import Module
 
+
 T = TypeVar("T", bound=Module)
+O = TypeVar("O")
 
 
 class ParameterModule(Module):
@@ -29,14 +31,14 @@ class StateModule(Module):
         return module
 
 
-class AutoModule(Module):
+class LazyModule(Module):
     """A module that auto creates a submodule when needed.
 
 
     Example:
 
     >>> @dataclass
-    ... class MLP(pax.AutoModule):
+    ... class MLP(pax.LazyModule):
     ...     features: Sequence[int]
     ...
     ...     def __call__(self, x):
@@ -54,15 +56,24 @@ class AutoModule(Module):
     └── Linear[in_dim=2, out_dim=3, with_bias=True]
     """
 
-    def get_or_create(self, name, create_fn: Callable[[], T]) -> T:
-        """Create and register a new module when it is not an attribute of the module."""
+    def get_or_create(self, name, create_fn: Callable[[], T], kind=PaxKind.MODULE) -> T:
+        """Create and register a new attribute when it is not exist.
+
+        Return the attribute.
+        """
         if hasattr(self, name):
-            module = getattr(self, name)
+            value = getattr(self, name)
         else:
             assert callable(create_fn), "Expect a callable function"
-            module = create_fn()
-            self.register_module(name, module)
-        return module
+            value = create_fn()
+            self.register_subtree(name, value, kind)
+        return value
+
+    def get_or_create_parameter(self, name, create_fn: Callable[[], O]) -> O:
+        return self.get_or_create(name, create_fn=create_fn, kind=PaxKind.PARAMETER)
+
+    def get_or_create_state(self, name, create_fn: Callable[[], O]) -> O:
+        return self.get_or_create(name, create_fn=create_fn, kind=PaxKind.STATE)
 
     def parameters(self: T) -> T:
         if len(self.submodules()) == 0:
