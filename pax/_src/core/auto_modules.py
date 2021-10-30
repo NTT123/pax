@@ -54,7 +54,7 @@ class AutoModule(Module):
     └── Linear[in_dim=2, out_dim=3, with_bias=True]
     """
 
-    def get_or_create(self, name, create_fn: Callable[[], Module]):
+    def get_or_create(self, name, create_fn: Callable[[], T]) -> T:
         """Create and register a new module when it is not an attribute of the module."""
         if hasattr(self, name):
             module = getattr(self, name)

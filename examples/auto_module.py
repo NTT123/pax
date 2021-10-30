@@ -21,6 +21,10 @@ class MLP(pax.AutoModule):
             x = jax.nn.leaky_relu(x)
         return x
 
+    def __post_init__(self):
+        # initialize submodules with a test run
+        self(jnp.empty((1, self.features[0])))
+
 
 def loss_fn(net: MLP, x, y):
     net, y_hat = net % x
@@ -35,15 +39,14 @@ def update_fn(net, optimizer: opax.GradientTransformation, x, y):
     return net, optimizer, loss
 
 
-x = jnp.ones((32, 1))
-y = jnp.ones((32, 5))
-
-net, _ = MLP([1, 2, 3, 4, 5]) % x
-# need to initialize net before initializing optimizer
+net = MLP([1, 2, 3, 4, 5])
 optimizer = opax.adam(1e-2)(~net)
 
 print(net.summary())
 print(optimizer)
+
+x = jnp.ones((32, 1))
+y = jnp.ones((32, 5))
 
 for step in range(100):
     net, optimizer, loss = update_fn(net, optimizer, x, y)
