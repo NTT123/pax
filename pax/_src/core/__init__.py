@@ -1,6 +1,7 @@
 """PAX Module"""
 
 from .flatten_module import flatten_module
+from .graph_module import GraphModule, InputNode, build_graph_module
 from .mixed_precision import apply_mp_policy
 from .module import Module, PaxKind
 from .module_and_value import module_and_value

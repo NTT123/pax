@@ -1,0 +1,27 @@
+"""A model as a directed graph."""
+
+import jax
+import pax
+import jax.numpy as jnp
+from pax.graph import Node, build_graph_module
+
+pax.seed_rng_key(42)
+
+
+def residual_net(x: Node):
+    _, D = x.shape
+    y = (
+        x
+        >> pax.nn.Linear(D, D)
+        >> jax.nn.relu
+        >> pax.nn.Linear(D, D)
+        >> pax.nn.Dropout(0.2)
+    )
+    z = (x | y) >> jax.lax.add
+    return z
+
+
+inputs = jnp.ones((3, 8))
+net = build_graph_module(residual_net)(inputs)
+print(net.summary())
+net, _ = pax.module_and_value(net)(inputs)

@@ -127,8 +127,8 @@ def pure(
                 return out
 
         with jax.check_tracer_leaks(check_leaks):
-            # leak check
-            _run(args, kwargs, eval_shape=True)
+            if check_leaks:
+                _run(args, kwargs, eval_shape=True)
             # real run
             out = _run(args, kwargs, eval_shape=False)
         _ = [m.scan_bugs() for m in _get_modules(out)]
