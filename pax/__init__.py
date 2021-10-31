@@ -1,7 +1,9 @@
 """PAX package."""
 
-from pax import initializers, nets, nn, utils
+from pax import graph, initializers, nets, nn, utils
 from pax._src.core import (
+    GraphModule,
+    InputNode,
     LazyModule,
     Module,
     ParameterModule,
@@ -9,6 +11,7 @@ from pax._src.core import (
     StateModule,
     apply_mp_policy,
     assert_structure_equal,
+    build_graph_module,
     enable_eval_mode,
     enable_train_mode,
     flatten_module,
@@ -23,24 +26,18 @@ from pax._src.core import (
 )
 from pax._src.core.rng import next_rng_key, seed_rng_key
 from pax._src.nn.dropout import dropout
-from pax._src.utils import (
-    build_update_fn,
-    grad_parameters,
-    scan,
-    value_and_grad,
-)
+from pax._src.utils import build_update_fn, grad_parameters, scan, value_and_grad
 
 STATE = PaxKind.STATE
 PARAMETER = PaxKind.PARAMETER
 P = PaxKind.PARAMETER
 S = PaxKind.STATE
 
-__version__ = "0.4.2.dev2"
+__version__ = "0.4.2.dev3"
 
 __all__ = (
     "apply_mp_policy",
     "assert_structure_equal",
-    "LazyModule",
     "build_update_fn",
     "dropout",
     "enable_eval_mode",
@@ -48,7 +45,9 @@ __all__ = (
     "flatten_module",
     "freeze_parameters",
     "grad_parameters",
+    "graph",
     "initializers",
+    "LazyModule",
     "module_and_value",
     "Module",
     "nets",
