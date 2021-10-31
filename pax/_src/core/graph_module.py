@@ -79,6 +79,20 @@ class Node(Module):
     __mul__ = partialmethod(_binary_ops, fn=jax.lax.mul)
     __div__ = partialmethod(_binary_ops, fn=jax.lax.div)
 
+    @property
+    def shape(self):
+        if hasattr(self, "value") and self.value is not None:
+            return self.value.shape
+        else:
+            return None
+
+    @property
+    def dtype(self):
+        if hasattr(self, "value") and self.value is not None:
+            return self.value.dtype
+        else:
+            return None
+
 
 @dataclass(repr=False)
 class InputNode(Node):
@@ -87,20 +101,6 @@ class InputNode(Node):
     parents: Tuple[Node, ...] = ()
     fx: Union[Module, Callable] = lambda x: x
     value: jnp.ndarray = None
-
-    @property
-    def shape(self):
-        if self.value is not None:
-            return self.value.shape
-        else:
-            return None
-
-    @property
-    def dtype(self):
-        if self.value is not None:
-            return self.value.dtype
-        else:
-            return None
 
 
 class CatNode(Node):
@@ -130,14 +130,24 @@ class GraphModule(Module):
     def __init__(self, inputs, output, name: Optional[str] = None):
         super().__init__(name=name)
 
-        def make(node: Node):
-            p = tuple(make(parent) for parent in node.parents)
+        def _check_shared_parameters(mod):
+            leaves = jax.tree_leaves(jax.tree_map(id, mod))
+            if len(leaves) != len(set(leaves)):
+                raise ValueError(
+                    "Shared parameters (or modules) are not allowed in a GraphModule. "
+                    "Please use normal module instead."
+                )
+
+        _check_shared_parameters(output)
+
+        def transform_input_nodes(node: Node):
+            p = tuple(transform_input_nodes(parent) for parent in node.parents)
             if node in inputs:
                 idx = inputs.index(node)
                 return InputNode((), Lambda(lambda xs: xs[idx], f"get<{idx}>"), None)
             return Node(p, node.fx, None)
 
-        self.output_node = make(output)
+        self.output_node = transform_input_nodes(output)
 
     def __call__(self, *xs):
         def run(node: Node):
