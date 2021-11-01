@@ -9,7 +9,6 @@ from typing import Sequence, Tuple
 import jax
 import jax.numpy as jnp
 
-from .. import initializers
 from ..core import Module
 from ..nn import BatchNorm2D, Conv2D, Linear, max_pool
 
@@ -220,7 +219,7 @@ class ResNet(Module):
         check_length(4, channels_per_group, "channels_per_group")
 
         logits_config = dict(logits_config or {})
-        logits_config.setdefault("w_init", initializers.zeros)
+        logits_config.setdefault("w_init", jax.nn.initializers.zeros)
 
         initial_conv_config = dict(initial_conv_config or {})
         initial_conv_config.setdefault("in_features", input_channels)

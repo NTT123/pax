@@ -66,14 +66,15 @@ class BatchNorm(Module):
 
         self.reduced_axes = tuple(reduced_axes)
 
-        if create_scale:
-            self.register_parameter("scale", jnp.ones(param_shape, dtype=jnp.float32))
-        else:
-            self.scale = None
-        if create_offset:
-            self.register_parameter("offset", jnp.zeros(param_shape, dtype=jnp.float32))
-        else:
-            self.offset = None
+        with self.add_parameters():
+            if create_scale:
+                self.scale = jnp.ones(param_shape, dtype=jnp.float32)
+            else:
+                self.scale = None
+            if create_offset:
+                self.offset = jnp.zeros(param_shape, dtype=jnp.float32)
+            else:
+                self.offset = None
 
         self.ema_mean = EMA(jnp.zeros_like(self.offset), decay_rate, debias=True)
         self.ema_var = EMA(jnp.zeros_like(self.offset), decay_rate, debias=True)

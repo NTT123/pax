@@ -17,10 +17,10 @@ def test_list_of_mod():
 
 @pax.pure
 def test_assigned_field_an_array():
-    class M(pax.Module):
+    class M(pax.ParameterModule):
         def __init__(self):
             super().__init__()
-            self.register_parameter("a", np.array([3.0, 1.0], dtype=np.float32))
+            self.a = np.array([3.0, 1.0], dtype=np.float32)
 
     # no error because we will automatically assign `a` to kind PARAMETER
     m = M()
@@ -35,17 +35,22 @@ def test_assigned_field_an_array():
 
     n.scan_bugs()
     # no error because we will automatically assign `a` to kind PARAMETER
-    n.register_parameter("b", jnp.array([1, 2, 3], dtype=jnp.float32))
+    def mutate(n):
+        with n.add_parameters():
+            n.b = jnp.array([1, 2, 3], dtype=jnp.float32)
+        return n
+
+    n = pax.pure(mutate)(n)
 
     # pylint: disable=protected-access
     assert n._pax.name_to_kind["b"] == pax.PaxKind.PARAMETER
 
 
 def test_assign_int_to_param():
-    class M(pax.Module):
+    class M(pax.ParameterModule):
         def __init__(self):
             super().__init__()
-            self.register_parameter("a", np.array([3, 1], dtype=np.int32))
+            self.a = np.array([3, 1], dtype=np.int32)
 
     with pytest.raises(ValueError):
         _ = M()
