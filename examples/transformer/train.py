@@ -55,7 +55,7 @@ def loss_fn(model: LM, batch: jnp.ndarray):
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
-    model, logits = model % inputs
+    model, logits = pax.module_and_value(model)(inputs)
     log_pr = jax.nn.log_softmax(logits, axis=-1)
     targets = jax.nn.one_hot(targets, num_classes=model.vocab_size)
     loss = -jnp.mean(jnp.sum(targets * log_pr, axis=-1))
