@@ -36,8 +36,10 @@ class flatten_module(Module, Generic[T]):  # pylint: disable=invalid-name
         self.params_treedef = params_treedef
         self.states_treedef = states_treedef
         self.module_treedef = jax.tree_structure(mod)
-        self.register_parameters("params_leaves", params_leaves)
-        self.register_states("states_leaves", states_leaves)
+        with self.add_parameters():
+            self.params_leaves = params_leaves
+        with self.add_states():
+            self.states_leaves = states_leaves
         self.num_leaves = len(jax.tree_leaves(mod))
 
         if hasattr(mod, "unflatten"):

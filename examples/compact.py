@@ -40,7 +40,7 @@ def train():
     # model & optimizer
     net, _ = forward(pax.LazyModule(), x)
     print(net.summary())
-    opt = opax.adam(1e-1)(~net)
+    opt = opax.adam(1e-1)(net.parameters())
 
     # training loop
     for step in range(10):

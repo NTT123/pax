@@ -4,13 +4,12 @@
 # https://jax.readthedocs.io/en/latest/notebooks/convolutions.html
 #
 
-from typing import Optional, Sequence, Tuple, Union
+from typing import Callable, Optional, Sequence, Tuple, Union
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 
-from .. import initializers
 from ..core import ParameterModule
 from ..core.rng import KeyArray, next_rng_key
 
@@ -30,8 +29,8 @@ class Conv(ParameterModule):
         rate: Union[int, Sequence[int]] = 1,
         padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
         with_bias: bool = True,
-        w_init: Optional[initializers.Initializer] = None,
-        b_init: Optional[initializers.Initializer] = None,
+        w_init: Optional[Callable] = None,
+        b_init: Optional[Callable] = None,
         data_format=None,
         *,
         name: Optional[str] = None,
@@ -86,15 +85,15 @@ class Conv(ParameterModule):
 
         if w_init is None:
             fan_in = np.prod(w_shape[:-1])
-            w_init = initializers.truncated_normal(stddev=1.0 / np.sqrt(fan_in))
+            w_init = jax.nn.initializers.normal(stddev=1.0 / np.sqrt(fan_in))
 
-        self.weight = w_init(w_shape, jnp.float32, w_rng_key)
+        self.weight = w_init(w_rng_key, w_shape)
 
         if with_bias:
             if b_init is None:
-                b_init = initializers.zeros
+                b_init = jax.nn.initializers.zeros
             b_shape = [out_features]
-            self.bias = b_init(b_shape, jnp.float32, b_rng_key)
+            self.bias = b_init(b_rng_key, b_shape)
         else:
             self.bias = None
 
@@ -170,8 +169,8 @@ class Conv1D(Conv):
         rate: Union[int, Sequence[int]] = 1,
         padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
         with_bias: bool = True,
-        w_init: Optional[initializers.Initializer] = None,
-        b_init: Optional[initializers.Initializer] = None,
+        w_init: Optional[Callable] = None,
+        b_init: Optional[Callable] = None,
         data_format: str = "NWC",
         *,
         name: Optional[str] = None,
@@ -236,8 +235,8 @@ class Conv2D(Conv):
         rate: Union[int, Sequence[int]] = 1,
         padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
         with_bias: bool = True,
-        w_init: Optional[initializers.Initializer] = None,
-        b_init: Optional[initializers.Initializer] = None,
+        w_init: Optional[Callable] = None,
+        b_init: Optional[Callable] = None,
         data_format: str = "NHWC",
         *,
         name: Optional[str] = None,
@@ -304,8 +303,8 @@ class ConvTranspose(ParameterModule):
         stride: Union[int, Sequence[int]] = 1,
         padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
         with_bias: bool = True,
-        w_init: Optional[initializers.Initializer] = None,
-        b_init: Optional[initializers.Initializer] = None,
+        w_init: Optional[Callable] = None,
+        b_init: Optional[Callable] = None,
         data_format=None,
         *,
         name: Optional[str] = None,
@@ -352,13 +351,13 @@ class ConvTranspose(ParameterModule):
 
         if w_init is None:
             fan_in = np.prod(w_shape[:-2] + [in_features])
-            w_init = initializers.truncated_normal(stddev=1.0 / np.sqrt(fan_in))
+            w_init = jax.nn.initializers.normal(stddev=1.0 / np.sqrt(fan_in))
         if b_init is None:
-            b_init = initializers.zeros
+            b_init = jax.nn.initializers.zeros
 
-        self.weight = w_init(w_shape, jnp.float32, w_rng_key)
+        self.weight = w_init(w_rng_key, w_shape)
         b_shape = [out_features]
-        self.bias = b_init(b_shape, jnp.float32, b_rng_key)
+        self.bias = b_init(b_rng_key, b_shape)
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         assert len(x.shape) == len(self.kernel_format)
@@ -414,8 +413,8 @@ class Conv1DTranspose(ConvTranspose):
         stride: Union[int, Sequence[int]] = 1,
         padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
         with_bias: bool = True,
-        w_init: Optional[initializers.Initializer] = None,
-        b_init: Optional[initializers.Initializer] = None,
+        w_init: Optional[Callable] = None,
+        b_init: Optional[Callable] = None,
         data_format: str = "NWC",
         *,
         name: Optional[str] = None,
@@ -476,8 +475,8 @@ class Conv2DTranspose(ConvTranspose):
         stride: Union[int, Sequence[int]] = 1,
         padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
         with_bias: bool = True,
-        w_init: Optional[initializers.Initializer] = None,
-        b_init: Optional[initializers.Initializer] = None,
+        w_init: Optional[Callable] = None,
+        b_init: Optional[Callable] = None,
         data_format: str = "NHWC",
         *,
         name: Optional[str] = None,

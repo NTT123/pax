@@ -74,7 +74,7 @@ def value_and_grad(func: Callable[..., K], has_aux=True):
 
     @functools.wraps(vag_fn)
     def new_vag_fn(module: T, *args, **kwargs) -> Tuple[K, T]:
-        return vag_fn(~module, module, *args, **kwargs)
+        return vag_fn(module.parameters(), module, *args, **kwargs)
 
     return new_vag_fn
 

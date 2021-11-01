@@ -9,7 +9,7 @@ def test_scan_bug_param_module():
     class M(pax.ParameterModule):
         def __init__(self):
             super().__init__()
-            self.register_state("a", jnp.array(0.0))
+            self.a = jnp.array(0.0)
 
     # with pytest.raises(ValueError):
     _ = M()
@@ -19,7 +19,7 @@ def test_scan_bug_state_module():
     class M(pax.StateModule):
         def __init__(self):
             super().__init__()
-            self.register_parameter("a", jnp.array(0.0))
+            self.a = jnp.array(0.0)
 
     # with pytest.raises(ValueError):
     _ = M()
@@ -34,5 +34,5 @@ def test_auto_module():
 
     m = M()
     x = jnp.ones((2, 1))
-    m, _ = m % x
+    m, _ = pax.module_and_value(m)(x)
     print(m.summary())

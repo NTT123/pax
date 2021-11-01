@@ -6,7 +6,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from .. import initializers
 from ..core import Module
 from ..nn import LayerNorm, Linear, MultiHeadAttention, RngSeq
 from ..nn.dropout import dropout
@@ -38,7 +37,9 @@ class DenseBlock(Module):
     def __init__(self, in_dim: int, init_scale: float, widening_factor: int = 4):
         super().__init__()
         self._init_scale = init_scale
-        initializer = initializers.variance_scaling(self._init_scale)
+        initializer = jax.nn.initializers.variance_scaling(
+            self._init_scale, mode="fan_in", distribution="normal"
+        )
         self._widening_factor = widening_factor
         self.fc1 = Linear(in_dim, in_dim * widening_factor, w_init=initializer)
         self.fc2 = Linear(in_dim * widening_factor, in_dim, w_init=initializer)

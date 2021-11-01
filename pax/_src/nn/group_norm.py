@@ -6,12 +6,11 @@
 
 
 import collections
-from typing import Optional, Sequence, Union
+from typing import Callable, Optional, Sequence, Union
 
 import jax
 import jax.numpy as jnp
 
-from .. import initializers
 from ..core import ParameterModule
 from ..core.rng import KeyArray, next_rng_key
 
@@ -75,8 +74,8 @@ class GroupNorm(ParameterModule):
         create_scale: bool = True,
         create_offset: bool = True,
         eps: float = 1e-5,
-        scale_init: Optional[initializers.Initializer] = None,
-        offset_init: Optional[initializers.Initializer] = None,
+        scale_init: Optional[Callable] = None,
+        offset_init: Optional[Callable] = None,
         data_format: str = "channels_last",
         *,
         rng_key: Optional[KeyArray] = None,
@@ -133,16 +132,16 @@ class GroupNorm(ParameterModule):
 
         self.create_scale = create_scale
         self.create_offset = create_offset
-        self.scale_init = scale_init or initializers.ones
-        self.offset_init = offset_init or initializers.zeros
+        self.scale_init = scale_init or jax.nn.initializers.ones
+        self.offset_init = offset_init or jax.nn.initializers.zeros
 
         param_shape = [num_channels]
         rng_key = next_rng_key() if rng_key is None else rng_key
         rng1, rng2 = jax.random.split(rng_key)
         if create_scale:
-            self.scale = self.scale_init(param_shape, jnp.float32, rng1)
+            self.scale = self.scale_init(rng1, param_shape)
         if create_offset:
-            self.offset = self.offset_init(param_shape, jnp.float32, rng2)
+            self.offset = self.offset_init(rng2, param_shape)
 
     def __call__(
         self,

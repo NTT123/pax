@@ -336,60 +336,6 @@ apply_mp_policy
 
 
 
-
-Initializers
-============
-
-.. currentmodule:: pax.initializers
-
-.. autosummary::
-
-   zeros
-   ones
-   truncated_normal
-   random_normal
-   random_uniform
-   variance_scaling
-
-
-
-zeros
------
-
-.. autofunction:: zeros
-
-
-ones
-----
-
-.. autofunction:: ones
-
-
-truncated_normal
-----------------
-
-.. autofunction:: truncated_normal
-
-
-random_normal
--------------
-
-.. autofunction:: random_normal
-
-
-random_uniform
---------------
-
-.. autofunction:: random_uniform
-
-
-variance_scaling
-----------------
-
-.. autofunction:: variance_scaling
-
-
-
 Utilities
 =========
 
