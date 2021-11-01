@@ -94,8 +94,8 @@ class Lambda(Module):
         super().__init__(name=name)
         self.func = func
 
-    def __call__(self, x):
-        return self.func(x)
+    def __call__(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
 
     def __repr__(self) -> str:
         if self.name is not None:
