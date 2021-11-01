@@ -52,12 +52,12 @@ def test_type_list_int():
 
 
 def test_type_sequence():
-    class Counter(pax.Module):
+    class Counter(pax.StateModule):
         count: Sequence[int]
 
         def __init__(self):
             super().__init__()
-            self.register_parameter("count", jnp.array([0.0]))
+            self.count = jnp.array([0.0])
 
     counter = Counter()
     leaves, treedef = jax.tree_flatten(counter)
@@ -164,17 +164,17 @@ def test_train_eval():
 
 
 def test_state_of_param():
-    class M1(pax.Module):
+    class M1(pax.ParameterModule):
         def __init__(self):
             super().__init__()
-            self.register_parameter("p1", jnp.array(0.0, dtype=jnp.float32))
+            self.p1 = jnp.array(0.0, dtype=jnp.float32)
 
     m1 = M1()
 
-    class M2(pax.Module):
+    class M2(pax.StateModule):
         def __init__(self, m11):
             super().__init__()
-            self.register_states("m2", {"m1": m11})
+            self.m2 = {"m1": m11}
 
     m2 = M2(m1)
     assert len(jax.tree_leaves(pax.select_states(m1))) == 0
@@ -305,7 +305,7 @@ def test_assign_empty_list_2():
 
         def __init__(self):
             super().__init__()
-            self.register_modules("fc", [])
+            self.fc = []
             for i in range(5):
                 self.fc.append(pax.nn.Linear(3, 3))
 
@@ -369,7 +369,7 @@ def test_module_list_contains_int():
         def __init__(self):
             super().__init__()
 
-            self.register_modules("lst", [])
+            self.lst = []
             self.lst.append(pax.nn.Linear(3, 3))
             self.lst.append(0)  # type: ignore
 

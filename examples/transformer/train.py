@@ -66,8 +66,10 @@ def update_step(model_and_optim: Tuple[LM, GradientTransformation], batch: jnp.n
     model, optimizer = model_and_optim
     (loss, model), grads = pax.value_and_grad(loss_fn)(model, batch)
     grads = jax.lax.pmean(grads, axis_name="i")
-    optimizer, updates = optimizer % (grads, ~model)
-    model = model | (~model).map(jax.lax.sub, updates)
+    params = model.parameters()
+    optimizer, updates = pax.module_and_value(optimizer)(grads, params)
+    params = params.map(jax.lax.sub, updates)
+    model = model.update_parameters(params)
     return (model, optimizer), loss
 
 
