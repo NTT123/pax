@@ -7,7 +7,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from .. import initializers
 from ..core import Module
 from .linear import Linear
 
@@ -34,7 +33,9 @@ class MultiHeadAttention(Module):
         self.key_size = key_size
         self.value_size = key_size
         self.model_size = key_size * num_heads
-        w_init = initializers.variance_scaling(w_init_scale)
+        w_init = jax.nn.initializers.variance_scaling(
+            w_init_scale, mode="fan_in", distribution="normal"
+        )
         self.query_projection = Linear(
             self.model_size, self.model_size, w_init=w_init, name="qry_proj"
         )

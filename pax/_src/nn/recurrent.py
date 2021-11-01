@@ -1,11 +1,10 @@
 """Recurrent modules."""
 
-from typing import NamedTuple, Optional, Tuple
+from typing import Callable, NamedTuple, Optional, Tuple
 
 import jax
 import jax.numpy as jnp
 
-from ..initializers import Initializer
 from ..core import Module
 from ..core.rng import KeyArray, next_rng_key
 from .linear import Linear
@@ -47,7 +46,7 @@ class LSTM(RNN):
         self,
         input_dim: int,
         hidden_dim: int,
-        w_init: Optional[Initializer] = None,
+        w_init: Optional[Callable] = None,
         forget_gate_bias: float = 0.0,
         *,
         rng_key: KeyArray = None,
