@@ -109,10 +109,7 @@ class InputNode(Node):
     value: jnp.ndarray
 
     def __init__(self, value: jnp.ndarray, fx=lambda x: x):
-        self.parents = ()
-        self.fx = fx
-        with self.add_states():
-            self.value = value
+        super().__init__((), fx, value)
 
 
 class CatNode(Node):

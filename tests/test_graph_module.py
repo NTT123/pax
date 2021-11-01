@@ -1,3 +1,5 @@
+"""Test graph module"""
+
 from functools import partial
 
 import jax
@@ -58,7 +60,7 @@ def test_3_cat_graph_module():
     x = pax.graph.InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
     z = x & y & y
-    m = GraphModule((x,), z)
+    _ = GraphModule((x,), z)
 
 
 def test_or_graph():
