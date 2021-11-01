@@ -9,6 +9,7 @@ import jax.numpy as jnp
 import jmp
 
 from .module import Module
+from .pure import pure
 from .threading_local import allow_mutation
 
 TreeDef = Any
@@ -95,8 +96,13 @@ class apply_mp_policy(Module, Generic[T]):  # pylint: disable=invalid-name
             )
 
             casted_mod_clone = mod.copy()
+
             # task 2
-            output = f(mod, *casted_args, **casted_kwargs)
+            def pure_fn(mod):
+                out = f(mod, *casted_args, **casted_kwargs)
+                return mod, out
+
+            mod, output = pure(pure_fn)(mod)
 
             # task 3
             if jax.tree_structure(mod) != jax.tree_structure(old_mod_clone):

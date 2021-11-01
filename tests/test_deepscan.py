@@ -35,8 +35,12 @@ def test_assigned_field_an_array():
 
     n.scan_bugs()
     # no error because we will automatically assign `a` to kind PARAMETER
-    with n.add_parameters():
-        n.b = jnp.array([1, 2, 3], dtype=jnp.float32)
+    def mutate(n):
+        with n.add_parameters():
+            n.b = jnp.array([1, 2, 3], dtype=jnp.float32)
+        return n
+
+    n = pax.pure(mutate)(n)
 
     # pylint: disable=protected-access
     assert n._pax.name_to_kind["b"] == pax.PaxKind.PARAMETER
