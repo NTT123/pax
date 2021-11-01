@@ -32,9 +32,9 @@ class Node(Module):
     def __post_init__(self):
         self.set_attribute_kind(parents=PaxKind.MODULE, value=PaxKind.STATE)
 
-        if not isinstance(self.fx, Module) and self.fx is not identity:
+        if not isinstance(self.fx, Module):
             self.fx = Lambda(self.fx)
-            self.set_attribute_kind(fx=PaxKind.MODULE)
+        self.set_attribute_kind(fx=PaxKind.MODULE)
 
     def __rshift__(self, fn):
         """Create a new node.
