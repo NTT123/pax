@@ -29,6 +29,29 @@ def test_grad_parameters():
         print(f"step {step}  loss {loss:.3f}")
 
 
+def test_value_and_grad():
+    def loss_fn(model: pax.nn.Linear, inputs):
+        x, target = inputs
+        y = model(x)
+        loss = jnp.mean(jnp.square(y - target))
+        return loss, model
+
+    @jax.jit
+    def update_fn(model, optimizer, inputs):
+        (loss, model), grads = pax.value_and_grad(loss_fn)(model, inputs)
+        model, optimizer = opax.apply_gradients(model, opt, grads)
+        return model, optimizer, loss
+
+    net = pax.nn.Linear(2, 1)
+    opt = opax.adamw(learning_rate=1e-2)(net.parameters())
+    x = np.random.normal(size=(32, 2))
+    y = np.random.normal(size=(32, 1))
+    print()
+    for step in range(5):
+        net, opt, loss = update_fn(net, opt, (x, y))
+        print(f"step {step}  loss {loss:.3f}")
+
+
 def test_util_update_fn():
     def loss_fn(model: pax.nn.Linear, x, target):
         y = model(x)
@@ -87,3 +110,25 @@ def test_ema_bias():
 
     ema, _ = pax.module_and_value(ema)(jnp.array(2.0))
     np.testing.assert_almost_equal(ema.averages.item(), 0.1 * 2.0 + 0.9 * 1.0)
+
+
+def test_scan_fn_not_time_major():
+    def loop(prev_state, x):
+        next_state = prev_state + x
+        return next_state, next_state
+
+    h0 = jnp.zeros((1,))
+    xs = jnp.arange(0, 10).reshape((1, -1))
+    _, ys = pax.scan(loop, h0, xs, time_major=False)
+    assert ys[0, -1].item() == 45
+
+
+def test_scan_fn_time_major():
+    def loop(prev_state, x):
+        next_state = prev_state + x
+        return next_state, next_state
+
+    h0 = jnp.zeros((1,))
+    xs = jnp.arange(0, 10).reshape((-1, 1))
+    _, ys = pax.scan(loop, h0, xs, time_major=True)
+    assert ys[-1, 0].item() == 45
