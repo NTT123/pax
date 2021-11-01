@@ -1,9 +1,7 @@
 """PAX package."""
 
-from pax import graph, initializers, nets, nn, utils
+from pax import graph, nets, nn, utils
 from pax._src.core import (
-    GraphModule,
-    InputNode,
     LazyModule,
     Module,
     ParameterModule,
@@ -11,7 +9,6 @@ from pax._src.core import (
     StateModule,
     apply_mp_policy,
     assert_structure_equal,
-    build_graph_module,
     enable_eval_mode,
     enable_train_mode,
     flatten_module,
@@ -46,7 +43,6 @@ __all__ = (
     "freeze_parameters",
     "grad_parameters",
     "graph",
-    "initializers",
     "LazyModule",
     "module_and_value",
     "Module",

@@ -197,3 +197,12 @@ class Module(BaseModule):
             return output
         else:
             return "\n".join(output)
+
+    def set_attribute(self: T, name, value) -> T:
+        """Create a new module and set attribute."""
+        module = self.copy()
+        with allow_mutation(module):
+            setattr(module, name, value)
+            module.find_and_register_submodules()
+
+        return module

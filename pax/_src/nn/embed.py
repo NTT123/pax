@@ -1,10 +1,10 @@
 """Embed module."""
 
-from typing import Optional
+from typing import Callable, Optional
 
+import jax
 import jax.numpy as jnp
 
-from .. import initializers
 from ..core import ParameterModule
 from ..core.rng import KeyArray, next_rng_key
 
@@ -22,7 +22,7 @@ class Embed(ParameterModule):
         self,
         vocab_size: int,
         embed_dim: int,
-        w_init: Optional[initializers.Initializer] = None,
+        w_init: Optional[Callable] = None,
         *,
         rng_key: Optional[KeyArray] = None,
         name: Optional[str] = None
@@ -44,12 +44,12 @@ class Embed(ParameterModule):
         shape = [vocab_size, embed_dim]
 
         if w_init is None:
-            w_init = initializers.truncated_normal()
+            w_init = jax.nn.initializers.normal()
 
         if rng_key is None:
             rng_key = next_rng_key()
 
-        self.weight = w_init(shape, jnp.float32, rng_key)
+        self.weight = w_init(rng_key, shape)
 
     def __call__(self, x: jnp.ndarray):
         """Return embedded vectors indexed by ``x``."""

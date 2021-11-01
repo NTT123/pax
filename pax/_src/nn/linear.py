@@ -6,7 +6,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from .. import initializers
 from ..core import ParameterModule
 from ..core.rng import KeyArray, next_rng_key
 
@@ -48,12 +47,12 @@ class Linear(ParameterModule):
 
         rng_key = next_rng_key() if rng_key is None else rng_key
         if w_init is None:
-            w_init = initializers.truncated_normal(stddev=1.0 / np.sqrt(self.in_dim))
-        b_init = initializers.zeros
+            w_init = jax.nn.initializers.normal(stddev=1.0 / np.sqrt(self.in_dim))
+        b_init = jax.nn.initializers.zeros
         rng_key_w, rng_key_b = jax.random.split(rng_key)
-        self.weight = w_init((in_dim, out_dim), jnp.float32, rng_key_w)
+        self.weight = w_init(rng_key_w, (in_dim, out_dim))
         if self.with_bias:
-            self.bias = b_init((out_dim,), jnp.float32, rng_key_b)
+            self.bias = b_init(rng_key_b, (out_dim,))
 
     def __call__(self, x: np.ndarray) -> jnp.ndarray:
         """Applies a linear transformation to the inputs along the last dimension.

@@ -117,8 +117,8 @@ def test_layer_norm_init():
         -1,
         True,
         True,
-        scale_init=pax.initializers.random_normal(),
-        offset_init=pax.initializers.truncated_normal(),
+        scale_init=jax.nn.initializers.normal(),
+        offset_init=jax.nn.initializers.normal(),
     )
     x = np.empty((32, 3), dtype=np.float32)
     fwd = hk.transform(
@@ -167,7 +167,7 @@ def test_linear():
 
 
 def test_linear_1():
-    fc = pax.nn.Linear(5, 7, b_init=pax.initializers.random_normal())
+    fc = pax.nn.Linear(5, 7, b_init=jax.nn.initializers.normal())
     rng_key = jax.random.PRNGKey(42)
     x = jax.random.normal(rng_key, (32, 5), dtype=jnp.float32)
     y = fc(x)
@@ -184,7 +184,7 @@ def test_linear_wo_bias():
 
 
 def test_linear_input_shape_error():
-    fc = pax.nn.Linear(2, 3, b_init=pax.initializers.random_normal())
+    fc = pax.nn.Linear(2, 3, b_init=jax.nn.initializers.normal())
     rng_key = jax.random.PRNGKey(42)
     x = jax.random.normal(rng_key, (2,), dtype=jnp.float32)
     with pytest.raises(AssertionError):
@@ -481,7 +481,7 @@ def test_native_conv2d_7():
         padding="VALID",
         with_bias=True,
         data_format="NCHW",
-        b_init=pax.initializers.truncated_normal(),
+        b_init=jax.nn.initializers.normal(),
         rng_key=rng_key,
     )
     x = jax.random.normal(rng_key, (2, 7, 40, 60))
@@ -517,7 +517,7 @@ def test_native_linear_w_bias():
         5,
         with_bias=True,
         rng_key=rng_key,
-        b_init=pax.initializers.truncated_normal(),
+        b_init=jax.nn.initializers.normal(),
     )
     hk_fc = hk.transform(lambda x: hk.Linear(5, with_bias=True)(x))
     x = jax.random.normal(rng_key, (7, 11, 9), dtype=jnp.float32)
@@ -584,7 +584,7 @@ def test_native_conv2d_transpose_3():
         with_bias=True,
         data_format="NCHW",
         rng_key=rng_key,
-        b_init=pax.initializers.truncated_normal(),
+        b_init=jax.nn.initializers.normal(),
     )
     x = jax.random.normal(rng_key, (2, 7, 40, 60))
     y = conv2d_t(x)
@@ -625,7 +625,7 @@ def test_native_conv2d_transpose_4():
         with_bias=True,
         data_format="NHWC",
         rng_key=rng_key,
-        b_init=pax.initializers.truncated_normal(),
+        b_init=jax.nn.initializers.normal(),
     )
     x = jax.random.normal(rng_key, (2, 40, 60, 7))
     y = conv2d_t(x)
@@ -706,7 +706,7 @@ def test_native_conv1d_transpose_3():
         with_bias=True,
         data_format="NCW",
         rng_key=rng_key,
-        b_init=pax.initializers.truncated_normal(),
+        b_init=jax.nn.initializers.normal(),
     )
     x = jax.random.normal(rng_key, (2, 7, 40))
     y = conv1d_t(x)
@@ -747,7 +747,7 @@ def test_native_conv1d_transpose_4():
         with_bias=True,
         data_format="NWC",
         rng_key=rng_key,
-        b_init=pax.initializers.truncated_normal(),
+        b_init=jax.nn.initializers.normal(),
     )
     x = jax.random.normal(rng_key, (2, 40, 7))
     y = conv1d_t(x)
