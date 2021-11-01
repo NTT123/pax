@@ -1,7 +1,7 @@
 """Build a module from a directed graph"""
 
 from dataclasses import dataclass
-from functools import partialmethod, wraps
+from functools import wraps
 from typing import Callable, Optional, Tuple, Union
 
 import jax
@@ -32,11 +32,9 @@ class Node(Module):
     def __post_init__(self):
         self.set_attribute_kind(parents=PaxKind.MODULE, value=PaxKind.STATE)
 
-        if not isinstance(self.fx, Module):
-
+        if not isinstance(self.fx, Module) and self.fx is not identity:
             self.fx = Lambda(self.fx)
-
-        self.set_attribute_kind(fx=PaxKind.MODULE)
+            self.set_attribute_kind(fx=PaxKind.MODULE)
 
     def __rshift__(self, fn):
         """Create a new node.
@@ -65,7 +63,23 @@ class Node(Module):
         else:
             return CatNode((self, other), identity, (self.value, other.value))
 
-    def _binary_ops(self, other, fn):
+    def __or__(self: "Node", other: "Node"):
+        """Concatenate two nodes to create a multi args node.
+
+        Example:
+
+        >>> x = pax.InputNode(1)
+        >>> y = pax.InputNode(2)
+        >>> z = x | y
+        """
+        if isinstance(other, ArgsNode):
+            return ArgsNode(
+                (self.parents, *other.parents), identity, (self.value, *other.value)
+            )
+        else:
+            return ArgsNode((self, other), identity, (self.value, other.value))
+
+    def binary_ops(self, fn, other):
         """Create a new using a binary operator."""
 
         @wraps(fn)
@@ -74,10 +88,10 @@ class Node(Module):
 
         return Node((self, other), bin_ops_fn, fn(self.value, other.value))
 
-    __add__ = partialmethod(_binary_ops, fn=jax.lax.add)
-    __sub__ = partialmethod(_binary_ops, fn=jax.lax.sub)
-    __mul__ = partialmethod(_binary_ops, fn=jax.lax.mul)
-    __div__ = partialmethod(_binary_ops, fn=jax.lax.div)
+    # __add__ = partialmethod(binary_ops, jax.lax.add)
+    # __sub__ = partialmethod(binary_ops, jax.lax.sub)
+    # __mul__ = partialmethod(binary_ops, jax.lax.mul)
+    # __div__ = partialmethod(binary_ops, jax.lax.div)
 
     @property
     def shape(self):
@@ -122,6 +136,32 @@ class CatNode(Node):
             )
 
 
+class ArgsNode(Node):
+    """Concatenate two nodes to create a multi output node."""
+
+    def __rshift__(self, fn):
+        """Create a new node with multiple arguments."""
+
+        @wraps(fn)
+        def multi_args_fn(xs):
+            return fn(*xs)
+
+        assert isinstance(self.value, tuple)
+        return Node((self,), multi_args_fn, multi_args_fn(self.value))
+
+    def __or__(self, other: Node):
+        if isinstance(other, ArgsNode):
+            return ArgsNode(
+                (*self.parents, *other.parents),
+                identity,
+                (*self.value, *other.value),
+            )
+        else:
+            return ArgsNode(
+                (*self.parents, other.parents), identity, (*self.value, other.value)
+            )
+
+
 class GraphModule(Module):
     """A module that uses a directed graph to represent its computation."""
 
@@ -130,7 +170,14 @@ class GraphModule(Module):
     def __init__(self, inputs, output, name: Optional[str] = None):
         super().__init__(name=name)
 
-        def _check_shared_parameters(mod):
+        def _check_shared_parameters(mod: Node):
+            def fx_filter(n: Node):
+                if isinstance(n, Node):
+                    return Node(n.parents, n.fx, None)
+                else:
+                    return n
+
+            mod = mod.apply(fx_filter)
             leaves = jax.tree_leaves(jax.tree_map(id, mod))
             if len(leaves) != len(set(leaves)):
                 raise ValueError(

@@ -1,6 +1,6 @@
 """PAX package."""
 
-from pax import initializers, nets, nn, utils
+from pax import graph, initializers, nets, nn, utils
 from pax._src.core import (
     GraphModule,
     InputNode,
@@ -38,7 +38,6 @@ __version__ = "0.4.2.dev3"
 __all__ = (
     "apply_mp_policy",
     "assert_structure_equal",
-    "build_graph_module",
     "build_update_fn",
     "dropout",
     "enable_eval_mode",
@@ -46,9 +45,8 @@ __all__ = (
     "flatten_module",
     "freeze_parameters",
     "grad_parameters",
-    "GraphModule",
+    "graph",
     "initializers",
-    "InputNode",
     "LazyModule",
     "module_and_value",
     "Module",
