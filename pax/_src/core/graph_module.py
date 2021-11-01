@@ -2,9 +2,8 @@
 
 from dataclasses import dataclass
 from functools import wraps
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 
-import jax
 import jax.numpy as jnp
 
 from .module import Module, PaxKind
@@ -14,10 +13,6 @@ from .utility_modules import Lambda
 
 def identity(x):
     return x
-
-
-def get_input(xs, index):
-    return xs[index]
 
 
 @dataclass(repr=False)
@@ -42,7 +37,7 @@ class Node(Module):
         Example:
         >>> import jax, pax, jax.numpy as jnp
         >>> from functools import partial
-        >>> x = pax.InputNode(value=jnp.array(1.))
+        >>> x = pax.InputNode(jnp.array(1.))
         >>> y = x >> partial(jax.lax.add, 1.)
         """
         return Node((self,), fn, fn(self.value))
@@ -57,9 +52,7 @@ class Node(Module):
         >>> z = x & y
         """
         if isinstance(other, CatNode):
-            return CatNode(
-                (self.parents, *other.parents), identity, (self.value, *other.value)
-            )
+            return CatNode((self, *other.parents), identity, (self.value, *other.value))
         else:
             return CatNode((self, other), identity, (self.value, other.value))
 
@@ -74,7 +67,7 @@ class Node(Module):
         """
         if isinstance(other, ArgsNode):
             return ArgsNode(
-                (self.parents, *other.parents), identity, (self.value, *other.value)
+                (self, *other.parents), identity, (self.value, *other.value)
             )
         else:
             return ArgsNode((self, other), identity, (self.value, other.value))
@@ -108,13 +101,18 @@ class Node(Module):
             return None
 
 
-@dataclass(repr=False)
 class InputNode(Node):
     """An input node. It is NOT a ndarray."""
 
-    parents: Tuple[Node, ...] = ()
-    fx: Union[Module, Callable] = lambda x: x
-    value: jnp.ndarray = None
+    parents: Tuple[Node, ...]
+    fx: Union[Module, Callable]
+    value: jnp.ndarray
+
+    def __init__(self, value: jnp.ndarray, fx=lambda x: x):
+        self.parents = ()
+        self.fx = fx
+        with self.add_states():
+            self.value = value
 
 
 class CatNode(Node):
@@ -131,9 +129,7 @@ class CatNode(Node):
                 (*self.value, *other.value),
             )
         else:
-            return CatNode(
-                (*self.parents, other.parents), identity, (*self.value, other.value)
-            )
+            return CatNode((*self.parents, other), identity, (*self.value, other.value))
 
 
 class ArgsNode(Node):
@@ -158,7 +154,7 @@ class ArgsNode(Node):
             )
         else:
             return ArgsNode(
-                (*self.parents, other.parents), identity, (*self.value, other.value)
+                (*self.parents, other), identity, (*self.value, other.value)
             )
 
 
@@ -166,45 +162,46 @@ class GraphModule(Module):
     """A module that uses a directed graph to represent its computation."""
 
     output_node: Node
+    modules: List[Module]
 
     def __init__(self, inputs, output, name: Optional[str] = None):
         super().__init__(name=name)
 
-        def _check_shared_parameters(mod: Node):
-            def fx_filter(n: Node):
-                if isinstance(n, Node):
-                    return Node(n.parents, n.fx, None)
-                else:
-                    return n
+        self.register_module("modules", [])
 
-            mod = mod.apply(fx_filter)
-            leaves = jax.tree_leaves(jax.tree_map(id, mod))
-            if len(leaves) != len(set(leaves)):
-                raise ValueError(
-                    "Shared parameters (or modules) are not allowed in a GraphModule. "
-                    "Please use normal module instead."
-                )
-
-        _check_shared_parameters(output)
-
-        def transform_input_nodes(node: Node):
-            p = tuple(transform_input_nodes(parent) for parent in node.parents)
+        def transform(node: Node):
+            p = tuple(transform(parent) for parent in node.parents)
             if node in inputs:
                 idx = inputs.index(node)
-                return InputNode((), Lambda(lambda xs: xs[idx], f"get<{idx}>"), None)
-            return Node(p, node.fx, None)
+                return InputNode(
+                    value=None, fx=Lambda(lambda _, xs: xs[idx], f"get<{idx}>")
+                )
+            elif isinstance(node.fx, Module):
+                for idx, mod in enumerate(self.modules):
+                    if mod is node.fx:
+                        mod_idx = idx
+                        break
+                else:
+                    mod_idx = len(self.modules)
+                    self.modules.append(node.fx)
+                fx = lambda mods, xs: mods[mod_idx](xs)
+                fx.__name__ = f"F[{mod_idx}]"
+                return Node(p, fx, None)
+            else:
+                raise RuntimeError("Impossible")
+                # return Node(p, lambda _, xs: node.fx(xs), None)
 
-        self.output_node = transform_input_nodes(output)
+        self.output_node = transform(output)
 
     def __call__(self, *xs):
         def run(node: Node):
             if isinstance(node, InputNode):
-                return node.fx(xs)
+                return node.fx(self.modules, xs)
             else:
                 ii = tuple(run(p) for p in node.parents)
                 if len(node.parents) == 1:
                     (ii,) = ii
-                return node.fx(ii)
+                return node.fx(self.modules, ii)
 
         return run(self.output_node)
 
@@ -225,7 +222,7 @@ def build_graph_module(func):
 
     @pure
     def _func(*inputs):
-        inputs = tuple(InputNode((), lambda q: q, x) for x in inputs)
+        inputs = tuple(InputNode(x) for x in inputs)
         output = func(*inputs)
         mod = GraphModule(inputs, output)
         del inputs, output
