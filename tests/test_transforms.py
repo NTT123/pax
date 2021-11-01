@@ -3,13 +3,15 @@ import jmp
 import pax
 
 
-@pax.pure
 def test_mutate_new_module_list():
     a = pax.nn.Linear(3, 3)
     b = a.copy()
-    b.lst = []
-    b.lst.append(pax.nn.Linear(4, 4))
-    b.find_and_register_submodules()
+
+    def mutate(b):
+        b.register_module("lst", [pax.nn.Linear(4, 4)])
+        return b
+
+    b = pax.pure(mutate)(b)
     # pylint: disable=protected-access
     assert b._pax.name_to_kind["lst"] == pax.PaxKind.MODULE
 

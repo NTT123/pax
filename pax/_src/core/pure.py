@@ -105,26 +105,26 @@ def pure(
         args = tuple(args)
 
         def no_leak_func(*args, **kwargs):
-            gc.collect()
-            args = list(args)
-            for i in static_argnums:
-                args[i] = args_copy[i]
-            args = tuple(args)
-            set_rng_state(rng_state)
-            out = unbound_func(*args, **kwargs)
-            set_rng_state(rng_state)
-            gc.collect()
-            return out
-
-        def _run(args, kwargs, eval_shape: bool = False):
             args, kwargs = _deepcopy((args, kwargs))
             modules = _get_all_submodules((args, kwargs))
             with allow_mutation(modules):
-                if eval_shape:
-                    out = jax.eval_shape(no_leak_func, *args, **kwargs)
-                else:
-                    out = no_leak_func(*args, **kwargs)
+                gc.collect()
+                args = list(args)
+                for i in static_argnums:
+                    args[i] = args_copy[i]
+                args = tuple(args)
+                set_rng_state(rng_state)
+                out = unbound_func(*args, **kwargs)
+                set_rng_state(rng_state)
+                gc.collect()
                 return out
+
+        def _run(args, kwargs, eval_shape: bool = False):
+            if eval_shape:
+                out = jax.eval_shape(no_leak_func, *args, **kwargs)
+            else:
+                out = no_leak_func(*args, **kwargs)
+            return out
 
         with jax.check_tracer_leaks(check_leaks):
             if check_leaks:
