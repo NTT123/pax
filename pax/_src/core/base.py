@@ -309,7 +309,7 @@ class BaseModule(metaclass=BaseModuleMetaclass):
                         raise ValueError(
                             f"Unregistered field `{self.__class__.__name__}.{name}`"
                             f" ({kind}) contains a ndarray. Consider registering it using"
-                            f" `self.set_attribute_kind` or `self.register_*` methods."
+                            f" `self.add_parameters()` or `self.add_states()` context managers."
                         )
 
             # Check if an unregistered (or PARAMETER) field contains pax.Module instances
