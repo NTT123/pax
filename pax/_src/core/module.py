@@ -157,7 +157,7 @@ class Module(BaseModule):
         else:
             lst_info = [f"{k}={v}" for (k, v) in info.items() if v is not None]
             str_info = ", ".join(lst_info)
-            return f"{name}{cls_name}[{str_info}]"
+            return f"{name}{cls_name}({str_info})"
 
     def __repr__(self) -> str:
         return self._repr()

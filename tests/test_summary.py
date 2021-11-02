@@ -4,7 +4,7 @@ import pax
 
 def test_linear_summary():
     fc = pax.nn.Linear(3, 3)
-    assert fc.summary() == "Linear[in_dim=3, out_dim=3, with_bias=True]"
+    assert fc.summary() == "Linear(in_dim=3, out_dim=3, with_bias=True)"
 
 
 def test_sequential_summary():
