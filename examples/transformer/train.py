@@ -85,7 +85,7 @@ def train():
     optimizer = opax.chain(
         opax.clip_by_global_norm(1.0),
         opax.adam(learning_rate),
-    )(~net)
+    )(net.parameters())
 
     data = inspect.getsource(LM)  # a _true_ AGI learns about itself.
     test_prompt = data[:20]
