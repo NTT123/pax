@@ -29,10 +29,12 @@ class Linear(pax.Module):
     b_init: Callable = field(default=jax.nn.initializers.zeros, repr=False)
 
     def __post_init__(self):
-        self.weight = self.w_init(pax.next_rng_key(), (self.in_dim, self.out_dim))
-        self.bias = self.b_init(None, (self.out_dim)) if self.with_bias else None
-        self.counter = jnp.array(0)
-        self.set_attribute_kind(weight=pax.P, bias=pax.P, counter=pax.S)
+        with self.add_parameters():
+            self.weight = self.w_init(pax.next_rng_key(), (self.in_dim, self.out_dim))
+            self.bias = self.b_init(None, (self.out_dim)) if self.with_bias else None
+
+        with self.add_states():
+            self.counter = jnp.array(0)
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         self.counter += 1
