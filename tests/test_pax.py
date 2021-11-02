@@ -263,12 +263,12 @@ def test_class_attribute_copy():
 def test_assign_empty_list_dict():
     fc = pax.nn.Linear(3, 3)
     fc = fc.set_attribute("a", [])
-    fc.a.append(1)
-    assert fc.a == [1]
-    del fc.a[0]
+    fc.a.append(1)  # type: ignore
+    assert fc.a == [1]  # type: ignore
+    del fc.a[0]  # type: ignore
 
     fc = fc.set_attribute("b", {})
-    fc.b[1] = 2
+    fc.b[1] = 2  # type: ignore
 
 
 def test_automatic_assign_module_list_1():
