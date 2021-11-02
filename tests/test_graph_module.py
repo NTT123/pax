@@ -1,13 +1,13 @@
 """Test graph module"""
 
+import copy
 from functools import partial
 
 import jax
 import jax.numpy as jnp
 import pax
 import pytest
-from pax._src.core.graph_module import build_graph_module
-from pax.graph import GraphModule
+from pax.graph import GraphModule, build_graph_module
 
 
 def test_simple_graph():
@@ -142,4 +142,16 @@ def test_reuse_module_error():
 
     x = jnp.empty((1, 3))
     with pytest.raises(ValueError):
-        net = build_graph_module(reuse)(x)
+        _ = build_graph_module(reuse)(x)
+
+
+def test_copy_error():
+    x = pax.graph.InputNode(jnp.empty((3, 3)))
+    with pytest.raises(TypeError):
+        _ = copy.copy(x)
+
+
+def test_deepcopy_error():
+    x = pax.graph.InputNode(jnp.empty((3, 3)))
+    with pytest.raises(TypeError):
+        _ = copy.deepcopy(x)
