@@ -1,7 +1,7 @@
 """Build a module from a directed graph"""
 
 from dataclasses import dataclass
-from functools import wraps
+from functools import lru_cache, wraps
 from typing import Callable, List, Optional, Tuple, Union
 
 import jax.numpy as jnp
@@ -25,11 +25,14 @@ class Node(Module):
     value: jnp.ndarray
 
     def __post_init__(self):
-        self.set_attribute_kind(parents=PaxKind.MODULE, value=PaxKind.STATE)
-
         if not isinstance(self.fx, Module):
             self.fx = Lambda(self.fx)
-        self.set_attribute_kind(fx=PaxKind.MODULE)
+
+        self.set_attribute_kind(
+            parents=PaxKind.MODULE,
+            value=PaxKind.STATE,
+            fx=PaxKind.MODULE,
+        )
 
     def __rshift__(self, fn):
         """Create a new node.
@@ -40,7 +43,7 @@ class Node(Module):
         >>> x = pax.InputNode(jnp.array(1.))
         >>> y = x >> partial(jax.lax.add, 1.)
         """
-        return Node((self,), fn, fn(self.value))
+        return Node((self,), fn, pure(fn)(self.value))
 
     def __and__(self: "Node", other: "Node"):
         """Concatenate two nodes to create a tuple.
@@ -81,11 +84,6 @@ class Node(Module):
 
         return Node((self, other), bin_ops_fn, fn(self.value, other.value))
 
-    # __add__ = partialmethod(binary_ops, jax.lax.add)
-    # __sub__ = partialmethod(binary_ops, jax.lax.sub)
-    # __mul__ = partialmethod(binary_ops, jax.lax.mul)
-    # __div__ = partialmethod(binary_ops, jax.lax.div)
-
     @property
     def shape(self):
         if hasattr(self, "value") and self.value is not None:
@@ -99,6 +97,12 @@ class Node(Module):
             return self.value.dtype
         else:
             return None
+
+    def __eq__(self, o: object) -> bool:
+        return self is o
+
+    def __hash__(self) -> int:
+        return id(self)
 
 
 class InputNode(Node):
@@ -166,6 +170,7 @@ class GraphModule(Module):
 
         self.register_module("modules", [])
 
+        @lru_cache(maxsize=None)
         def transform(node: Node):
             p = tuple(transform(parent) for parent in node.parents)
             if node in inputs:
@@ -176,8 +181,11 @@ class GraphModule(Module):
             elif isinstance(node.fx, Module):
                 for idx, mod in enumerate(self.modules):
                     if mod is node.fx:
-                        mod_idx = idx
-                        break
+                        raise ValueError(
+                            f"The module {node.fx} is shared between nodes.\n"
+                            f"This is NOT allowed by pax.graph.GraphModule.\n"
+                            f"Please use pax.Module instead."
+                        )
                 else:
                     mod_idx = len(self.modules)
                     self.modules.append(node.fx)
@@ -191,6 +199,7 @@ class GraphModule(Module):
         self.output_node = transform(output)
 
     def __call__(self, *xs):
+        @lru_cache(maxsize=None)
         def run(node: Node):
             if isinstance(node, InputNode):
                 return node.fx(self.modules, xs)
@@ -217,12 +226,12 @@ def build_graph_module(func):
     >>> net = pax.build_graph_module(residual_forward)(jnp.empty((3, 8)))
     """
 
-    @pure
-    def _func(*inputs):
+    def builder_fn(*inputs):
         inputs = tuple(InputNode(x) for x in inputs)
         output = func(*inputs)
+        assert isinstance(output, Node)
         mod = GraphModule(inputs, output)
         del inputs, output
         return mod
 
-    return _func
+    return builder_fn

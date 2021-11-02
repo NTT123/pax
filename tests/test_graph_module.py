@@ -5,6 +5,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import pax
+import pytest
 from pax._src.core.graph_module import build_graph_module
 from pax.graph import GraphModule
 
@@ -60,7 +61,8 @@ def test_3_cat_graph_module():
     x = pax.graph.InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
     z = x & y & y
-    _ = GraphModule((x,), z)
+    t = z >> partial(jnp.concatenate, axis=-1)
+    _ = GraphModule((x,), t)
 
 
 def test_or_graph():
@@ -128,3 +130,16 @@ def test_build_residual_net():
     net = build_graph_module(residual)(x)
     y = net(x)
     assert y.shape == (1, 3)
+
+
+def test_reuse_module_error():
+    def reuse(x):
+        mod = pax.nn.Linear(3, 3)
+        y = x >> mod >> jax.nn.relu
+        t = x >> mod
+        z = (y | t) >> jax.lax.add
+        return z
+
+    x = jnp.empty((1, 3))
+    with pytest.raises(ValueError):
+        net = build_graph_module(reuse)(x)
