@@ -58,3 +58,6 @@ class Dropout(StateModule):
             return dropout(rng_key, self.dropout_rate, x)
         else:
             return x
+
+    def __repr__(self):
+        return super()._repr({"dropout_rate": self.dropout_rate})
