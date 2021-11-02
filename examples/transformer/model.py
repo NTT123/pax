@@ -1,13 +1,14 @@
 import math
 from typing import Sequence
 
+import jax
 import jax.numpy as jnp
 import pax
 from pax.nets import Transformer
 
 
 def positional_encoding(x):
-    B, L, D = x.shape
+    _, L, D = x.shape
     position = jnp.arange(0, L, dtype=x.dtype)[:, None]
     div_term = jnp.exp(jnp.arange(0, D, 2, dtype=x.dtype) * (-math.log(10_000.0) / D))
     x1 = jnp.sin(position * div_term[None, :])
@@ -41,7 +42,9 @@ class LM(pax.Module):
         self.embed = pax.nn.Embed(
             vocab_size,
             hidden_dim,
-            w_init=pax.initializers.variance_scaling(mode="fan_out"),
+            w_init=jax.nn.initializers.variance_scaling(
+                1.0, mode="fan_out", distribution="normal"
+            ),
         )
         self.transformer = Transformer(
             hidden_dim, hidden_dim // 64, num_layers, dropout_rate=dropout
