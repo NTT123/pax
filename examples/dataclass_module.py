@@ -1,6 +1,6 @@
 """How to implement a PAX module using python dataclass."""
+
 from dataclasses import dataclass, field
-from functools import partial
 from typing import Callable, Optional
 
 import jax
