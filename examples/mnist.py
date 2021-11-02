@@ -1,9 +1,8 @@
 """train a handwritten digit classifier."""
 
 import pickle
-from functools import partial
 from pathlib import Path
-from typing import List, Mapping, Tuple
+from typing import Mapping
 
 import jax
 import jax.numpy as jnp
@@ -15,19 +14,11 @@ from tqdm.auto import tqdm
 
 Batch = Mapping[str, jnp.ndarray]
 
-# config
-batch_size = 32
-num_epochs = 5
-learning_rate = 1e-4
-weight_decay = 1e-4
-pax.seed_rng_key(42)
-
 
 class ConvNet(pax.Module):
     """ConvNet module."""
 
     layers: pax.nn.Sequential
-    output: pax.nn.Conv2D
 
     def __init__(self):
         super().__init__()
@@ -69,22 +60,10 @@ def update_fn(model: ConvNet, optimizer: GradientTransformation, batch: Batch):
     return model, optimizer, loss
 
 
-net = ConvNet()
-print(net.summary())
-optimizer = opax.chain(
-    opax.clip_by_global_norm(1.0),
-    opax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
-)(~net)
-
-
 def load_dataset(split: str):
     """Loads the dataset as a tensorflow dataset."""
     ds = tfds.load("mnist:3.*.*", split=split)
     return ds
-
-
-train_data = load_dataset("train").shuffle(10 * batch_size).batch(batch_size)
-test_data = load_dataset("test").shuffle(10 * batch_size).batch(batch_size)
 
 
 def save_ckpt(epoch: int, model: pax.Module, path: Path):
@@ -102,28 +81,53 @@ def load_ckpt(model, path: Path):
     return dic["epoch"], jax.tree_unflatten(treedef, dic["leaves"])
 
 
-# resume from the latest checkpoint
-ckpts = sorted(Path("/tmp").glob("pax_mnist_ckpt_*.pickle"))
-if len(ckpts) > 0:
-    print("loading checkpoint at", ckpts[-1])
-    last_epoch, net = load_ckpt(net, ckpts[-1])
-else:
-    last_epoch = -1
+def train(
+    batch_size=32,
+    num_epochs=10,
+    learning_rate=1e-4,
+    weight_decay=1e-4,
+    ckpt_dir="/tmp",
+):
+    pax.seed_rng_key(42)
 
-for epoch in range(last_epoch + 1, 10):
-    losses = 0.0
-    for batch in tqdm(train_data, desc="train", leave=False):
-        batch = jax.tree_map(lambda x: x.numpy(), batch)
-        net, optimizer, loss = update_fn(net, optimizer, batch)
-        losses = losses + loss
-    loss = losses / len(train_data)
+    net = ConvNet()
+    print(net.summary())
+    optimizer = opax.chain(
+        opax.clip_by_global_norm(1.0),
+        opax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
+    )(net.parameters())
 
-    test_losses = 0.0
-    for batch in tqdm(test_data, desc="eval", leave=False):
-        batch = jax.tree_map(lambda x: x.numpy(), batch)
-        test_losses = test_losses + test_loss_fn(net, batch)
-    test_loss = test_losses / len(test_data)
+    train_data = load_dataset("train").shuffle(10 * batch_size).batch(batch_size)
+    test_data = load_dataset("test").shuffle(10 * batch_size).batch(batch_size)
 
-    save_ckpt(epoch, net, Path(f"/tmp/pax_mnist_ckpt_{epoch:02d}.pickle"))
+    # resume from the latest checkpoint
+    ckpts = sorted(Path(ckpt_dir).glob("pax_mnist_ckpt_*.pickle"))
+    if len(ckpts) > 0:
+        print("loading checkpoint at", ckpts[-1])
+        last_epoch, net = load_ckpt(net, ckpts[-1])
+    else:
+        last_epoch = -1
 
-    print(f"[Epoch {epoch}]  train loss {loss:.3f}  test loss {test_loss:.3f}")
+    for epoch in range(last_epoch + 1, num_epochs):
+        losses = 0.0
+        for batch in tqdm(train_data, desc="train", leave=False):
+            batch = jax.tree_map(lambda x: x.numpy(), batch)
+            net, optimizer, loss = update_fn(net, optimizer, batch)
+            losses = losses + loss
+        loss = losses / len(train_data)
+
+        test_losses = 0.0
+        for batch in tqdm(test_data, desc="eval", leave=False):
+            batch = jax.tree_map(lambda x: x.numpy(), batch)
+            test_losses = test_losses + test_loss_fn(net, batch)
+        test_loss = test_losses / len(test_data)
+
+        save_ckpt(epoch, net, Path(ckpt_dir) / f"pax_mnist_ckpt_{epoch:02d}.pickle")
+
+        print(f"[Epoch {epoch}]  train loss {loss:.3f}  test loss {test_loss:.3f}")
+
+
+if __name__ == "__main__":
+    import fire
+
+    fire.Fire(train)
