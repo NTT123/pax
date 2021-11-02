@@ -2,6 +2,7 @@
 
 from typing import List, Mapping, Tuple
 
+import fire
 import jax
 import jax.numpy as jnp
 import jmp
@@ -123,6 +124,4 @@ def train(
 
 
 if __name__ == "__main__":
-    import fire
-
     fire.Fire(train)

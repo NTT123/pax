@@ -4,6 +4,7 @@ import pickle
 from pathlib import Path
 from typing import Mapping
 
+import fire
 import jax
 import jax.numpy as jnp
 import opax
@@ -108,26 +109,28 @@ def train(
     else:
         last_epoch = -1
 
+    # training loop
     for epoch in range(last_epoch + 1, num_epochs):
         losses = 0.0
+
+        # training
         for batch in tqdm(train_data, desc="train", leave=False):
             batch = jax.tree_map(lambda x: x.numpy(), batch)
             net, optimizer, loss = update_fn(net, optimizer, batch)
             losses = losses + loss
         loss = losses / len(train_data)
 
+        # testing
         test_losses = 0.0
-        for batch in tqdm(test_data, desc="eval", leave=False):
+        for batch in tqdm(test_data, desc="test", leave=False):
             batch = jax.tree_map(lambda x: x.numpy(), batch)
             test_losses = test_losses + test_loss_fn(net, batch)
         test_loss = test_losses / len(test_data)
 
         save_ckpt(epoch, net, Path(ckpt_dir) / f"pax_mnist_ckpt_{epoch:02d}.pickle")
-
+        # logging
         print(f"[Epoch {epoch}]  train loss {loss:.3f}  test loss {test_loss:.3f}")
 
 
 if __name__ == "__main__":
-    import fire
-
     fire.Fire(train)
