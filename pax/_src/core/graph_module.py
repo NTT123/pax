@@ -6,7 +6,7 @@ from typing import Callable, List, Optional, Tuple, Union
 
 import jax.numpy as jnp
 
-from .module import Module, PaxKind
+from .module import Module
 from .pure import pure
 from .utility_modules import Lambda
 
@@ -16,7 +16,7 @@ def identity(x):
 
 
 @dataclass(repr=False)
-class Node(Module):
+class Node:
     """A node that stores its parents nodes,
     a function and the output value of the function."""
 
@@ -27,12 +27,6 @@ class Node(Module):
     def __post_init__(self):
         if not isinstance(self.fx, Module):
             self.fx = Lambda(self.fx)
-
-        self.set_attribute_kind(
-            parents=PaxKind.MODULE,
-            value=PaxKind.STATE,
-            fx=PaxKind.MODULE,
-        )
 
     def __rshift__(self, fn):
         """Create a new node.
@@ -103,6 +97,12 @@ class Node(Module):
 
     def __hash__(self) -> int:
         return id(self)
+
+    def __deepcopy__(self, _):
+        raise TypeError("DO NOT COPY")
+
+    def __copy__(self):
+        raise TypeError("DO NOT COPY")
 
 
 class InputNode(Node):
@@ -175,9 +175,7 @@ class GraphModule(Module):
             p = tuple(transform(parent) for parent in node.parents)
             if node in inputs:
                 idx = inputs.index(node)
-                return InputNode(
-                    value=None, fx=Lambda(lambda _, xs: xs[idx], f"get<{idx}>")
-                )
+                return InputNode(value=None, fx=lambda xs: xs[idx])
             elif isinstance(node.fx, Module):
                 for idx, mod in enumerate(self.modules):
                     if mod is node.fx:
@@ -194,7 +192,6 @@ class GraphModule(Module):
                 return Node(p, fx, None)
             else:
                 raise RuntimeError("Impossible")
-                # return Node(p, lambda _, xs: node.fx(xs), None)
 
         self.output_node = transform(output)
 
@@ -202,7 +199,7 @@ class GraphModule(Module):
         @lru_cache(maxsize=None)
         def run(node: Node):
             if isinstance(node, InputNode):
-                return node.fx(self.modules, xs)
+                return node.fx(xs)
             else:
                 ii = tuple(run(p) for p in node.parents)
                 if len(node.parents) == 1:
