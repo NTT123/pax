@@ -22,10 +22,8 @@ from jax.dtypes import issubdtype as isdt
 from jaxlib.xla_extension import CompiledFunction
 
 from .threading_local import (
-    add_mutable_module,
     allow_mutation,
     is_deep_copy_enabled,
-    is_inside_pure_function,
     is_mutable,
 )
 
@@ -86,12 +84,6 @@ class BaseModuleMetaclass(type):
     def __call__(cls: Type[T], *args, **kwargs) -> T:
         module = cls.__new__(cls, *args, **kwargs)  # type: ignore
 
-        # # if a module is created inside a `pure` function, it is mutable.
-        # if is_inside_pure_function():
-        #     add_mutable_module(module)
-        #     cls.__init__(module, *args, **kwargs)
-        #     module.find_and_register_submodules()
-        # else:
         with allow_mutation(module):
             cls.__init__(module, *args, **kwargs)
             module.find_and_register_submodules()
@@ -248,10 +240,6 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         # md["name_to_kind"] = OrderedDict(module.name_to_kind)
         # pylint: disable=protected-access
         module_dict.update(zip(module._pax.name_to_kind, children))
-
-        # # if a module is created inside a `pure` function, it is mutable.
-        # if is_inside_pure_function():
-        #     add_mutable_module(module)
 
         return module
 

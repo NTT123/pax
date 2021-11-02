@@ -19,13 +19,11 @@ class PaxThreadingLocalState(threading.local):
 
     __slots__ = [
         "_enable_deep_copy",
-        "_inside_pure_function",
         "_mutable_module_id_list",
         "_rng_seed",
         "_rng_key",
     ]
     _enable_deep_copy: bool
-    _inside_pure_function: bool
     _mutable_module_id_list: Tuple[int, ...]
     _rng_seed: Optional[int]
     _rng_key: Optional[KeyArray]
@@ -34,14 +32,9 @@ class PaxThreadingLocalState(threading.local):
         super().__init__()
 
         self._enable_deep_copy = False
-        self._inside_pure_function = False
         self._mutable_module_id_list = ()
         self._rng_seed = None
         self._rng_key = None
-
-    def is_inside_pure_function(self):
-        """are we inside a function decorated by `pax.pure`"""
-        return self._inside_pure_function
 
     def is_deep_copy_enabled(self):
         """use deepcopy to copy modules"""
@@ -73,15 +66,12 @@ class PaxThreadingLocalState(threading.local):
         modules = tuple(id(mod) for mod in modules)
 
         prev = self._mutable_module_id_list
-        prev_inside = self._inside_pure_function
         prev_rng_state = self.get_rng_state()
         try:
-            self._inside_pure_function = True
             self._mutable_module_id_list = modules
             yield
         finally:
             self._mutable_module_id_list = prev
-            self._inside_pure_function = prev_inside
             self.set_rng_state(prev_rng_state)
 
     def seed_rng_key(self, seed: int) -> None:
@@ -141,7 +131,6 @@ allow_mutation = PAX_STATE.allow_mutation
 enable_deep_copy = PAX_STATE.enable_deep_copy
 get_rng_state = PAX_STATE.get_rng_state
 is_deep_copy_enabled = PAX_STATE.is_deep_copy_enabled
-is_inside_pure_function = PAX_STATE.is_inside_pure_function
 is_mutable = PAX_STATE.is_mutable
 next_rng_key = PAX_STATE.next_rng_key
 seed_rng_key = PAX_STATE.seed_rng_key
