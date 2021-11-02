@@ -57,8 +57,12 @@ class Counter(pax.Module):
     
     def __init__(self, start_value: int = 0):
         super().__init__()
-        self.register_parameter("bias", jnp.array(0.0))
-        self.register_state("counter", jnp.array(start_value))
+        
+        with self.add_parameters():
+            self.bias = jnp.array(0.0)
+        
+        with self.add_states():
+            self.counter = jnp.array(start_value)
 
     def __call__(self, x):
         self.counter = self.counter + 1
@@ -80,8 +84,8 @@ print(grads.bias) # 60.0
 
 There are few noteworthy points in the above example:
 
-* ``bias`` is registered as a trainable parameter using ``register_parameter`` method.
-* ``counter`` is registered as a non-trainable state using ``register_state`` method.
+* ``self.bias`` is registered as a trainable parameter inside the ``add_parameters`` context.
+* ``self.counter`` is registered as a non-trainable state inside the ``add_states`` context.
 * ``pax.module_and_value`` transforms `model.__call__` into a 
   pure function that returns the updated model in its output.
 * ``loss_fn`` returns the updated `model` in the output.
@@ -178,15 +182,10 @@ print(f.summary())
 
 ## PAX and other libraries <a id="paxandfriends"></a>
 
-PAX module has several methods that are similar to Pytorch. 
-
-- ``self.register_parameter(name, value)`` registers ``name`` as a trainable parameter.
-- ``self.apply(func)`` applies ``func`` on all modules of ``self`` recursively.
-- ``self.train()`` and ``self.eval()`` returns a new module in ``train/eval`` mode.
-
-PAX learns a lot from other libraries too:
+PAX learns a lot from other libraries:
 - PAX borrows the idea that _a module is also a pytree_ from [treex] and [equinox]. 
 - PAX uses the concept of _trainable parameters_ and _non-trainable states_ from [dm-haiku].
+- PAX has similar methods to PyTorch such as `model.apply()`, `model.parameters()`, `model.eval()`, etc.
 - PAX uses [objax]'s approach to implement optimizers as modules. 
 - PAX uses [jmp] library for supporting mixed precision. 
 - And of course, PAX is heavily influenced by [jax] functional programming approach.

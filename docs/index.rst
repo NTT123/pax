@@ -10,11 +10,11 @@ PAX documentation
 ===============================
 
 PAX is a stateful pytree library for training neural networks using JAX. It is designed to be simple
-and easy to use while preserving benefits from JAX.
+and easy to use while preserving benefits of JAX.
 
 .. code-block:: python
 
-   class SGD(pax.Module):
+    class SGD(pax.Module):
       velocity: pax.Module
       learning_rate: float
       momentum: float 
@@ -23,7 +23,8 @@ and easy to use while preserving benefits from JAX.
          super().__init__()
          self.momentum = momentum
          self.learning_rate = learning_rate
-         self.register_states('velocity', jax.tree_map(lambda x: jnp.zeros_like(x), params))
+         with self.add_states():
+            self.velocity = jax.tree_map(lambda x: jnp.zeros_like(x), params)
          
       def step(self, grads: pax.Module, params: pax.Module):
          self.velocity = jax.tree_map(
