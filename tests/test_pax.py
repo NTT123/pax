@@ -412,9 +412,22 @@ def test_replace_no_node():
         a = a.replace_node(3, relu)
 
 
-def test_replace_two_node():
-    fc = pax.nn.Linear(2, 3)
-    a = pax.nn.Sequential(fc, fc)
-    relu = pax.nn.Lambda(jax.nn.relu)
+def test_shared_weight():
+    fc1 = pax.nn.Linear(2, 3)
+    fc2 = pax.nn.Linear(2, 3)
+    fc2 = fc2.replace(weight=fc1.weight)
     with pytest.raises(ValueError):
-        a = a.replace_node(fc, relu)
+        _ = pax.nn.Sequential(fc1, fc2)
+
+
+def test_shared_module():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+
+            mod = pax.nn.Linear(3, 3)
+            self.fc1 = mod
+            self.fc2 = mod
+
+    with pytest.raises(ValueError):
+        _ = M()
