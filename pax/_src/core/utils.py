@@ -5,9 +5,9 @@ from unittest import TestCase
 
 import jax
 
-from .module import Module
+from .base import BaseModule
 
-T = TypeVar("T", bound=Module)
+T = TypeVar("T", bound=BaseModule)
 
 
 def assert_structure_equal(tree_a: T, tree_b: T):
@@ -19,7 +19,7 @@ def assert_structure_equal(tree_a: T, tree_b: T):
         return True
 
     def check(subtree_a, subtree_b):
-        if isinstance(subtree_a, Module) and isinstance(subtree_b, Module):
+        if isinstance(subtree_a, BaseModule) and isinstance(subtree_b, BaseModule):
             assert_structure_equal(subtree_a, subtree_b)
 
     has_error = False
@@ -28,7 +28,7 @@ def assert_structure_equal(tree_a: T, tree_b: T):
             check,
             tree_a,
             tree_b,
-            is_leaf=lambda x: isinstance(x, Module)
+            is_leaf=lambda x: isinstance(x, BaseModule)
             and x is not tree_a
             and x is not tree_b,
         )

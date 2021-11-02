@@ -177,16 +177,8 @@ class GraphModule(Module):
                 idx = inputs.index(node)
                 return InputNode(value=None, fx=lambda xs: xs[idx])
             elif isinstance(node.fx, Module):
-                for idx, mod in enumerate(self.modules):
-                    if mod is node.fx:
-                        raise ValueError(
-                            f"The module {node.fx} is shared between nodes.\n"
-                            f"This is NOT allowed by pax.graph.GraphModule.\n"
-                            f"Please use pax.Module instead."
-                        )
-                else:
-                    mod_idx = len(self.modules)
-                    self.modules.append(node.fx)
+                mod_idx = len(self.modules)
+                self.modules.append(node.fx)
                 fx = lambda mods, xs: mods[mod_idx](xs)
                 fx.__name__ = f"F[{mod_idx}]"
                 return Node(p, fx, None)

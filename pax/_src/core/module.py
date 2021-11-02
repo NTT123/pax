@@ -116,7 +116,11 @@ class Module(BaseModule):
     def scan_bugs(self: T) -> T:
         """Scan the module for potential bugs."""
 
-        def _scan_apply_fn(mod: T) -> T:
+        # scan for shared module/weight.
+        self._assert_not_shared_module()
+        self._assert_not_shared_weight()
+
+        def _scan_field_fn(mod: T) -> T:
             assert isinstance(mod, Module)
             # pylint: disable=protected-access
             mod._scan_fields(mod.__class__.__dict__.keys())
@@ -124,7 +128,7 @@ class Module(BaseModule):
             mod._scan_fields(mod.__dict__.keys())
             return mod
 
-        self.apply(_scan_apply_fn)
+        self.apply(_scan_field_fn)
         return self
 
     def __mod__(self: T, args: Union[Any, Tuple]) -> Tuple[T, Any]:
@@ -147,7 +151,7 @@ class Module(BaseModule):
 
     def _repr(self, info: Optional[Dict[str, Any]] = None) -> str:
         name = f"({self.name}) " if self.name is not None else ""
-        cls_name = self.__class__.__name__
+        cls_name = self.__class__.__qualname__
         if info is None:
             return f"{name}{cls_name}"
         else:

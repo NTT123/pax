@@ -89,6 +89,8 @@ class BaseModuleMetaclass(type):
             module.find_and_register_submodules()
 
         # scan module after initialization for potential bugs
+        module._assert_not_shared_module()
+        module._assert_not_shared_weight()
         module._scan_fields(module.__dict__.keys())
         return module
 
@@ -418,3 +420,49 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         is_module = lambda x: isinstance(x, BaseModule)
         submods, _ = jax.tree_flatten(module_subtrees, is_leaf=is_module)
         return [v for v in submods if is_module(v)]
+
+    def _assert_not_shared_module(self):
+        """Shared module is not allowed."""
+        shared_module = _find_shared_module(self)
+        if shared_module is not None:
+            raise ValueError(
+                f"The module `{shared_module}` is shared between two nodes of the pytree.\n"
+                f"This is not allowed to prevent potential silence bugs."
+            )
+
+    def _assert_not_shared_weight(self):
+        """Shared weight is not allowed."""
+        leaves = jax.tree_leaves(self)
+        leaf_ids = set()
+        for leaf in leaves:
+            if id(leaf) in leaf_ids:
+                raise ValueError(
+                    f"Detected a shared ndarray. This is not allowed.\n"
+                    f"Shape={leaf.shape}\n"
+                    f"Dtype={leaf.dtype}\n"
+                    f"Value={leaf}",
+                )
+            leaf_ids.add(id(leaf))
+
+
+def _find_shared_module(module: BaseModule):
+    """Find shared module.
+
+    - Return the first module that is shared by two nodes of the pytree.
+    - Return `None` if there is no shared module.
+    """
+
+    def _get_all_modules(mod: BaseModule, lst: List):
+        lst.append(mod)
+        for m in mod.submodules():
+            _get_all_modules(m, lst)
+
+    mods = []
+    _get_all_modules(module, mods)
+    module_ids = set()
+    for m in mods:
+        if id(m) in module_ids:
+            return m
+        module_ids.add(id(m))
+
+    return None
