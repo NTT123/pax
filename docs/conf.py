@@ -15,9 +15,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+import doctest
+import inspect
 import os
 import sys
-import inspect
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -85,6 +86,24 @@ html_theme = "sphinx_rtd_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ["_static"]
+
+
+# -- Options for doctest -----------------------------------------------------
+
+doctest_test_doctest_blocks = "true"
+doctest_global_setup = """
+import jax
+import jax.numpy as jnp
+import pax
+import opax
+pax.seed_rng_key(42)
+"""
+doctest_default_flags = (
+    doctest.ELLIPSIS
+    | doctest.IGNORE_EXCEPTION_DETAIL
+    | doctest.DONT_ACCEPT_TRUE_FOR_1
+    | doctest.NORMALIZE_WHITESPACE
+)
 
 
 # -- Options for katex ------------------------------------------------------
