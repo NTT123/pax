@@ -15,11 +15,20 @@ class Sequential(Module):
 
     For example:
 
-        >>> net = pax.nn.Sequential(
-        ...              pax.nn.Linear(2, 32),
-        ...              jax.nn.relu,
-        ...              pax.nn.Linear(32, 2)
-        ... )
+    >>> net = pax.nn.Sequential(
+    ...              pax.nn.Linear(2, 32),
+    ...              jax.nn.relu,
+    ...              pax.nn.Linear(32, 3)
+    ... )
+    >>> print(net.summary())
+    Sequential
+    ├── Linear(in_dim=2, out_dim=32, with_bias=True)
+    ├── x => relu(x)
+    └── Linear(in_dim=32, out_dim=3, with_bias=True)
+    >>> x = jnp.empty((3, 2))
+    >>> y = net(x)
+    >>> y.shape
+    (3, 3)
     """
 
     # Note: we cannot mix pax.Module and jax functions (e.g., jax.nn.relu) in the same list.
