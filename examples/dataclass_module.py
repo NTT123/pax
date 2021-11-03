@@ -31,7 +31,7 @@ class Linear(pax.Module):
     def __post_init__(self):
         with self.add_parameters():
             self.weight = self.w_init(pax.next_rng_key(), (self.in_dim, self.out_dim))
-            self.bias = self.b_init(None, (self.out_dim)) if self.with_bias else None
+            self.bias = self.b_init(None, (self.out_dim,)) if self.with_bias else None
 
         with self.add_states():
             self.counter = jnp.array(0)
