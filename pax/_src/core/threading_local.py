@@ -4,6 +4,7 @@ Manage thread local states
 
 import logging
 import threading
+import weakref
 from contextlib import contextmanager
 from typing import Any, Optional, Tuple, Union
 
@@ -19,12 +20,12 @@ class PaxThreadingLocalState(threading.local):
 
     __slots__ = [
         "_enable_deep_copy",
-        "_mutable_module_id_list",
+        "_mutable_module_ref_list",
         "_rng_seed",
         "_rng_key",
     ]
     _enable_deep_copy: bool
-    _mutable_module_id_list: Tuple[int, ...]
+    _mutable_module_ref_list: Tuple[weakref.ReferenceType, ...]
     _rng_seed: Optional[int]
     _rng_key: Optional[KeyArray]
 
@@ -32,7 +33,7 @@ class PaxThreadingLocalState(threading.local):
         super().__init__()
 
         self._enable_deep_copy = False
-        self._mutable_module_id_list = ()
+        self._mutable_module_ref_list = ()
         self._rng_seed = None
         self._rng_key = None
 
@@ -42,11 +43,18 @@ class PaxThreadingLocalState(threading.local):
 
     def add_mutable_module(self, module):
         """add `module` to mutable list"""
-        self._mutable_module_id_list = (id(module),) + self._mutable_module_id_list
+        self._mutable_module_ref_list = (
+            weakref.ref(module),
+            *self._mutable_module_ref_list,
+        )
 
     def is_mutable(self, module):
         """Is `module` mutable?"""
-        return id(module) in self._mutable_module_id_list
+        for ref in self._mutable_module_ref_list:
+            if module is ref():
+                return True
+
+        return False
 
     @contextmanager
     def enable_deep_copy(self):
@@ -63,15 +71,15 @@ class PaxThreadingLocalState(threading.local):
         r"""A context manager that turns on mutability."""
         if not isinstance(modules, (tuple, list)):
             modules = (modules,)
-        modules = tuple(id(mod) for mod in modules)
+        modules = tuple(weakref.ref(mod) for mod in modules)
 
-        prev = self._mutable_module_id_list
+        prev = self._mutable_module_ref_list
         prev_rng_state = self.get_rng_state()
         try:
-            self._mutable_module_id_list = modules
+            self._mutable_module_ref_list = modules
             yield
         finally:
-            self._mutable_module_id_list = prev
+            self._mutable_module_ref_list = prev
             self.set_rng_state(prev_rng_state)
 
     def seed_rng_key(self, seed: int) -> None:

@@ -1,3 +1,4 @@
+import weakref
 from functools import partial
 from typing import Any
 
@@ -116,3 +117,11 @@ def test_deep_compare_2():
     m = M()
     m1 = mutate(m)
     pax.assert_structure_equal(m, m1)
+
+
+def test_module_weak_ref():
+    mod = pax.nn.Linear(3, 3)
+    mod_ref = weakref.ref(mod)
+    assert mod_ref() is mod
+    del mod
+    assert mod_ref() is None
