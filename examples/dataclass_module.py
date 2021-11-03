@@ -7,12 +7,6 @@ import jax
 import jax.numpy as jnp
 import pax
 
-pax.seed_rng_key(42)
-
-# data
-x = jax.random.normal(pax.next_rng_key(), (32, 1))
-y = jax.random.normal(pax.next_rng_key(), (32, 1))
-
 
 @dataclass
 class Linear(pax.Module):
@@ -44,11 +38,12 @@ class Linear(pax.Module):
         return x
 
 
+pax.seed_rng_key(42)
+
 fc = Linear(3, 4, name="fc1")
-print(fc)
 
-x = jnp.ones((32, 3))
-fc, y = pax.module_and_value(fc)(x)
+print("Before:", fc)
+dummy_x = jnp.empty((32, 3))
+fc, y = pax.module_and_value(fc)(dummy_x)
 assert y.shape == (32, 4)
-
-print(fc)
+print("After :", fc)
