@@ -375,7 +375,16 @@ class BaseModule(metaclass=BaseModuleMetaclass):
 
         Example:
 
-        >>> self.set_attribute_kind(weight=pax.P, counter=pax.S)
+        >>> class M(pax.Module):
+        ...     def __init__(self):
+        ...         super().__init__()
+        ...         self.weight = jnp.array(0.)
+        ...         self.counter = jnp.array(0)
+        ...         self.set_attribute_kind(weight=pax.P, counter=pax.S)
+        ...
+        >>> m = M()
+        >>> print(m._pax.name_to_kind)
+        OrderedDict([('weight', <PaxKind.PARAMETER: 2>), ('counter', <PaxKind.STATE: 1>)])
         """
         for name, kind in kwargs.items():
             if not hasattr(self, name):
