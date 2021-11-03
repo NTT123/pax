@@ -47,49 +47,49 @@ pip3 install git+https://github.com/ntt123/pax.git#egg=pax3[test]
 ## Getting started<a id="gettingstarted"></a>
 
 ```python
-import jax
-import jax.numpy as jnp
-import pax
+import jax, pax, jax.numpy as jnp
 
-class Counter(pax.Module):
+class Linear(pax.Module):
+    weight: jnp.ndarray
     bias: jnp.ndarray
     counter: jnp.ndarray
-    
-    def __init__(self, start_value: int = 0):
+
+    def __init__(self):
         super().__init__()
-        
+
         with self.add_parameters():
+            self.weight = jnp.array(0.0)
             self.bias = jnp.array(0.0)
-        
+
         with self.add_states():
-            self.counter = jnp.array(start_value)
+            self.counter = jnp.array(0)
 
     def __call__(self, x):
         self.counter = self.counter + 1
-        return self.counter * x + self.bias
+        return self.weight * x + self.bias
 
-def loss_fn(model: Counter, x: jnp.ndarray):
-    model, y = pax.module_and_value(model)(x)
-    loss = jnp.mean(jnp.square(x - y))
+def loss_fn(model: Linear, x: jnp.ndarray, y: jnp.ndarray):
+    model, y_hat = pax.module_and_value(model)(x)
+    loss = jnp.mean(jnp.square(y_hat - y))
     return loss, (loss, model)
 
 grad_fn = jax.grad(loss_fn, has_aux=True, allow_int=True)
 
-net = Counter(3)
-x = jnp.array(10.)
-grads, (loss, net) = grad_fn(net, x)
-print(grads.counter) # (b'',)
-print(grads.bias) # 60.0
+net = Linear()
+x, y = jnp.array(1.0), jnp.array(1.0)
+grads, (loss, net) = grad_fn(net, x, y)
+print(grads.counter)  # (b'',)
+print(grads.bias)  # -2.0
 ```
 
-There are few noteworthy points in the above example:
+There are a few noteworthy points in the above example:
 
-* ``self.bias`` is registered as a trainable parameter inside the ``add_parameters`` context.
+* ``self.weight`` and ``self.bias`` are registered as trainable parameters inside the ``add_parameters`` context.
 * ``self.counter`` is registered as a non-trainable state inside the ``add_states`` context.
 * ``pax.module_and_value`` transforms `model.__call__` into a 
   pure function that returns the updated model in its output.
 * ``loss_fn`` returns the updated `model` in the output.
-* ``allow_int=True`` to compute gradients with respect to integer ndarray leaf `counter`.
+* ``jax.grad(..., allow_int=True)`` allows gradients with respect to integer ndarray leaves (e.g., `counter`).
 
 ## PAX functional programming<a id="functional"></a>
 
@@ -98,43 +98,37 @@ There are few noteworthy points in the above example:
 It is a good practice to keep functions of PAX modules pure (no side effects).
 
 Following this practice, the modifications of PAX module's internal states are restricted.
-Only PAX functions decorated by `pax.pure` are allowed to modify PAX modules.
+Only PAX functions decorated by `pax.pure` are allowed to modify a *copy* of its input modules.
+Any modification on the copy will not affect the original inputs.
+As a consequence, the only way to *update* an input module is to return it in the output.
 
 ```python
-net = Counter(3)
+net = Linear()
 net(0)
 # ...
 # ValueError: Cannot modify a module in immutable mode.
 # Please do this computation inside a function decorated by `pax.pure`.
-```
 
-Furthermore, a decorated function can only access a copy of its inputs. Any modification on the copy will not affect the original inputs.
-
-```python
 @pax.pure
-def update_counter_wo_return(m: Counter):
+def update_counter_wo_return(m: Linear):
     m(0)
 
 print(net.counter)
-# 3
+# 0
 update_counter_wo_return(net)
 print(net.counter) # the same counter
-# 3
-```
+# 0
 
-As a consequence, the only way to *update* an input module is to return it in the output.
-
-```python
 @pax.pure
-def update_counter(m: Counter):
+def update_counter_and_return(m: Linear):
     m(0)
     return m
 
 print(net.counter)
-# 3
-net = update_counter(net)
+# 0
+net = update_counter_and_return(net)
 print(net.counter) # increased by 1
-# 4
+# 1
 ```
 
 ### `pax.module_and_value`
@@ -144,10 +138,10 @@ It is a good practice to keep functions decorated by `pax.pure` as small as poss
 PAX provides the `pax.module_and_value` function that transforms a module's method into a pure function. The pure function also returns the updated module in its output. For example:
 
 ```python
-net = Counter(3)
-print(net.counter) # 3
+net = Linear()
+print(net.counter) # 0
 net, y = pax.module_and_value(net)(0)
-print(net.counter) # 4
+print(net.counter) # 1
 ```
 
 In this example, `pax.module_and_value` transforms `net.__call__` into a pure function which returns the updated `net` in its output.
@@ -155,10 +149,10 @@ In this example, `pax.module_and_value` transforms `net.__call__` into a pure fu
 
 ### Replacing parts
 
-PAX provides utility methods to modify a module in a functional way.
+For convenience, PAX provides utility methods to modify a module in a functional way.
 
 The `replace` method creates a new module with attributes replaced. 
-For example, to replace `weight` and `bias` of a `Linear` module:
+For example, to replace `weight` and `bias` of a `pax.nn.Linear` module:
 
 ```python
 fc = pax.nn.Linear(2, 2)
