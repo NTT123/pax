@@ -170,8 +170,8 @@ f = pax.nn.Sequential(
 f = f.replace_node(f[-1], pax.nn.Linear(3, 5))
 print(f.summary())
 # Sequential
-# ├── Linear[in_dim=2, out_dim=3, with_bias=True]
-# └── Linear[in_dim=3, out_dim=5, with_bias=True]
+# ├── Linear(in_dim=2, out_dim=3, with_bias=True)
+# └── Linear(in_dim=3, out_dim=5, with_bias=True)
 ```
 
 ## PAX and other libraries <a id="paxandfriends"></a>
