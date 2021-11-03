@@ -32,6 +32,23 @@ PAX's Module
    .. autoattribute:: UNKNOWN
 
 
+Graph API
+---------
+
+.. currentmodule:: pax.graph
+
+.. autoclass:: Node
+   :members:
+
+.. autoclass:: InputNode
+   :members:
+
+.. autoclass:: GraphModule
+   :members:
+
+.. autofunction:: build_graph_module
+
+
 Purify functions and methods
 ----------------------------
 
