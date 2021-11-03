@@ -102,7 +102,7 @@ class Lambda(Module):
         if self.name is not None:
             return super().__repr__()
         else:
-            return f"{self.__class__.__name__}[{self.func}]"
+            return f"{self.__class__.__qualname__}({self.func.__name__})"
 
     def summary(self, return_list: bool = False) -> Union[str, List[str]]:
         if self.name is not None:
