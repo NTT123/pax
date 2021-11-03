@@ -33,7 +33,7 @@ class StateModule(Module):
 
 
 class LazyModule(Module):
-    """A module that auto creates a submodule when needed.
+    """A lazy module is a module that only creates submodules when needed.
 
 
     Example:
