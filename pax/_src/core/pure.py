@@ -46,9 +46,10 @@ def pure(
 
     >>> f = pax.nn.Linear(3,3)
     >>> f.a_list = []
-    [...]
+    Traceback (most recent call last):
+      ...
     ValueError: Cannot modify a module in immutable mode.
-    Please do this computation inside a @pax.pure function.
+    Please do this computation inside a function decorated by `pax.pure`.
     >>>
     >>> @pax.pure
     ... def add_list(m):
