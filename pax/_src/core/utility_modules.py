@@ -87,7 +87,17 @@ class LazyModule(Module):
 
 
 class Lambda(Module):
-    """Convert a function to a module."""
+    """Convert a function to a module.
+
+    Example:
+
+    >>> net = pax.nn.Lambda(jax.nn.relu)
+    >>> print(net.summary())
+    x => relu(x)
+    >>> y = net(jnp.array(-1))
+    >>> y
+    DeviceArray(0, dtype=int32, weak_type=True)
+    """
 
     func: Callable
 
