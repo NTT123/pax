@@ -38,9 +38,10 @@ class LazyModule(Module):
 
     Example:
 
+    >>> from dataclasses import dataclass
     >>> @dataclass
     ... class MLP(pax.LazyModule):
-    ...     features: Sequence[int]
+    ...     features: list
     ...
     ...     def __call__(self, x):
     ...         sizes = zip(self.features[:-1], self.features[1:])
