@@ -17,8 +17,18 @@ def identity(x):
 
 @dataclass(repr=False)
 class Node:
-    """A node that stores its parents nodes,
-    a function and the output value of the function."""
+    """A node is an object that stores:
+
+    - parents nodes,
+    - a PAX module (or a function),
+    - and a value.
+
+    For example:
+
+    >>> x = pax.graph.Node((), lambda x: x, jnp.array(0))
+    >>> x.parents, x.fx, x.value
+    ((), Lambda..., DeviceArray(0, dtype=int32, weak_type=True))
+    """
 
     parents: Tuple["Node", ...]
     fx: Union[Module, Callable]
@@ -29,13 +39,16 @@ class Node:
             self.fx = Lambda(self.fx)
 
     def __rshift__(self, fn):
-        """Create a new node.
+        """Create a new node by applying `fn` to the node's value.
 
         Example:
+
         >>> import jax, pax, jax.numpy as jnp
         >>> from functools import partial
-        >>> x = pax.InputNode(jnp.array(1.))
+        >>> x = pax.graph.Node((), lambda x: x, jnp.array(1.))
         >>> y = x >> partial(jax.lax.add, 1.)
+        >>> y.value
+        DeviceArray(2., dtype=float32, weak_type=True)
         """
         return Node((self,), fn, pure(fn)(self.value))
 
@@ -44,9 +57,11 @@ class Node:
 
         Example:
 
-        >>> x = pax.InputNode(1)
-        >>> y = pax.InputNode(2)
+        >>> x = pax.graph.InputNode(1)
+        >>> y = pax.graph.InputNode(2)
         >>> z = x & y
+        >>> z.value
+        (1, 2)
         """
         if isinstance(other, CatNode):
             return CatNode((self, *other.parents), identity, (self.value, *other.value))
@@ -58,9 +73,11 @@ class Node:
 
         Example:
 
-        >>> x = pax.InputNode(1)
-        >>> y = pax.InputNode(2)
-        >>> z = x | y
+        >>> x = pax.graph.InputNode(1)
+        >>> y = pax.graph.InputNode(2)
+        >>> z = (x | y) >> jax.lax.add
+        >>> z.value
+        DeviceArray(3, dtype=int32, weak_type=True)
         """
         if isinstance(other, ArgsNode):
             return ArgsNode(
@@ -70,7 +87,16 @@ class Node:
             return ArgsNode((self, other), identity, (self.value, other.value))
 
     def binary_ops(self, fn, other):
-        """Create a new using a binary operator."""
+        """Create a new node using a binary operator.
+
+        Example:
+
+        >>> x = pax.graph.InputNode(1)
+        >>> y = pax.graph.InputNode(2)
+        >>> z = x.binary_ops(jax.lax.sub, y)
+        >>> z.value
+        DeviceArray(-1, dtype=int32, weak_type=True)
+        """
 
         @wraps(fn)
         def bin_ops_fn(xs):
@@ -80,6 +106,14 @@ class Node:
 
     @property
     def shape(self):
+        """Return the shape of value.
+
+        Example:
+
+        >>> x = pax.graph.InputNode(jnp.empty((3, 4)))
+        >>> x.shape
+        (3, 4)
+        """
         if hasattr(self, "value") and self.value is not None:
             return self.value.shape
         else:
@@ -87,6 +121,14 @@ class Node:
 
     @property
     def dtype(self):
+        """Return dtype of value.
+
+        Example:
+
+        >>> x = pax.graph.InputNode(jnp.empty((1,), dtype=jnp.int32))
+        >>> x.dtype
+        dtype('int32')
+        """
         if hasattr(self, "value") and self.value is not None:
             return self.value.dtype
         else:
@@ -106,13 +148,14 @@ class Node:
 
 
 class InputNode(Node):
-    """An input node. It is NOT a ndarray."""
+    """An InputNode object represents an input argument of a GraphModule."""
 
     parents: Tuple[Node, ...]
     fx: Union[Module, Callable]
     value: jnp.ndarray
 
     def __init__(self, value: jnp.ndarray, fx=lambda x: x):
+        """Creata an InputNode object from a value."""
         super().__init__((), fx, value)
 
 
@@ -209,10 +252,16 @@ def build_graph_module(func):
     >>> def residual_forward(x):
     ...     y = x >> pax.nn.Linear(x.shape[-1], x.shape[-1])
     ...     y >>= jax.nn.relu
-    ...     z = (x & y) >> (lambda xs: xs[0] + xs[1])
+    ...     z = (x | y) >> jax.lax.add
     ...     return z
     ...
-    >>> net = pax.build_graph_module(residual_forward)(jnp.empty((3, 8)))
+    >>> net = pax.graph.build_graph_module(residual_forward)(jnp.empty((3, 8)))
+    >>> print(net.summary())
+    GraphModule
+    ├── Linear(in_dim=8, out_dim=8, with_bias=True)
+    ├── x => relu(x)
+    ├── x => identity(x)
+    └── x => add(x)
     """
 
     def builder_fn(*inputs):
