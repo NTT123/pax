@@ -15,7 +15,6 @@ C = TypeVar("C")
 K = TypeVar("K")
 
 
-@functools.wraps(jax.grad)
 def grad_parameters(
     fun: Union[
         Callable[[T, Any], Tuple[jnp.ndarray, C]],
@@ -36,10 +35,12 @@ def grad_parameters(
     ...     loss = jnp.mean(jnp.square(y - y_hat))
     ...     return loss, (loss, model)
     ...
-    >>> grad_fn = pax.grad_parameters(loss_fn)
+    >>> grad_fn = pax.grad_parameters(loss_fn, has_aux=True)
     >>> net = pax.nn.Linear(1, 1)
-    >>> x = jnp.zeros((3, 1))
+    >>> x = jnp.ones((3, 1))
     >>> grads, (loss, net) = grad_fn(net, x, x)
+    >>> print(jax.tree_leaves(grads))
+    [DeviceArray([[-1.4543512]], dtype=float32), DeviceArray([-1.4543512], dtype=float32)]
     """
 
     def _fun(params: T, mod: T, *args, **kwargs):
