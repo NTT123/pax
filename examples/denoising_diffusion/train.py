@@ -8,6 +8,7 @@ import opax
 import pax
 import tensorflow as tf
 from PIL import Image
+from tqdm.auto import tqdm
 
 from data_loader import load_celeb_a
 from model import GaussianDiffusion, UNet
@@ -57,9 +58,7 @@ def train(
     dataset = load_celeb_a()
 
     dataloader = (
-        dataset
-        # .cache()  # TODO: memory leak?
-        .repeat()
+        dataset.repeat()
         .shuffle(batch_size * 100)
         .batch(batch_size)
         .take(num_training_steps)
@@ -74,8 +73,6 @@ def train(
     fast_update_fn = jax.jit(update_fn)
 
     optimizer = opax.adam(learning_rate)(diffusion.parameters())
-
-    from tqdm.auto import tqdm
 
     total_loss = 0.0
     tr = tqdm(dataloader)

@@ -102,8 +102,8 @@ class ResnetBlock(pax.Module):
             if exists(time_emb_dim)
             else None
         )
-        self.block1 = Block(dim, dim_out)
-        self.block2 = Block(dim_out, dim_out)
+        self.block1 = Block(dim, dim_out, groups=groups)
+        self.block2 = Block(dim_out, dim_out, groups=groups)
 
         if dim != dim_out:
             self.res_conv = pax.nn.Conv2D(dim, dim_out, 1)
@@ -185,25 +185,31 @@ class UNet(pax.Module):
             is_last = ind >= (num_resolutions - 1)
             self.downs.append(
                 [
-                    ResnetBlock(dim_in, dim_out, time_emb_dim=time_dim),
-                    ResnetBlock(dim_out, dim_out, time_emb_dim=time_dim),
+                    ResnetBlock(dim_in, dim_out, time_emb_dim=time_dim, groups=groups),
+                    ResnetBlock(dim_out, dim_out, time_emb_dim=time_dim, groups=groups),
                     Residual(PreNorm(dim_out, LinearAttention(dim_out))),
                     Downsample(dim_out) if not is_last else pax.nn.Identity(),
                 ]
             )
 
         mid_dim = dims[-1]
-        self.mid_block1 = ResnetBlock(mid_dim, mid_dim, time_emb_dim=time_dim)
+        self.mid_block1 = ResnetBlock(
+            mid_dim, mid_dim, time_emb_dim=time_dim, groups=groups
+        )
         self.mid_attn = Residual(PreNorm(mid_dim, LinearAttention(mid_dim)))
-        self.mid_block2 = ResnetBlock(mid_dim, mid_dim, time_emb_dim=time_dim)
+        self.mid_block2 = ResnetBlock(
+            mid_dim, mid_dim, time_emb_dim=time_dim, groups=groups
+        )
 
         for ind, (dim_in, dim_out) in enumerate(reversed(in_out[1:])):
             is_last = ind >= (num_resolutions - 1)
 
             self.ups.append(
                 [
-                    ResnetBlock(dim_out * 2, dim_in, time_emb_dim=time_dim),
-                    ResnetBlock(dim_in, dim_in, time_emb_dim=time_dim),
+                    ResnetBlock(
+                        dim_out * 2, dim_in, time_emb_dim=time_dim, groups=groups
+                    ),
+                    ResnetBlock(dim_in, dim_in, time_emb_dim=time_dim, groups=groups),
                     Residual(PreNorm(dim_in, LinearAttention(dim_in))),
                     Upsample(dim_in) if not is_last else pax.nn.Identity(),
                 ]
@@ -212,7 +218,8 @@ class UNet(pax.Module):
         out_dim = default(out_dim, channels)
 
         self.final_conv = pax.nn.Sequential(
-            Block(dim, dim), pax.nn.Conv2D(dim, out_dim, 1)
+            Block(dim, dim, groups=groups),
+            pax.nn.Conv2D(dim, out_dim, 1),
         )
 
     def __call__(self, x, time):
@@ -316,7 +323,8 @@ class GaussianDiffusion(pax.Module):
             )
             # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
             self.posterior_variance = posterior_variance
-            # below: log calculation clipped because the posterior variance is 0 at the beginning of the diffusion chain
+            # below: log calculation clipped because the posterior variance is 0
+            # at the beginning of the diffusion chain
             self.posterior_log_variance_clipped = np.log(
                 np.maximum(posterior_variance, 1e-20)
             )
