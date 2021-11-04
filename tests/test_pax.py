@@ -191,8 +191,7 @@ def test_assign_module_with_default_kind():
             with self.add_parameters():
                 self.fc = pax.nn.Linear(3, 3)
 
-    with pytest.raises(ValueError):
-        _ = M1()
+    _ = M1()
 
     class M2(pax.Module):
         def __init__(self):
@@ -200,24 +199,21 @@ def test_assign_module_with_default_kind():
             with self.add_states():
                 self.fc = pax.nn.Linear(3, 3)
 
-    with pytest.raises(ValueError):
-        _ = M2()
+    _ = M2()
 
     class M11(pax.ParameterModule):
         def __init__(self):
             super().__init__()
             self.fc = pax.nn.Linear(3, 3)
 
-    with pytest.raises(ValueError):
-        _ = M11()
+    _ = M11()
 
     class M22(pax.StateModule):
         def __init__(self):
             super().__init__()
             self.fc = pax.nn.Linear(3, 3)
 
-    with pytest.raises(ValueError):
-        _ = M22()
+    _ = M22()
 
 
 def test_default_kind_module():
