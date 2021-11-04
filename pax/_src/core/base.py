@@ -172,10 +172,8 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         super().__setattr__(name, value)
 
     def __delattr__(self, name: str) -> None:
-        self._assert_mutability()
-        if name in self._pax.name_to_kind:
-            raise ValueError("Cannot delete a pytree attribute.")
-        super().__delattr__(name)
+        del name
+        raise ValueError("Cannot delete a module's attribute.")
 
     def _update_default_kind(self, kind: PaxKind):
         self._assert_mutability()

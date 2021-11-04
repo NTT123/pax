@@ -385,12 +385,22 @@ def test_deepcopy_pytreedef():
 
 
 @pax.pure
-def test_delete_attribute():
+def test_delete_attribute_1():
     f = pax.nn.BatchNorm1D(3)
     f = f.set_attribute("t", pax.nn.Linear(1, 1))
     assert "t" in f._pax.name_to_kind
     with pytest.raises(ValueError):
         del f.t
+
+
+def test_delete_attribute_2():
+    def mutate(f: pax.nn.Linear):
+        del f.in_dim
+        return f
+
+    f = pax.nn.Linear(3, 3)
+    with pytest.raises(ValueError):
+        pax.pure(mutate)(f)
 
 
 def test_module_list_contains_int():
