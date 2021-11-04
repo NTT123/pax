@@ -220,6 +220,18 @@ def test_assign_module_with_default_kind():
         _ = M22()
 
 
+def test_default_kind_module():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+
+            with self._default_kind(pax.PaxKind.MODULE):
+                self.fc = pax.nn.Linear(3, 3)
+
+    m = M()
+    assert m._pax.name_to_kind["fc"] is pax.PaxKind.MODULE
+
+
 def test_module_properties_modify():
     fc = pax.nn.Linear(3, 3)
     assert fc.training == True

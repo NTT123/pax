@@ -198,7 +198,7 @@ class BaseModule(metaclass=BaseModuleMetaclass):
             for name in new_fields:
                 if name not in self._pax.name_to_kind:
                     value = getattr(self, name)
-                    if _has_module_node(value):
+                    if _has_module_node(value) and kind != PaxKind.MODULE:
                         raise ValueError(
                             f"Found unregistered modules "
                             f"({self.__class__.__name__}.{name} = {value}).\n"
