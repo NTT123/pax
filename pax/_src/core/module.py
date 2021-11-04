@@ -82,7 +82,8 @@ class Module(BaseModule):
             for name, value in kwargs.items():
                 assert hasattr(mod, name)
                 setattr(mod, name, value)
-            mod.find_and_register_submodules()
+            # pylint: disable=protected-access
+            mod._find_and_register_pytree(PaxKind.MODULE)
 
         mod.scan_bugs()
         return mod
@@ -207,6 +208,7 @@ class Module(BaseModule):
         module = self.copy()
         with allow_mutation(module):
             setattr(module, name, value)
-            module.find_and_register_submodules()
+            # pylint: disable=protected-access
+            module._find_and_register_pytree(PaxKind.MODULE)
 
         return module

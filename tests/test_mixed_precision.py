@@ -128,7 +128,7 @@ def test_wrap_wrap_mixed_precision():
 
 
 def test_mixed_precision_clone():
-    f = pax.nn.Linear(3, 3)
+    f = pax.nn.BatchNorm1D(3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
@@ -138,7 +138,7 @@ def test_mixed_precision_clone():
 
 
 def test_mixed_precision_unwrap_clone():
-    f = pax.nn.Linear(3, 3)
+    f = pax.nn.BatchNorm1D(3)
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
@@ -152,7 +152,7 @@ def test_mixed_precision_no_method_name():
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
     # with pytest.raises(TypeError):
-    ff = pax.apply_mp_policy(f, mp_policy=my_policy)
+    _ = pax.apply_mp_policy(f, mp_policy=my_policy)
 
 
 def test_mp_call_classmethod():

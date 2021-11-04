@@ -174,7 +174,7 @@ def test_state_of_param():
     class M2(pax.StateModule):
         def __init__(self, m11):
             super().__init__()
-            self.m2 = {"m1": m11}
+            self.register_state("m2", {"m1": m11})
 
     m2 = M2(m1)
     assert len(jax.tree_leaves(pax.select_states(m1))) == 0
@@ -182,6 +182,42 @@ def test_state_of_param():
 
     assert len(jax.tree_leaves(pax.select_parameters(m1))) == 1
     assert len(jax.tree_leaves(pax.select_states(m2))) == 1
+
+
+def test_assign_module_with_default_kind():
+    class M1(pax.Module):
+        def __init__(self):
+            super().__init__()
+            with self.add_parameters():
+                self.fc = pax.nn.Linear(3, 3)
+
+    with pytest.raises(ValueError):
+        _ = M1()
+
+    class M2(pax.Module):
+        def __init__(self):
+            super().__init__()
+            with self.add_states():
+                self.fc = pax.nn.Linear(3, 3)
+
+    with pytest.raises(ValueError):
+        _ = M2()
+
+    class M11(pax.ParameterModule):
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(3, 3)
+
+    with pytest.raises(ValueError):
+        _ = M11()
+
+    class M22(pax.StateModule):
+        def __init__(self):
+            super().__init__()
+            self.fc = pax.nn.Linear(3, 3)
+
+    with pytest.raises(ValueError):
+        _ = M22()
 
 
 def test_module_properties_modify():
@@ -195,7 +231,7 @@ def test_module_properties_modify():
 
 
 def test_clone_no_side_effect():
-    fc1 = pax.nn.Linear(3, 3)
+    fc1 = pax.nn.BatchNorm1D(3)
     fc2 = fc1.copy()
     fc1 = fc1.set_attribute("new_module", pax.nn.Linear(5, 5))
 
@@ -350,7 +386,7 @@ def test_deepcopy_pytreedef():
 
 @pax.pure
 def test_delete_attribute():
-    f = pax.nn.Linear(3, 3)
+    f = pax.nn.BatchNorm1D(3)
     f = f.set_attribute("t", pax.nn.Linear(1, 1))
     assert "t" in f._pax.name_to_kind
     with pytest.raises(ValueError):

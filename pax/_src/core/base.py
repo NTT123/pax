@@ -10,7 +10,17 @@ from contextlib import contextmanager
 from copy import deepcopy
 from enum import Enum
 from types import MappingProxyType
-from typing import Any, Iterable, List, Mapping, NamedTuple, Tuple, Type, TypeVar
+from typing import (
+    Any,
+    Iterable,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
 
 import jax
 import jax.numpy as jnp
@@ -21,11 +31,7 @@ from jax.dtypes import issubdtype as isdt
 # pylint: disable=no-name-in-module
 from jaxlib.xla_extension import CompiledFunction
 
-from .threading_local import (
-    allow_mutation,
-    is_deep_copy_enabled,
-    is_mutable,
-)
+from .threading_local import allow_mutation, is_deep_copy_enabled, is_mutable
 
 T = TypeVar("T", bound="BaseModule")
 M = TypeVar("M")
@@ -86,7 +92,8 @@ class BaseModuleMetaclass(type):
 
         with allow_mutation(module):
             cls.__init__(module, *args, **kwargs)
-            module.find_and_register_submodules()
+            module._find_and_register_pytree(module._pax.default_kind)
+            module._find_and_register_pytree(PaxKind.MODULE)
 
         # scan module after initialization for potential bugs
         module._assert_not_shared_module()
@@ -154,12 +161,7 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         super().__setattr__("_pax", new_info)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        """Whenever a user sets an attribute, we will check the assignment:
-
-        - Setting `_pax` is forbidden.
-        - If `value` is a pytree of modules and `name` is not in `name_to_kind`,
-          its kind will be `PaxKind.MODULE`.
-        """
+        """Setting `_pax` attribute is forbidden."""
         self._assert_mutability()
 
         if name == "_pax":
@@ -168,14 +170,6 @@ class BaseModule(metaclass=BaseModuleMetaclass):
             )
 
         super().__setattr__(name, value)
-        if name not in self._pax.name_to_kind:
-            if self._pax.default_kind != PaxKind.UNKNOWN:
-                leaves = jax.tree_leaves(value)
-                is_ndarray = lambda x: isinstance(x, (jnp.ndarray, np.ndarray))
-                if any(is_ndarray(x) for x in leaves):
-                    self._update_name_to_kind_dict(name, self._pax.default_kind)
-
-            self.find_and_register_submodules()
 
     def __delattr__(self, name: str) -> None:
         self._assert_mutability()
@@ -189,21 +183,25 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         super(BaseModule, self).__setattr__("_pax", new_pax_info)
 
     @contextmanager
-    def default_kind(self, kind: PaxKind):
-        prev = self._pax.default_kind
+    def _default_kind(self, kind: PaxKind):
+        """Search for any new unregistered pytree attribute
+        at the end of the context and register it with kind `kind`.
+        """
+        fields_before = set(vars(self).keys())
         try:
-            self._update_default_kind(kind)
             yield
         finally:
-            self._update_default_kind(prev)
+            fields_after = set(vars(self).keys())
+            new_fields = fields_after.difference(fields_before)
+            self._find_and_register_pytree(kind, fields=new_fields)
 
     def add_parameters(self):
         """Add new attributes as trainable parameters"""
-        return self.default_kind(PaxKind.PARAMETER)
+        return self._default_kind(PaxKind.PARAMETER)
 
     def add_states(self):
         """Add new attributes as non-trainable states."""
-        return self.default_kind(PaxKind.STATE)
+        return self._default_kind(PaxKind.STATE)
 
     def tree_flatten(
         self,
@@ -348,19 +346,30 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         leaves = jax.tree_map(lambda x: (x.shape, x.dtype), leaves)
         return hash((tuple(leaves), treedef))
 
-    def find_and_register_submodules(self):
-        """Find unregistered submodules and register it with MODULE kind."""
+    def _find_and_register_pytree(
+        self, kind: PaxKind, fields: Optional[Iterable[str]] = None
+    ):
+        """Find unregistered pytree attributes and register it with kind `kind`."""
 
-        def all_module_leaves(tree):
-            leaves = jax.tree_flatten(
-                tree, is_leaf=lambda m: isinstance(m, BaseModule)
-            )[0]
-            return len(leaves) > 0 and all(isinstance(m, BaseModule) for m in leaves)
+        if kind == PaxKind.UNKNOWN:
+            return
 
-        for name, value in vars(self).items():
+        if fields is not None:
+            items = ((name, getattr(self, name)) for name in fields)
+        else:
+            items = vars(self).items()
+
+        for name, value in items:
             if name not in self._pax.name_to_kind:
-                if all_module_leaves(value):
-                    self._update_name_to_kind_dict(name, PaxKind.MODULE)
+                if _has_module_node(value) and kind != PaxKind.MODULE:
+                    raise ValueError(
+                        f"Found an unregistered module (or pytree of modules).\n"
+                        f"Attribute=`{name}``, value=`{value}`.\n"
+                        f"Perhaps, you are assigning the module inside an `add_parameters` or `add_states` context.\n"
+                        f"Please register it with `self.register_*` methods."
+                    )
+                if _has_ndarray_leaf(value) or _has_module_node(value):
+                    self._update_name_to_kind_dict(name, kind)
 
     def register_subtree(self, name: str, value, kind: PaxKind):
         """Assign `value` to attribute `name` and register its kind as `kind`."""
@@ -475,3 +484,20 @@ def _find_shared_module(module: BaseModule):
         module_ids.add(id(m))
 
     return None
+
+
+def _has_ndarray_leaf(value):
+    for leaf in jax.tree_leaves(value):
+        if isinstance(leaf, (np.ndarray, jnp.ndarray)):
+            return True
+
+    return False
+
+
+def _has_module_node(value):
+    leaves = jax.tree_flatten(value, is_leaf=lambda x: isinstance(x, BaseModule))[0]
+    for leaf in leaves:
+        if isinstance(leaf, BaseModule):
+            return True
+
+    return False
