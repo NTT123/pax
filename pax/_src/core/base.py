@@ -95,7 +95,7 @@ class BaseModuleMetaclass(type):
             if module._pax.default_kind == PaxKind.UNKNOWN:
                 module._find_and_register_pytree(PaxKind.MODULE)
             else:
-            module._find_and_register_pytree(module._pax.default_kind)
+                module._find_and_register_pytree(module._pax.default_kind)
 
         # scan module after initialization for potential bugs
         module._assert_not_shared_module()
@@ -193,6 +193,18 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         finally:
             fields_after = set(vars(self).keys())
             new_fields = fields_after.difference(fields_before)
+
+            # scan for unregistered modules
+            for name in new_fields:
+                if name not in self._pax.name_to_kind:
+                    value = getattr(self, name)
+                    if _has_module_node(value):
+                        raise ValueError(
+                            f"Found unregistered modules "
+                            f"({self.__class__.__name__}.{name} = {value}).\n"
+                            f"Please register it with `self.register_*` methods."
+                        )
+
             self._find_and_register_pytree(kind, fields=new_fields)
 
     def add_parameters(self):
