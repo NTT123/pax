@@ -92,8 +92,10 @@ class BaseModuleMetaclass(type):
 
         with allow_mutation(module):
             cls.__init__(module, *args, **kwargs)
+            if module._pax.default_kind == PaxKind.UNKNOWN:
+                module._find_and_register_pytree(PaxKind.MODULE)
+            else:
             module._find_and_register_pytree(module._pax.default_kind)
-            module._find_and_register_pytree(PaxKind.MODULE)
 
         # scan module after initialization for potential bugs
         module._assert_not_shared_module()
@@ -357,16 +359,18 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         else:
             items = vars(self).items()
 
+        def is_pytree_of(tree, classes):
+            is_leaf_fn = lambda m: isinstance(m, classes)
+            leaves = jax.tree_flatten(tree, is_leaf=is_leaf_fn)[0]
+            return len(leaves) > 0 and all(is_leaf_fn(m) for m in leaves)
+
         for name, value in items:
             if name not in self._pax.name_to_kind:
-                if _has_module_node(value) and kind != PaxKind.MODULE:
-                    raise ValueError(
-                        f"Found an unregistered module (or pytree of modules).\n"
-                        f"Attribute=`{name}``, value=`{value}`.\n"
-                        f"Perhaps, you are assigning the module inside an `add_parameters` or `add_states` context.\n"
-                        f"Please register it with `self.register_*` methods."
-                    )
-                if _has_ndarray_leaf(value) or _has_module_node(value):
+                if (kind == PaxKind.MODULE and is_pytree_of(value, BaseModule)) or (
+                    kind in [PaxKind.PARAMETER, PaxKind.STATE]
+                    and not _has_module_node(value)
+                    and is_pytree_of(value, (np.ndarray, jnp.ndarray))
+                ):
                     self._update_name_to_kind_dict(name, kind)
 
     def register_subtree(self, name: str, value, kind: PaxKind):
