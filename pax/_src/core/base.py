@@ -189,8 +189,8 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         try:
             yield
         finally:
-            fields_after = set(vars(self).keys())
-            new_fields = fields_after.difference(fields_before)
+            fields_after = vars(self).keys()
+            new_fields = (name for name in fields_after if name not in fields_before)
             self._find_and_register_pytree(kind, fields=new_fields)
 
     def add_parameters(self):

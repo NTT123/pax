@@ -228,6 +228,25 @@ def test_default_kind_module():
     assert m._pax.name_to_kind["fc"] is pax.PaxKind.MODULE
 
 
+def test_default_kind_attribute_order():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            with self._default_kind(pax.PaxKind.STATE):
+                self.e = jnp.array(0)
+                self.a = jnp.array(0)
+                self.z = jnp.array(0)
+
+            with self._default_kind(pax.PaxKind.PARAMETER):
+                self.b = jnp.array(0.0)
+                self.t = jnp.array(0.0)
+                self.c = jnp.array(0.0)
+
+    for _ in range(1000):
+        m = M()
+        assert tuple(m._pax.name_to_kind.keys()) == ("e", "a", "z", "b", "t", "c")
+
+
 def test_module_properties_modify():
     fc = pax.nn.Linear(3, 3)
     assert fc.training == True
