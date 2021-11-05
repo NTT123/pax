@@ -486,14 +486,6 @@ def _find_shared_module(module: BaseModule):
     return None
 
 
-def _has_ndarray_leaf(value):
-    for leaf in jax.tree_leaves(value):
-        if isinstance(leaf, (np.ndarray, jnp.ndarray)):
-            return True
-
-    return False
-
-
 def _has_module_node(value):
     leaves = jax.tree_flatten(value, is_leaf=lambda x: isinstance(x, BaseModule))[0]
     for leaf in leaves:
