@@ -360,17 +360,17 @@ Utilities
 
 
 .. autosummary::
-    grad_parameters
+    grad
     scan
     build_update_fn
 
 
 
 
-grad_parameters
----------------
+grad
+----
 
-.. autofunction:: grad_parameters
+.. autofunction:: grad
 
 
 scan

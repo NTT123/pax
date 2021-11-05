@@ -15,7 +15,7 @@ C = TypeVar("C")
 K = TypeVar("K")
 
 
-def grad_parameters(
+def grad(
     fun: Union[
         Callable[[T, Any], Tuple[jnp.ndarray, C]],
         Callable[[T, Any, Any], Tuple[jnp.ndarray, C]],
@@ -35,7 +35,7 @@ def grad_parameters(
     ...     loss = jnp.mean(jnp.square(y - y_hat))
     ...     return loss, (loss, model)
     ...
-    >>> grad_fn = pax.grad_parameters(loss_fn, has_aux=True)
+    >>> grad_fn = pax.grad(loss_fn, has_aux=True)
     >>> net = pax.nn.Linear(1, 1)
     >>> x = jnp.ones((3, 1))
     >>> grads, (loss, net) = grad_fn(net, x, x)
@@ -128,9 +128,7 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
         assert isinstance(optimizer, Module)
 
         model_treedef = jax.tree_structure(model)
-        grads, (aux, model) = grad_parameters(loss_fn, has_aux=True)(
-            model, *inputs, **kwinputs
-        )
+        grads, (aux, model) = grad(loss_fn, has_aux=True)(model, *inputs, **kwinputs)
         if jax.tree_structure(model) != model_treedef:
             raise ValueError("Expecting an updated model in the auxiliary output.")
 

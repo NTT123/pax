@@ -23,7 +23,7 @@ from pax._src.core import (
 )
 from pax._src.core.rng import next_rng_key, seed_rng_key
 from pax._src.nn.dropout import dropout
-from pax._src.utils import build_update_fn, grad_parameters, scan, value_and_grad
+from pax._src.utils import build_update_fn, grad, scan, value_and_grad
 
 STATE = PaxKind.STATE
 PARAMETER = PaxKind.PARAMETER
@@ -41,7 +41,7 @@ __all__ = (
     "enable_train_mode",
     "flatten_module",
     "freeze_parameters",
-    "grad_parameters",
+    "grad",
     "graph",
     "LazyModule",
     "module_and_value",

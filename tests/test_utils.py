@@ -6,7 +6,7 @@ import pax
 from pax.nn import EMA, RngSeq
 
 
-def test_grad_parameters():
+def test_grad():
     def loss_fn(model: pax.nn.Linear, inputs):
         x, target = inputs
         y = model(x)
@@ -15,7 +15,7 @@ def test_grad_parameters():
 
     @jax.jit
     def update_fn(model, optimizer, inputs):
-        grads, (loss, model) = pax.grad_parameters(loss_fn, has_aux=True)(model, inputs)
+        grads, (loss, model) = pax.grad(loss_fn, has_aux=True)(model, inputs)
         model, optimizer = opax.apply_gradients(model, opt, grads=grads)
         return model, optimizer, loss
 
