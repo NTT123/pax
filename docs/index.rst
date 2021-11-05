@@ -53,6 +53,7 @@ To install the latest version::
    notebooks/training
    notebooks/operators
    notebooks/understanding
+   notebooks/kind_assignment
    notebooks/jax_transformations
    notebooks/performance
 
