@@ -91,9 +91,9 @@ class BaseModuleMetaclass(type):
         module = cls.__new__(cls, *args, **kwargs)  # type: ignore
 
         with allow_mutation(module):
-            cls.__init__(module, *args, **kwargs)
-            module._find_and_register_pytree(PaxKind.MODULE)
-            module._find_and_register_pytree(module._pax.default_kind)
+            with module._default_kind(module._pax.default_kind):
+                with module._default_kind(PaxKind.MODULE):
+                    cls.__init__(module, *args, **kwargs)
 
         # scan module after initialization for potential bugs
         module._assert_not_shared_module()
