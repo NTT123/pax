@@ -38,7 +38,7 @@ def test_value_and_grad():
 
     @jax.jit
     def update_fn(model, optimizer, inputs):
-        (loss, model), grads = pax.value_and_grad(loss_fn)(model, inputs)
+        (loss, model), grads = pax.value_and_grad(loss_fn, has_aux=True)(model, inputs)
         model, optimizer = opax.apply_gradients(model, opt, grads)
         return model, optimizer, loss
 

@@ -60,12 +60,10 @@ def grad(
     return grad_fn
 
 
-def value_and_grad(func: Callable[..., K], has_aux=True):
+def value_and_grad(func: Callable[..., K], has_aux=False):
     """A PAX-compatible version of jax.value_and_grad.
 
-
     This version computes gradients w.r.t. trainable parameters of a PAX module.
-    It also set `has_aux=True` by default.
     """
 
     def func_with_params(params: T, module: T, *args, **kwargs):

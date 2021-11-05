@@ -40,7 +40,7 @@ def loss_fn(model: Linear, x: jnp.ndarray, y: jnp.ndarray):
 
 @jax.jit
 def train_step(model: Linear, optimizer: GradientTransformation, x, y):
-    (loss, model), grads = pax.value_and_grad(loss_fn)(model, x, y)
+    (loss, model), grads = pax.value_and_grad(loss_fn, has_aux=True)(model, x, y)
     model, optimizer = opax.apply_gradients(model, optimizer, grads)
     return model, optimizer, loss
 
