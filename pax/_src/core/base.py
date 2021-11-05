@@ -376,8 +376,8 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         if hasattr(self, name):
             raise RuntimeError("Cannot register an existing attribute")
 
-        self._update_name_to_kind_dict(name, kind)
         setattr(self, name, value)
+        self.set_attribute_kind(**{name: kind})
 
     def set_attribute_kind(self, **kwargs):
         """Set PAX kind for one or many attributes.
