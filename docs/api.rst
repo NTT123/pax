@@ -32,22 +32,6 @@ PAX's Module
    .. autoattribute:: UNKNOWN
 
 
-Graph API (experimental)
-------------------------
-
-.. currentmodule:: pax.experimental.graph
-
-.. autoclass:: Node
-   :members:
-
-.. autoclass:: InputNode
-   :members:
-
-.. autoclass:: GraphModule
-   :members:
-
-.. autofunction:: build_graph_module
-
 
 Purify functions and methods
 ----------------------------
@@ -383,3 +367,28 @@ build_update_fn
 ---------------
 
 .. autofunction:: build_update_fn
+
+
+
+
+Experimental
+============
+
+.. currentmodule:: pax.experimental
+
+Graph API
+---------
+
+.. currentmodule:: pax.experimental.graph
+
+.. autoclass:: Node
+   :members:
+
+.. autoclass:: InputNode
+   :members:
+
+.. autoclass:: GraphModule
+   :members:
+
+.. autofunction:: build_graph_module
+
