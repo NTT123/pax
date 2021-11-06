@@ -79,12 +79,6 @@ class LazyModule(Module):
         """Get or create a non-trainable state."""
         return self.get_or_create(name, create_fn=create_fn, kind=PaxKind.STATE)
 
-    def parameters(self: T) -> T:
-        if len(jax.tree_leaves(self)) == 0:
-            raise ValueError("An empty lazy module. Please initialize it!")
-
-        return super().parameters()
-
 
 class Lambda(Module):
     """Convert a function to a module.
