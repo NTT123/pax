@@ -7,7 +7,7 @@ import pax
 
 
 @pax.pure
-def forward(net: pax.LazyModule, x):
+def forward(net: pax.experimental.LazyModule, x):
     fc1 = net.get_or_create("fc1", lambda: pax.nn.Linear(1, 1))
     x = jax.nn.relu(fc1(x))
     fc2 = net.get_or_create("fc2", lambda: pax.nn.Linear(1, 1))
@@ -38,7 +38,7 @@ def train():
     y = jax.random.normal(pax.next_rng_key(), (32, 1))
 
     # model & optimizer
-    net, _ = forward(pax.LazyModule(), x)
+    net, _ = forward(pax.experimental.LazyModule(), x)
     print(net.summary())
     opt = opax.adam(1e-1)(net.parameters())
 

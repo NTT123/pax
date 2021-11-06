@@ -26,7 +26,7 @@ def test_scan_bug_state_module():
 
 
 def test_auto_module():
-    class M(pax.LazyModule):
+    class M(pax.experimental.LazyModule):
         def __call__(self, x):
             x = self.get_or_create("fc", lambda: pax.nn.Linear(1, 1))(x)
             x = jax.nn.relu(x)

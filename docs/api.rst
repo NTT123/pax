@@ -19,10 +19,6 @@ PAX's Module
    :members:
 
 
-.. autoclass:: LazyModule
-   :members:
-
-
 .. autoclass:: PaxKind
    :members:
    
@@ -392,3 +388,11 @@ Graph API
 
 .. autofunction:: build_graph_module
 
+
+Lazy Module
+-----------
+
+.. currentmodule:: pax.experimental
+
+.. autoclass:: LazyModule
+   :members:

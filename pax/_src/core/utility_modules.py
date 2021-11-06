@@ -40,7 +40,7 @@ class LazyModule(Module):
 
     >>> from dataclasses import dataclass
     >>> @dataclass
-    ... class MLP(pax.LazyModule):
+    ... class MLP(pax.experimental.LazyModule):
     ...     features: list
     ...
     ...     def __call__(self, x):

@@ -2,7 +2,6 @@
 
 from pax import experimental, nets, nn, utils
 from pax._src.core import (
-    LazyModule,
     Module,
     ParameterModule,
     PaxKind,
@@ -43,7 +42,6 @@ __all__ = (
     "flatten_module",
     "freeze_parameters",
     "grad",
-    "LazyModule",
     "module_and_value",
     "Module",
     "nets",
