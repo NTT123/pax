@@ -1,6 +1,6 @@
 """PAX package."""
 
-from pax import graph, nets, nn, utils
+from pax import experimental, nets, nn, utils
 from pax._src.core import (
     LazyModule,
     Module,
@@ -39,10 +39,10 @@ __all__ = (
     "dropout",
     "enable_eval_mode",
     "enable_train_mode",
+    "experimental",
     "flatten_module",
     "freeze_parameters",
     "grad",
-    "graph",
     "LazyModule",
     "module_and_value",
     "Module",

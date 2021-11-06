@@ -25,7 +25,7 @@ class Node:
 
     For example:
 
-    >>> x = pax.graph.Node((), lambda x: x, jnp.array(0))
+    >>> x = pax.experimental.graph.Node((), lambda x: x, jnp.array(0))
     >>> x.parents, x.fx, x.value
     ((), Lambda..., DeviceArray(0, dtype=int32, weak_type=True))
     """
@@ -45,7 +45,7 @@ class Node:
 
         >>> import jax, pax, jax.numpy as jnp
         >>> from functools import partial
-        >>> x = pax.graph.Node((), lambda x: x, jnp.array(1.))
+        >>> x = pax.experimental.graph.Node((), lambda x: x, jnp.array(1.))
         >>> y = x >> partial(jax.lax.add, 1.)
         >>> y.value
         DeviceArray(2., dtype=float32, weak_type=True)
@@ -57,8 +57,8 @@ class Node:
 
         Example:
 
-        >>> x = pax.graph.InputNode(1)
-        >>> y = pax.graph.InputNode(2)
+        >>> x = pax.experimental.graph.InputNode(1)
+        >>> y = pax.experimental.graph.InputNode(2)
         >>> z = x & y
         >>> z.value
         (1, 2)
@@ -73,8 +73,8 @@ class Node:
 
         Example:
 
-        >>> x = pax.graph.InputNode(1)
-        >>> y = pax.graph.InputNode(2)
+        >>> x = pax.experimental.graph.InputNode(1)
+        >>> y = pax.experimental.graph.InputNode(2)
         >>> z = (x | y) >> jax.lax.add
         >>> z.value
         DeviceArray(3, dtype=int32, weak_type=True)
@@ -91,8 +91,8 @@ class Node:
 
         Example:
 
-        >>> x = pax.graph.InputNode(1)
-        >>> y = pax.graph.InputNode(2)
+        >>> x = pax.experimental.graph.InputNode(1)
+        >>> y = pax.experimental.graph.InputNode(2)
         >>> z = x.binary_ops(jax.lax.sub, y)
         >>> z.value
         DeviceArray(-1, dtype=int32, weak_type=True)
@@ -110,7 +110,7 @@ class Node:
 
         Example:
 
-        >>> x = pax.graph.InputNode(jnp.empty((3, 4)))
+        >>> x = pax.experimental.graph.InputNode(jnp.empty((3, 4)))
         >>> x.shape
         (3, 4)
         """
@@ -125,7 +125,7 @@ class Node:
 
         Example:
 
-        >>> x = pax.graph.InputNode(jnp.empty((1,), dtype=jnp.int32))
+        >>> x = pax.experimental.graph.InputNode(jnp.empty((1,), dtype=jnp.int32))
         >>> x.dtype
         dtype('int32')
         """
@@ -255,7 +255,8 @@ def build_graph_module(func):
     ...     z = (x | y) >> jax.lax.add
     ...     return z
     ...
-    >>> net = pax.graph.build_graph_module(residual_forward)(jnp.empty((3, 8)))
+    >>> from pax.experimental.graph import build_graph_module
+    >>> net = build_graph_module(residual_forward)(jnp.empty((3, 8)))
     >>> print(net.summary())
     GraphModule
     ├── Linear(in_dim=8, out_dim=8, with_bias=True)

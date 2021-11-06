@@ -7,17 +7,17 @@ import jax
 import jax.numpy as jnp
 import pax
 import pytest
-from pax.graph import GraphModule, build_graph_module
+from pax.experimental.graph import GraphModule, InputNode, build_graph_module
 
 
 def test_simple_graph():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
     assert y.value.shape == (3, 4)
 
 
 def test_cat_graph():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
     z = x & y
     t = z >> partial(jnp.concatenate, axis=-1)
@@ -25,7 +25,7 @@ def test_cat_graph():
 
 
 def test_cat_merge_left():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
     q = y & y
     z = q & x
@@ -33,7 +33,7 @@ def test_cat_merge_left():
 
 
 def test_cat_merge_right():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
     q = y & y
     z = x & q
@@ -41,7 +41,7 @@ def test_cat_merge_right():
 
 
 def test_merge_2_cat():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
     q = y & y
     t = x & x
@@ -50,7 +50,7 @@ def test_merge_2_cat():
 
 
 def test_3_cat_graph():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
     z = x & y & x
     t = z >> partial(jnp.concatenate, axis=-1)
@@ -58,7 +58,7 @@ def test_3_cat_graph():
 
 
 def test_3_cat_graph_module():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
     z = x & y & y
     t = z >> partial(jnp.concatenate, axis=-1)
@@ -66,14 +66,14 @@ def test_3_cat_graph_module():
 
 
 def test_or_graph():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 3) >> jax.nn.relu
     z = (x | y) >> jax.lax.add
     assert z.value.shape == (3, 3)
 
 
 def test_merge_2_or():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
     q = y | y
     t = x | x
@@ -82,7 +82,7 @@ def test_merge_2_or():
 
 
 def test_or_merge_left():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 3) >> jax.nn.relu
     z = x | y
     t = z | x
@@ -90,7 +90,7 @@ def test_or_merge_left():
 
 
 def test_or_merge_right():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 3) >> jax.nn.relu
     z = x | y
     t = x | z
@@ -98,7 +98,7 @@ def test_or_merge_right():
 
 
 def test_cat_graph_merge():
-    x = pax.graph.InputNode(jnp.zeros((3, 3)))
+    x = InputNode(jnp.zeros((3, 3)))
     y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
     q = y | y
     z = x | q
@@ -106,7 +106,7 @@ def test_cat_graph_merge():
 
 
 def test_binops():
-    x = pax.graph.InputNode(jnp.ones((3, 3)))
+    x = InputNode(jnp.ones((3, 3)))
     y = x.binary_ops(jax.lax.add, x)
     assert y.parents == (x, x)
     assert jnp.array_equal(y.fx((x.value, x.value)), jnp.ones((3, 3)) * 2)
@@ -114,7 +114,7 @@ def test_binops():
 
 
 def test_type_shape():
-    x = pax.graph.InputNode(jnp.ones((3, 3), dtype=jnp.int32))
+    x = InputNode(jnp.ones((3, 3), dtype=jnp.int32))
     assert x.shape == (3, 3)
     assert x.dtype == jnp.int32
 
@@ -146,12 +146,12 @@ def test_reuse_module_error():
 
 
 def test_copy_error():
-    x = pax.graph.InputNode(jnp.empty((3, 3)))
+    x = InputNode(jnp.empty((3, 3)))
     with pytest.raises(TypeError):
         _ = copy.copy(x)
 
 
 def test_deepcopy_error():
-    x = pax.graph.InputNode(jnp.empty((3, 3)))
+    x = InputNode(jnp.empty((3, 3)))
     with pytest.raises(TypeError):
         _ = copy.deepcopy(x)

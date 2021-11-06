@@ -3,7 +3,7 @@
 import jax
 import pax
 import jax.numpy as jnp
-from pax.graph import Node, build_graph_module
+from pax.experimental.graph import Node, build_graph_module
 
 pax.seed_rng_key(42)
 

@@ -32,10 +32,10 @@ PAX's Module
    .. autoattribute:: UNKNOWN
 
 
-Graph API
----------
+Graph API (experimental)
+------------------------
 
-.. currentmodule:: pax.graph
+.. currentmodule:: pax.experimental.graph
 
 .. autoclass:: Node
    :members:
