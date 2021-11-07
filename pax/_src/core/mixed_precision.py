@@ -26,6 +26,7 @@ class apply_mp_policy(Module, Generic[T]):  # pylint: disable=invalid-name
 
     def __init__(self, mod: T, *, mp_policy: jmp.Policy):
         """Create a wrapper module to enforce the mixed-precision policy.
+
         Arguments:
             mod: the module.
             mp_policy: a ``jmp`` mixed precision policy.
@@ -75,18 +76,18 @@ class apply_mp_policy(Module, Generic[T]):  # pylint: disable=invalid-name
         if inspect.ismethod(f):
             raise ValueError(
                 f"Calling a class method `{name}` "
-                f"is not supported for mixed-precision modules."
+                f"is not supported by mixed-precision modules."
             )
 
         def _fn(*args, **kwargs):
-            """This method does four tasks:
+            """This function does four tasks:
 
-            * Task 1: It casts all parameters and arguments to the "compute" data type.
-            * Task 2: It calls the original module.
-            * Task 3: It casts all the parameters back to the "param" data type.
+            * Task 1: Casts all parameters and arguments to the "compute" data type.
+            * Task 2: Calls the original method.
+            * Task 3: Casts all the parameters back to the "param" data type.
               However, if a parameter is NOT modified during the forward pass,
               the original parameter will be reused to avoid a `cast` operation.
-            * Task 4: It casts the output to the "output" data type.
+            * Task 4: Casts the output to the "output" data type.
             """
             old_mod_clone = self._module.copy()
 
@@ -109,7 +110,7 @@ class apply_mp_policy(Module, Generic[T]):  # pylint: disable=invalid-name
                 raise ValueError(
                     f"The module `{self._module.__class__.__name__}` has "
                     f"its treedef modified during the forward pass. "
-                    f"This is currently not supported for a mixed-precision module!"
+                    f"This is not supported by mixed-precision modules!"
                 )
 
             def reuse_params_fn(updated_new, new, old):
