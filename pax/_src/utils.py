@@ -5,8 +5,26 @@ from typing import Any, Callable, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
+import jmp
 
-from .core import Module, select_parameters, update_parameters
+from .core import (
+    Module,
+    apply_mp_policy,
+    module_and_value,
+    select_parameters,
+    update_parameters,
+)
+from .nn import (
+    BatchNorm1D,
+    BatchNorm2D,
+    Conv1D,
+    Conv1DTranspose,
+    Conv2D,
+    Conv2DTranspose,
+    GroupNorm,
+    LayerNorm,
+    Linear,
+)
 
 GradientTransformation = Module
 T = TypeVar("T", bound=Module)
@@ -172,3 +190,71 @@ def scan(func, init, xs, length=None, unroll: int = 1, time_major=True):
         state, output = jax.lax.scan(func, init, xs, length=length, unroll=unroll)
         output = jnp.swapaxes(output, 0, 1)  # restore to NT...
         return state, output
+
+
+def apply_scaled_gradients(model: T, optimizer: Callable, loss_scale, grads: T):
+    """Update model, optimizer and loss scale.
+
+    Example:
+
+    >>> import jmp
+    >>> from pax.experimental import apply_scaled_gradients
+    >>> net = pax.nn.Linear(2, 2)
+    >>> opt = opax.adam(1e-4)(net.parameters())
+    >>> loss_scale = jmp.DynamicLossScale(jmp.half_dtype()(2**15))
+    >>> grads = net.parameters()
+    >>> net, opt, loss_scale = apply_scaled_gradients(net, opt, loss_scale, grads)
+    >>> print(loss_scale.loss_scale)
+    32770.0
+    """
+    params = model.parameters()
+    grads = loss_scale.unscale(grads)
+    skip_nonfinite_updates = isinstance(loss_scale, jmp.DynamicLossScale)
+    if skip_nonfinite_updates:
+        grads_finite = jmp.all_finite(grads)
+        loss_scale = loss_scale.adjust(grads_finite)
+        new_optimizer, updates = module_and_value(optimizer)(grads, params)
+        new_params = params.map(jax.lax.sub, updates)
+        new_model = model.update_parameters(new_params)
+        model, optimizer = jmp.select_tree(
+            grads_finite,
+            (new_model, new_optimizer),
+            (model, optimizer),
+        )
+    else:
+        optimizer, updates = module_and_value(optimizer)(grads, params)
+        params = params.map(jax.lax.sub, updates)
+        model = model.update_parameters(params)
+    return model, optimizer, loss_scale
+
+
+def default_mp_policy(module: T) -> T:
+    """A default mixed precision policy.
+
+    - Linear layers are in half precision.
+    - Normalization layers are in full precision.
+
+    Example:
+
+    >>> net = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.BatchNorm1D(3))
+    >>> net = net.apply(pax.experimental.default_mp_policy)
+    >>> print(net.summary())
+    Sequential
+    ├── apply_mp_policy(param_dtype=float32, compute_dtype=float16, output_dtype=float32)
+    │   └── Linear(in_dim=3, out_dim=3, with_bias=True)
+    └── apply_mp_policy(param_dtype=float32, compute_dtype=float32, output_dtype=float32)
+        └── BatchNorm1D(num_channels=3, create_scale=True, create_offset=True, data_format=NWC, decay_rate=0.9)
+    """
+    half = jmp.half_dtype()
+    full = jnp.float32
+    linear_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=full)
+    norm_policy = jmp.Policy(compute_dtype=full, param_dtype=full, output_dtype=full)
+    linear_classes = (Linear, Conv1D, Conv2D, Conv1DTranspose, Conv2DTranspose)
+    norm_classes = (BatchNorm1D, BatchNorm2D, GroupNorm, LayerNorm)
+
+    if isinstance(module, linear_classes):
+        return apply_mp_policy(module, mp_policy=linear_policy)
+    elif isinstance(module, norm_classes):
+        return apply_mp_policy(module, mp_policy=norm_policy)
+    else:
+        return module  # unchanged

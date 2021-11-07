@@ -396,3 +396,12 @@ Lazy Module
 
 .. autoclass:: LazyModule
    :members:
+
+
+Mixed Precision
+---------------
+
+.. currentmodule:: pax.experimental
+
+.. autofunction:: default_mp_policy
+.. autofunction:: apply_scaled_gradients
