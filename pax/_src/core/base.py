@@ -138,9 +138,14 @@ class BaseModule(metaclass=BaseModuleMetaclass):
             raise ValueError("`__slots__` is not supported by PAX modules.")
 
         # scan class attributes for unregistered modules and ndarray's.
-        obj._scan_fields(obj.__class__.__dict__)
+        obj._scan_fields(obj._class_fields())
 
         return obj
+
+    def _class_fields(self):
+        for name, value in self.__class__.__dict__.items():
+            if not hasattr(value, "__get__"):  # ignore descriptors
+                yield name
 
     def _assert_mutability(self):
         if not is_mutable(self):

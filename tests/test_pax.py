@@ -504,3 +504,21 @@ def test_shared_module():
 
     with pytest.raises(ValueError):
         _ = M()
+
+
+def test_class_with_property():
+    class M(pax.StateModule):
+        @property
+        def counter(self):
+            return self._counter
+
+        def __init__(self):
+            super().__init__()
+            self._counter = jnp.array(0)
+
+        def __call__(self):
+            self._counter += 1
+
+    m = M()
+    m, _ = pax.module_and_value(m)()
+    print(m.counter)
