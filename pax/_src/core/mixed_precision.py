@@ -10,7 +10,6 @@ import jmp
 
 from .module import Module
 from .pure import pure
-from .threading_local import allow_mutation
 
 TreeDef = Any
 
@@ -79,8 +78,8 @@ class apply_mp_policy(Module, Generic[T]):  # pylint: disable=invalid-name
                 f"is not supported by mixed-precision modules."
             )
 
-        def _fn(*args, **kwargs):
-            """This function does four tasks:
+        def proxy_method(this: apply_mp_policy, *args, **kwargs):
+            """This method does four tasks:
 
             * Task 1: Casts all parameters and arguments to the "compute" data type.
             * Task 2: Calls the original method.
@@ -89,11 +88,12 @@ class apply_mp_policy(Module, Generic[T]):  # pylint: disable=invalid-name
               the original parameter will be reused to avoid a `cast` operation.
             * Task 4: Casts the output to the "output" data type.
             """
-            old_mod_clone = self._module.copy()
+            # pylint: disable=protected-access
+            old_mod_clone = this._module.copy()
 
             # task 1
-            mod, casted_args, casted_kwargs = self.mp_policy.cast_to_compute(
-                (self._module, args, kwargs)
+            mod, casted_args, casted_kwargs = this.mp_policy.cast_to_compute(
+                (this._module, args, kwargs)
             )
 
             casted_mod_clone = mod.copy()
@@ -108,7 +108,7 @@ class apply_mp_policy(Module, Generic[T]):  # pylint: disable=invalid-name
             # task 3
             if jax.tree_structure(mod) != jax.tree_structure(old_mod_clone):
                 raise ValueError(
-                    f"The module `{self._module.__class__.__name__}` has "
+                    f"The module `{this._module.__class__.__name__}` has "
                     f"its treedef modified during the forward pass. "
                     f"This is not supported by mixed-precision modules!"
                 )
@@ -119,20 +119,20 @@ class apply_mp_policy(Module, Generic[T]):  # pylint: disable=invalid-name
                 if updated_new is new:
                     return old  # nothing change
                 else:
-                    return self.mp_policy.cast_to_param(updated_new)
+                    return this.mp_policy.cast_to_param(updated_new)
 
             mod = jax.tree_map(reuse_params_fn, mod, casted_mod_clone, old_mod_clone)
 
-            # `mod` has the same pytree structure as `self._module`,
+            # `mod` has the same pytree structure as `this._module`,
             # therefore, this is safe.
-            with allow_mutation(self):
-                self._module = mod
+            if this._module != mod:
+                this._module = mod
 
             # task 4
-            output = self.mp_policy.cast_to_output(output)
+            output = this.mp_policy.cast_to_output(output)
             return output
 
-        return _fn
+        return proxy_method.__get__(self, self.__class__)
 
     def __repr__(self):
         dtype_to_name = {
