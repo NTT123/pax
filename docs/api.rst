@@ -267,7 +267,6 @@ A module transformation is a pure function that inputs PAX's modules and outputs
    select_states
    freeze_parameters
    unfreeze_parameters
-   flatten_module
    apply_mp_policy
 
 
@@ -319,12 +318,6 @@ unfreeze_parameters
 .. autofunction:: unfreeze_parameters
 
 
-flatten_module
---------------
-
-.. autoclass:: flatten_module
-
-
 apply_mp_policy
 ---------------
 
@@ -371,6 +364,13 @@ Experimental
 ============
 
 .. currentmodule:: pax.experimental
+
+Flattener
+---------
+
+.. autoclass:: Flattener
+   :members:
+
 
 Graph API
 ---------

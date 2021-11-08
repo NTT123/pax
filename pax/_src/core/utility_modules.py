@@ -1,9 +1,10 @@
 """Utility Modules."""
 
 
-from typing import Callable, List, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Type, TypeVar, Union
 
 import jax
+import jax.numpy as jnp
 
 from .base import PaxKind, allow_mutation
 from .module import Module
@@ -122,3 +123,52 @@ class Lambda(Module):
             name = f"{self.func}"
         output = f"x => {name}(x)"
         return [output] if return_list else output
+
+
+class Flattener(StateModule):
+    """Flatten PAX modules for better performance.
+
+    Example:
+
+    >>> net = pax.nn.Linear(3, 3)
+    >>> opt = opax.adam(1e-3)(net.parameters())
+    >>> flat_mods = pax.experimental.Flattener(model=net, optimizer=opt)
+    >>> net, opt = flat_mods.model, flat_mods.optimizer
+    >>> print(net.summary())
+    Linear(in_dim=3, out_dim=3, with_bias=True)
+    >>> print(opt.summary())
+    chain.<locals>.Chain
+    ├── scale_by_adam.<locals>.ScaleByAdam
+    └── scale.<locals>.Scale
+    """
+
+    treedef_dict: Dict[str, Any]
+    leaves_dict: Dict[str, Sequence[jnp.ndarray]]
+
+    def __init__(self, **kwargs):
+        """Create a new flattener."""
+        super().__init__()
+        self.treedef_dict = {}
+        self.leaves_dict = {}
+        for name, value in kwargs.items():
+            leaves, treedef = jax.tree_flatten(value)
+            self.treedef_dict[name] = treedef
+            self.leaves_dict[name] = leaves
+
+    def __getattr__(self, name: str) -> Any:
+        if name in self.treedef_dict:
+            treedef = self.treedef_dict[name]
+            leaves = self.leaves_dict[name]
+            value = jax.tree_unflatten(treedef, leaves)
+            return value
+        else:
+            return super().__getattr__(name)
+
+    def update(self: T, **kwargs) -> T:
+        """Update the flattener."""
+        new_self = self.copy()
+        for name, value in kwargs.items():
+            leaves, treedef = jax.tree_flatten(value)
+            new_self.treedef_dict[name] = treedef
+            new_self.leaves_dict[name] = leaves
+        return new_self

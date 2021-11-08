@@ -1,6 +1,5 @@
 """PAX Module"""
 
-from .flatten_module import flatten_module
 from .graph_module import GraphModule, InputNode, build_graph_module
 from .mixed_precision import apply_mp_policy
 from .module import Module, PaxKind
@@ -16,5 +15,5 @@ from .transforms import (
     update_parameters,
     update_states,
 )
-from .utility_modules import LazyModule, ParameterModule, StateModule
+from .utility_modules import Flattener, LazyModule, ParameterModule, StateModule
 from .utils import assert_structure_equal
