@@ -116,7 +116,7 @@ class BatchNorm(Module):
         }
         return super()._repr(info)
 
-    def summary(self, return_list: bool = True):
+    def summary(self, return_list: bool = False):
         lines = super().summary(return_list=True)
         if return_list:
             return lines[:1]
