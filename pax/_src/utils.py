@@ -240,8 +240,8 @@ def default_mp_policy(module: T) -> T:
     >>> net = net.apply(pax.experimental.default_mp_policy)
     >>> print(net.summary())
     Sequential
-    ├── FHF_Linear(in_dim=3, out_dim=3, with_bias=True)
-    └── FFF_BatchNorm1D(num_channels=3, create_scale=True, create_offset=True, data_format=NWC, decay_rate=0.9)
+    ├── Linear(in_dim=3, out_dim=3, with_bias=True, mp_policy=FHF)
+    └── BatchNorm1D(num_channels=3, create_scale=True, create_offset=True, data_format=NWC, decay_rate=0.9, mp_policy=FFF)
     """
     half = jmp.half_dtype()
     full = jnp.float32

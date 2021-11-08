@@ -89,11 +89,11 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
     >>> net = pax.nn.Linear(3, 3)
     >>> net = pax.apply_mp_policy(net, mp_policy)
     >>> print(net.summary())
-    FHF_Linear(in_dim=3, out_dim=3, with_bias=True)
+    Linear(in_dim=3, out_dim=3, with_bias=True, mp_policy=FHF)
     """
 
     # pylint: disable=protected-access
-    cls_name = f"{_mp_repr(mp_policy)}_{module.__class__.__name__}"
+    cls_name = module.__class__.__name__
     module_methods = dir(Module)
     base = module.__class__
 
@@ -112,6 +112,13 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
                 else:
                     methods[name] = _wrap_method(value)
 
+    def _repr(self, info=None):
+        if info is None:
+            info = {}
+        info["mp_policy"] = _mp_repr(self.mp_policy)
+        return super(base, self)._repr(info)
+
+    methods["_repr"] = _repr
     cls = type(cls_name, (base,), methods)
     obj = object.__new__(cls)
     object.__setattr__(obj, "_pax", module._pax)
@@ -120,5 +127,4 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
     for name, kind in obj._pax.name_to_kind.items():
         if kind in [PaxKind.PARAMETER, PaxKind.STATE]:
             obj.__dict__[name] = mp_policy.cast_to_param(obj.__dict__[name])
-
     return obj
