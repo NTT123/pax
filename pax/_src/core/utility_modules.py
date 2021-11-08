@@ -162,7 +162,7 @@ class Flattener(StateModule):
             value = jax.tree_unflatten(treedef, leaves)
             return value
         else:
-            return super().__getattr__(name)
+            raise AttributeError()
 
     def update(self: T, **kwargs) -> T:
         """Update the flattener."""

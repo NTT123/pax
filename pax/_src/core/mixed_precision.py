@@ -132,7 +132,7 @@ class apply_mp_policy(Module, Generic[T]):  # pylint: disable=invalid-name
             output = this.mp_policy.cast_to_output(output)
             return output
 
-        return proxy_method.__get__(self, self.__class__)
+        return proxy_method.__get__(self, self.__class__)  # type: ignore
 
     def __repr__(self):
         dtype_to_name = {
