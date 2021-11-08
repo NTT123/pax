@@ -125,7 +125,7 @@ class Lambda(Module):
         return [output] if return_list else output
 
 
-class Flattener(StateModule):
+class Flattener(Module):
     """Flatten PAX modules for better performance.
 
     Example:
@@ -150,6 +150,8 @@ class Flattener(StateModule):
         super().__init__()
         self.treedef_dict = {}
         self.leaves_dict = {}
+        self.set_attribute_kind(leaves_dict=PaxKind.STATE)
+
         for name, value in kwargs.items():
             leaves, treedef = jax.tree_flatten(value)
             self.treedef_dict[name] = treedef
@@ -172,3 +174,9 @@ class Flattener(StateModule):
             new_self.treedef_dict[name] = treedef
             new_self.leaves_dict[name] = leaves
         return new_self
+
+    def parameters(self: T) -> T:
+        raise ValueError(
+            "A flattener only stores ndarray leaves as non-trainable states.\n"
+            "Reconstruct the original module before getting parameters."
+        )
