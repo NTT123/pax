@@ -167,7 +167,16 @@ class Flattener(Module):
             raise AttributeError()
 
     def update(self: T, **kwargs) -> T:
-        """Update the flattener."""
+        """Update the flattener.
+
+        Example:
+
+        >>> net = pax.nn.Linear(3, 3)
+        >>> flats = pax.experimental.Flattener(net=net)
+        >>> flats = flats.update(net=pax.nn.Linear(4, 4))
+        >>> print(flats.net.summary())
+        Linear(in_dim=4, out_dim=4, with_bias=True)
+        """
         new_self = self.copy()
         for name, value in kwargs.items():
             leaves, treedef = jax.tree_flatten(value)
@@ -176,6 +185,11 @@ class Flattener(Module):
         return new_self
 
     def parameters(self: T) -> T:
+        """Raise an error.
+
+        Need to reconstruct the original module before getting parameters.
+        """
+
         raise ValueError(
             "A flattener only stores ndarray leaves as non-trainable states.\n"
             "Reconstruct the original module before getting parameters."
