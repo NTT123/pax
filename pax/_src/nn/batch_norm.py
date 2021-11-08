@@ -114,7 +114,7 @@ class BatchNorm(Module):
             "data_format": self.data_format,
             "decay_rate": self.decay_rate,
         }
-        return super()._repr(info)
+        return self._repr(info)
 
     def summary(self, return_list: bool = False):
         lines = super().summary(return_list=True)

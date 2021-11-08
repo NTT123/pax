@@ -72,4 +72,4 @@ class Linear(ParameterModule):
             "out_dim": self.out_dim,
             "with_bias": self.with_bias,
         }
-        return super()._repr(info)
+        return self._repr(info)

@@ -57,4 +57,4 @@ class Embed(ParameterModule):
 
     def __repr__(self):
         info = {"vocab_size": self.vocab_size, "embed_dim": self.embed_dim}
-        return super()._repr(info)
+        return self._repr(info)

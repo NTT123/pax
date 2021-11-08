@@ -154,7 +154,7 @@ class Conv(ParameterModule):
         if all_one(info["stride"]):
             del info["stride"]
 
-        return super()._repr(info)
+        return self._repr(info)
 
 
 class Conv1D(Conv):
@@ -399,7 +399,7 @@ class ConvTranspose(ParameterModule):
             "stride": self.stride,
             "with_bias": self.with_bias,
         }
-        return super()._repr(info)
+        return self._repr(info)
 
 
 class Conv1DTranspose(ConvTranspose):
