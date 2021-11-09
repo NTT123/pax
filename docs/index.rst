@@ -42,7 +42,7 @@ Installation
 
 To install the latest version::
 
-   pip3 install git+https://github.com/ntt123/pax.git
+   pip install git+https://github.com/ntt123/pax.git
 
 
 .. toctree::

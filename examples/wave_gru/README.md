@@ -11,7 +11,7 @@ We use `ffmpeg` and `sox` to do audio conversion and silence trimming.
 
 To prepare audio clip:
 
-    pip3 install -r requirements.txt
+    pip install -r requirements.txt
     bash prepare_data.sh
     
 ## Train WaveGRU

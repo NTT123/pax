@@ -8,6 +8,6 @@ The difference is at how PAX manages random keys. PAX's version uses a `RngSeq` 
 To train model:
 
 ```sh
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 python3 train.py
 ```

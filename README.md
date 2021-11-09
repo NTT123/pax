@@ -31,16 +31,16 @@ A `pax.Module` object has two sides:
 Install from PyPI:
 
 ```bash
-pip3 install pax3
+pip install pax3
 ```
 
 Or install the latest version from Github:
 
 ```bash
-pip3 install git+https://github.com/ntt123/pax.git
+pip install git+https://github.com/ntt123/pax.git
 
 ## or test mode to run tests and examples
-pip3 install git+https://github.com/ntt123/pax.git#egg=pax3[test]
+pip install git+https://github.com/ntt123/pax.git#egg=pax3[test]
 ```
 
 
