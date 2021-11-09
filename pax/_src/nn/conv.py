@@ -192,8 +192,7 @@ class Conv1D(Conv):
                 ``rate > 1`` corresponds to dilated convolution. Defaults to 1.
             padding: Optional padding. Either ``VALID`` or ``SAME`` or
                 sequence of `Tuple[int, int]` representing the padding before and after
-                for each spatial dimension. Defaults to ``SAME``. See:
-                https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
+                for each spatial dimension. Defaults to ``SAME``.
             with_bias: Whether to add a bias. By default, true.
             w_init: Optional weight initialization. By default, truncated normal.
             b_init: Optional bias initialization. By default, zeros.
@@ -258,8 +257,7 @@ class Conv2D(Conv):
                 ``rate > 1`` corresponds to dilated convolution. Defaults to 1.
             padding: Optional padding. Either ``VALID`` or ``SAME`` or
                 sequence of `Tuple[int, int]` representing the padding before and after
-                for each spatial dimension. Defaults to ``SAME``. See:
-                https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
+                for each spatial dimension. Defaults to ``SAME``.
             with_bias: Whether to add a bias. By default, true.
             w_init: Optional weight initialization. By default, truncated normal.
             b_init: Optional bias initialization. By default, zeros.
@@ -433,8 +431,7 @@ class Conv1DTranspose(ConvTranspose):
             stride: Optional stride for the kernel. Either an integer or a sequence of
                 length 1. Defaults to 1.
             padding: Optional padding algorithm. Either ``VALID`` or ``SAME``.
-                Defaults to ``SAME``. See:
-                https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
+                Defaults to ``SAME``.
             with_bias: Whether to add a bias. By default, true.
             w_init: Optional weight initialization. By default, truncated normal.
             b_init: Optional bias initialization. By default, zeros.
@@ -495,8 +492,7 @@ class Conv2DTranspose(ConvTranspose):
             stride: Optional stride for the kernel. Either an integer or a sequence of
                 length 1. Defaults to 1.
             padding: Optional padding algorithm. Either ``VALID`` or ``SAME``.
-                Defaults to ``SAME``. See:
-                https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
+                Defaults to ``SAME``.
             with_bias: Whether to add a bias. By default, true.
             w_init: Optional weight initialization. By default, truncated normal.
             b_init: Optional bias initialization. By default, zeros.
