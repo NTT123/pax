@@ -101,6 +101,12 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
     Linear(in_dim=3, out_dim=3, with_bias=True, mp_policy=FHF)
     """
 
+    if hasattr(module, "_pax_mp_policy"):
+        raise ValueError(
+            "Cannot apply multiple mixed-precision policies on an object.\n"
+            "Call `.unwrap_mp_policy()` to remove the policy first."
+        )
+
     # pylint: disable=protected-access
     cls_name = module.__class__.__name__
     module_methods = dir(Module)
@@ -127,7 +133,16 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
         info["mp_policy"] = _mp_repr(self._pax_mp_policy)
         return super(base, self)._repr(info)
 
+    def unwrap_mp_policy(self):
+        origin = object.__new__(base)
+        object.__setattr__(origin, "_pax", self._pax)
+        origin.__dict__.update(self.__dict__)
+        del origin.__dict__["_pax_mp_policy"]
+        return origin
+
     methods["_repr"] = _repr
+    methods["unwrap_mp_policy"] = unwrap_mp_policy
+
     cls = type(cls_name, (base,), methods)
     obj = object.__new__(cls)
     object.__setattr__(obj, "_pax", module._pax)
