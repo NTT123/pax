@@ -268,7 +268,7 @@ A module transformation is a pure function that inputs PAX's modules and outputs
    freeze_parameters
    unfreeze_parameters
    apply_mp_policy
-
+   unwrap_mp_policy
 
 update_parameters
 -----------------
@@ -321,9 +321,13 @@ unfreeze_parameters
 apply_mp_policy
 ---------------
 
-.. autoclass:: apply_mp_policy
-   :members: __init__
+.. autofunction:: apply_mp_policy
 
+
+unwrap_mp_policy
+----------------
+
+.. autofunction:: unwrap_mp_policy
 
 
 Utilities

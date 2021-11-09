@@ -98,9 +98,7 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
     Create a subclass on the fly to enforce the mixed-precision policy.
 
     >>> import jmp
-    >>> mp_policy = jmp.Policy(
-    ...     param_dtype=jnp.float32, compute_dtype=jnp.float16, output_dtype=jnp.float32
-    ... )
+    >>> mp_policy = jmp.get_policy("params=float32,compute=float16,output=float32")
     >>> net = pax.nn.Linear(3, 3)
     >>> net = pax.apply_mp_policy(net, mp_policy)
     >>> print(net.summary())
@@ -110,7 +108,7 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
     if hasattr(module, "_pax_mp_policy"):
         raise ValueError(
             "Cannot apply multiple mixed-precision policies on an object.\n"
-            "Call `.unwrap_mp_policy()` to remove the policy first."
+            "Call `pax.unwrap_mp_policy(...)` to remove the policy first."
         )
 
     # pylint: disable=protected-access
@@ -137,17 +135,9 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
         if info is None:
             info = {}
         info["mp_policy"] = _mp_repr(self._pax_mp_policy)
-        return super(base, self)._repr(info)
-
-    def unwrap_mp_policy(self):
-        origin = object.__new__(base)
-        object.__setattr__(origin, "_pax", self._pax)
-        origin.__dict__.update(self.__dict__)
-        del origin.__dict__["_pax_mp_policy"]
-        return origin
+        return super(base, self)._repr(info)  # type: ignore
 
     methods["_repr"] = _repr
-    methods["unwrap_mp_policy"] = unwrap_mp_policy
 
     cls = type(cls_name, (base,), methods)
     obj = object.__new__(cls)
@@ -158,3 +148,27 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
         if kind in [PaxKind.PARAMETER, PaxKind.STATE]:
             obj.__dict__[name] = mp_policy.cast_to_param(obj.__dict__[name])
     return obj
+
+
+def unwrap_mp_policy(module: T) -> T:
+    """Unwrap a mixed-precision module to recreate the original module.
+
+    >>> import jmp
+    >>> mp_policy = jmp.get_policy("params=float32,compute=float16,output=float32")
+    >>> net = pax.nn.Linear(3, 3)
+    >>> net = pax.apply_mp_policy(net, mp_policy)
+    >>> print(net.summary())
+    Linear(in_dim=3, out_dim=3, with_bias=True, mp_policy=FHF)
+    >>> net = pax.unwrap_mp_policy(net)
+    >>> print(net.summary())
+    Linear(in_dim=3, out_dim=3, with_bias=True)
+    """
+    if not hasattr(module, "_pax_mp_policy"):
+        raise ValueError("Expected a mixed-precision module.")
+
+    base = module.__class__.__base__
+    original = object.__new__(base)
+    object.__setattr__(original, "_pax", module._pax)
+    original.__dict__.update(module.__dict__)
+    del original.__dict__["_pax_mp_policy"]
+    return original

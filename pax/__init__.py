@@ -16,6 +16,7 @@ from pax._src.core import (
     select_parameters,
     select_states,
     unfreeze_parameters,
+    unwrap_mp_policy,
     update_parameters,
     update_states,
 )
@@ -54,6 +55,7 @@ __all__ = (
     "select_states",
     "StateModule",
     "unfreeze_parameters",
+    "unwrap_mp_policy",
     "update_parameters",
     "update_states",
     "utils",

@@ -14,7 +14,7 @@ def test_wrap_unwrap_mp_policy():
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
-    fff = ff.unwrap_mp_policy()
+    fff = pax.unwrap_mp_policy(ff)
     assert hasattr(ff, "_pax_mp_policy")
     assert not hasattr(fff, "_pax_mp_policy")
 
@@ -120,7 +120,7 @@ def test_wrap_wrap_mixed_precision():
     with pytest.raises(ValueError):
         f = pax.apply_mp_policy(f, mp_policy=my_policy)
 
-    f = f.unwrap_mp_policy()
+    f = pax.unwrap_mp_policy(f)
     f = pax.apply_mp_policy(f, mp_policy=my_policy)
 
     with pytest.raises(ValueError):
@@ -142,7 +142,7 @@ def test_mixed_precision_unwrap_clone():
     my_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=half)
 
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
-    f = ff.unwrap_mp_policy()
+    f = pax.unwrap_mp_policy(ff)
     f = f.set_attribute("new_fc", pax.nn.Linear(1, 1))
     assert "new_fc" not in ff._pax.name_to_kind
 
