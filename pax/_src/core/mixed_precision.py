@@ -1,3 +1,5 @@
+"""Enforce mixed-precision policy."""
+
 import functools
 from typing import TypeVar
 
@@ -10,6 +12,8 @@ T = TypeVar("T", bound=Module)
 
 # source: https://stackoverflow.com/a/21963090
 def _find_descriptor(cls, attrname):
+    """Find the descriptor of an attribute."""
+
     def hasspecialmethod(obj, name):
         return any(name in klass.__dict__ for klass in type(obj).__mro__)
 
@@ -75,10 +79,10 @@ def _wrap_method(func):
 
 def _mp_repr(mp_policy):
     dtype_to_name = {
-        jnp.bfloat16: "B",
+        jnp.bfloat16: "H",
         jnp.float16: "H",
         jnp.float32: "F",
-        jnp.float64: "S",
+        jnp.float64: "F",
     }
 
     return (
@@ -91,10 +95,12 @@ def _mp_repr(mp_policy):
 def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
     """Create a mixed-precision module.
 
-    Create a subclass on the fly to enfore mixed-precision policy.
+    Create a subclass on the fly to enforce the mixed-precision policy.
 
     >>> import jmp
-    >>> mp_policy = jmp.Policy(param_dtype=jnp.float32, compute_dtype=jnp.float16, output_dtype=jnp.float32)
+    >>> mp_policy = jmp.Policy(
+    ...     param_dtype=jnp.float32, compute_dtype=jnp.float16, output_dtype=jnp.float32
+    ... )
     >>> net = pax.nn.Linear(3, 3)
     >>> net = pax.apply_mp_policy(net, mp_policy)
     >>> print(net.summary())
