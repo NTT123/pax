@@ -23,42 +23,51 @@ def _find_descriptor(cls, attrname):
 
 
 def _wrap_method(func):
+    """Wrap a class's method to enforce mixe-precision policy."""
+
     @functools.wraps(func)
     def mp_method_wrapper(self, *args, **kwargs):
         """A mixed-precision method.
 
         - Convert all weights to compute dtype.
-        - Convert all arguments to compute dtype.
+        - Cast all arguments to compute dtype.
         - Call the original method.
         - Convert all weights to param dtype.
-        - Convert output to output dtype.
+        - Cast output to output dtype.
+
+        We bypass PAX mutability checking to make mixed-precision
+        policy transparent from the user's point of view.
         """
-        old_values = {}
+        original_values = {}
+        casted_original = {}
         # pylint: disable=protected-access
 
-        # cast weights to compute dtype
+        # convert weights to compute dtype
         for name, kind in self._pax.name_to_kind.items():
             if kind in [PaxKind.PARAMETER, PaxKind.STATE]:
                 value = getattr(self, name)
-                casted_value = self.mp_policy.cast_to_compute(value)
-                setattr(self, name, casted_value)
-                old_values[name] = value
+                casted_value = self._pax_mp_policy.cast_to_compute(value)
+                self.__dict__[name] = casted_value
+                original_values[name] = value
+                casted_original[name] = casted_value
 
-        args, kwargs = self.mp_policy.cast_to_compute((args, kwargs))
+        # cast arguments to compute dtype
+        args, kwargs = self._pax_mp_policy.cast_to_compute((args, kwargs))
         output = func.__get__(self, type(self))(*args, **kwargs)  # type:ignore
 
-        # cast weights to param dtype
+        # convert weights to param dtype
         for name, kind in self._pax.name_to_kind.items():
             if kind in [PaxKind.PARAMETER, PaxKind.STATE]:
                 value = getattr(self, name)
-                if value is not old_values[name]:  # modified
-                    casted_value = self.mp_policy.cast_to_param(value)
+                if value is not casted_original[name]:  # modified
+                    casted_value = self._pax_mp_policy.cast_to_param(value)
+                    setattr(self, name, casted_value)
                 else:
-                    casted_value = old_values[name]  # avoid casting operation
-                setattr(self, name, casted_value)
+                    # avoid casting operation
+                    self.__dict__[name] = original_values[name]
 
         # cast output to output dtype
-        output = self.mp_policy.cast_to_output(output)
+        output = self._pax_mp_policy.cast_to_output(output)
         return output
 
     return mp_method_wrapper
@@ -115,7 +124,7 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
     def _repr(self, info=None):
         if info is None:
             info = {}
-        info["mp_policy"] = _mp_repr(self.mp_policy)
+        info["mp_policy"] = _mp_repr(self._pax_mp_policy)
         return super(base, self)._repr(info)
 
     methods["_repr"] = _repr
@@ -123,7 +132,7 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
     obj = object.__new__(cls)
     object.__setattr__(obj, "_pax", module._pax)
     obj.__dict__.update(module.__dict__)
-    obj.__dict__["mp_policy"] = mp_policy
+    obj.__dict__["_pax_mp_policy"] = mp_policy
     for name, kind in obj._pax.name_to_kind.items():
         if kind in [PaxKind.PARAMETER, PaxKind.STATE]:
             obj.__dict__[name] = mp_policy.cast_to_param(obj.__dict__[name])
