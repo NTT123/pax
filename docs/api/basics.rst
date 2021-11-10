@@ -18,8 +18,26 @@ PAX's Module
 .. currentmodule:: pax
 
 .. autoclass:: Module
-   :inherited-members:
    :members:
+      __init__,
+      register_parameter,
+      register_state,
+      register_module,
+      add_parameters,
+      add_states,
+      set_attribute_kind,
+      parameters,
+      training,
+      train,
+      eval,
+      update_parameters,
+      replace,
+      replace_node,
+      summary,
+      apply,
+      __or__,
+      __mod__
+
 
 
 .. autoclass:: ParameterModule

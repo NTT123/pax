@@ -199,11 +199,25 @@ class BaseModule(metaclass=BaseModuleMetaclass):
             self._find_and_register_pytree(kind, fields=new_fields)
 
     def add_parameters(self):
-        """Add new attributes as trainable parameters"""
+        """Return a context manager that registers new attributes
+        in the scope as trainable parameters.
+
+        >>> def add_param(net):
+        ...     with net.add_parameters():
+        ...         net.weight = jnp.array(0.)
+        ...         net.bias = jnp.array(0.)
+        ...     return net
+        ...
+        >>> net = pax.pure(add_param)(pax.Module())
+        >>> net._pax
+        PaxModuleInfo[training=True, nodes={weight:PARAMETER, bias:PARAMETER}]
+        """
         return self._default_kind(PaxKind.PARAMETER)
 
     def add_states(self):
-        """Add new attributes as non-trainable states."""
+        """Return a context manager that registers new attributes
+        in the scope as non-trainable states.
+        """
         return self._default_kind(PaxKind.STATE)
 
     def tree_flatten(
@@ -408,7 +422,16 @@ class BaseModule(metaclass=BaseModuleMetaclass):
     def apply(self: T, apply_fn) -> T:
         """Apply a function to all submodules.
 
-        **Note**: this function returns a transformed copy of the module.
+        >>> def print_param_count(mod):
+        ...     count = sum(jax.tree_leaves(jax.tree_map(jnp.size, mod)))
+        ...     print(f"{count}\t{mod}")
+        ...     return mod
+        ...
+        >>> net = pax.nn.Sequential(pax.nn.Linear(1, 1), jax.nn.relu)
+        >>> net = net.apply(print_param_count)
+        2 Linear(in_dim=1, out_dim=1, with_bias=True)
+        0 Lambda(relu)
+        2 Sequential
 
         Arguments:
             apply_fn: a function which inputs a module and outputs a transformed module.

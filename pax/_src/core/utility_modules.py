@@ -14,9 +14,10 @@ O = TypeVar("O")
 
 
 class ParameterModule(Module):
-    """A PAX module that registers PARAMETER by default"""
+    """A PAX module that registers attributes as parameters by default."""
 
     def __new__(cls: Type[T], *args, **kwargs) -> T:
+        """Set the default kind to ``PaxKind.PARAMETER``."""
         module = super().__new__(cls, *args, **kwargs)
         with allow_mutation(module):
             module._update_default_kind(PaxKind.PARAMETER)
@@ -24,9 +25,10 @@ class ParameterModule(Module):
 
 
 class StateModule(Module):
-    """A PAX module that registers STATE by default"""
+    """A PAX module that registers attributes as states by default."""
 
     def __new__(cls: Type[T], *args, **kwargs) -> T:
+        """Set the default kind to ``PaxKind.STATE``."""
         module = super().__new__(cls, *args, **kwargs)
         with allow_mutation(module):
             module._update_default_kind(PaxKind.STATE)
