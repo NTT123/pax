@@ -10,6 +10,8 @@ Experimental
     graph.build_graph_module
     default_mp_policy
     apply_scaled_gradients
+    save_weights_to_dict
+    load_weights_from_dict
 
 
 Flattener
@@ -52,3 +54,12 @@ Mixed Precision
 
 .. autofunction:: default_mp_policy
 .. autofunction:: apply_scaled_gradients
+
+
+Save and load weights
+---------------------
+
+.. currentmodule:: pax.experimental
+
+.. autofunction:: save_weights_to_dict
+.. autofunction:: load_weights_from_dict
