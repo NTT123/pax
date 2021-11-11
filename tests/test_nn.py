@@ -221,7 +221,7 @@ def test_sequential_all_jax():
 
 def test_conv_no_bias():
     conv = pax.nn.Conv2D(3, 3, 3, 1, 1, "SAME", False)
-    assert conv.bias == None and "bias" not in conv._pax.name_to_kind
+    assert conv.bias == None and "bias" not in conv.pax.name_to_kind
 
 
 def test_native_conv1d_1():

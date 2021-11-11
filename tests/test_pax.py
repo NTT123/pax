@@ -225,7 +225,7 @@ def test_default_kind_module():
                 self.fc = pax.nn.Linear(3, 3)
 
     m = M()
-    assert m._pax.name_to_kind["fc"] is pax.PaxKind.MODULE
+    assert m.pax.name_to_kind["fc"] is pax.PaxKind.MODULE
 
 
 def test_default_kind_attribute_order():
@@ -244,7 +244,7 @@ def test_default_kind_attribute_order():
 
     for _ in range(1000):
         m = M()
-        assert tuple(m._pax.name_to_kind.keys()) == ("e", "a", "z", "b", "t", "c")
+        assert tuple(m.pax.name_to_kind.keys()) == ("e", "a", "z", "b", "t", "c")
 
 
 def test_module_properties_modify():
@@ -263,11 +263,11 @@ def test_clone_no_side_effect():
     fc1 = fc1.set_attribute("new_module", pax.nn.Linear(5, 5))
 
     assert (
-        "new_module" in fc1._pax.name_to_kind
+        "new_module" in fc1.pax.name_to_kind
     ), "registered 'new_modules' as part of fc1"
     assert (
-        "new_module" not in fc2._pax.name_to_kind
-    ), "fc2._pax.name_to_kind is different from fc1._pax.name_to_kind"
+        "new_module" not in fc2.pax.name_to_kind
+    ), "fc2.pax.name_to_kind is different from fc1.pax.name_to_kind"
 
 
 def test_lambda_module():
@@ -415,7 +415,7 @@ def test_deepcopy_pytreedef():
 def test_delete_attribute_1():
     f = pax.nn.BatchNorm1D(3)
     f = f.set_attribute("t", pax.nn.Linear(1, 1))
-    assert "t" in f._pax.name_to_kind
+    assert "t" in f.pax.name_to_kind
     with pytest.raises(ValueError):
         del f.t
 
@@ -460,8 +460,8 @@ def test_set_attribute_kind():
             self.set_attribute_kind(a=pax.S, b=pax.P)
 
     m = M()
-    assert m._pax.name_to_kind["a"] == pax.S
-    assert m._pax.name_to_kind["b"] == pax.P
+    assert m.pax.name_to_kind["a"] == pax.S
+    assert m.pax.name_to_kind["b"] == pax.P
 
 
 def test_replace_leaf():

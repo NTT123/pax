@@ -134,7 +134,7 @@ def test_mixed_precision_clone():
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
 
     f = f.set_attribute("new_fc", pax.nn.Linear(1, 1))
-    assert "new_fc" not in ff._pax.name_to_kind
+    assert "new_fc" not in ff.pax.name_to_kind
 
 
 def test_mixed_precision_unwrap_clone():
@@ -144,7 +144,7 @@ def test_mixed_precision_unwrap_clone():
     ff = pax.apply_mp_policy(f, mp_policy=my_policy)
     f = pax.unwrap_mp_policy(ff)
     f = f.set_attribute("new_fc", pax.nn.Linear(1, 1))
-    assert "new_fc" not in ff._pax.name_to_kind
+    assert "new_fc" not in ff.pax.name_to_kind
 
 
 def test_mixed_precision_no_method_name():

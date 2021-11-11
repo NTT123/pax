@@ -118,6 +118,10 @@ class BaseModule(metaclass=BaseModuleMetaclass):
 
     _pax: PaxModuleInfo
 
+    @property
+    def pax(self):
+        return self._pax
+
     def __new__(cls: Type[T], *args, **kwargs) -> T:
         """Initialize `_pax` attribute in `__new__` method to avoid
         calling `super().__init__()` in every subclass of Module."""
