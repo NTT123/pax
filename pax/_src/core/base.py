@@ -141,7 +141,7 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         if obj.__slots__ != ("_pax",):
             raise ValueError("`__slots__` is not supported by PAX modules.")
 
-        # scan class attributes for unregistered modules and ndarray's.
+        # scan class attributes for unregistered modules and ndarrays.
         obj._scan_fields(obj._class_fields())
 
         return obj
@@ -297,7 +297,7 @@ class BaseModule(metaclass=BaseModuleMetaclass):
                             f"(type={type(leaf)}, value={leaf})."
                         )
 
-            # Check if a PARAMETER attribute contains non-differentiable ndarray's.
+            # Check if a PARAMETER attribute contains non-differentiable ndarrays.
             if kind == PaxKind.PARAMETER:
                 for leaf in leaves:
                     if hasattr(leaf, "dtype") and not (
