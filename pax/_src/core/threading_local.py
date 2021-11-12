@@ -26,6 +26,7 @@ class PaxThreadingLocalState(threading.local):
     ]
     _enable_deep_copy: bool
     _mutable_module_ref_list: Tuple[weakref.ReferenceType, ...]
+    _mutable_module_level: jax.core.Sublevel
     _rng_seed: Optional[int]
     _rng_key: Optional[KeyArray]
 
@@ -34,6 +35,7 @@ class PaxThreadingLocalState(threading.local):
 
         self._enable_deep_copy = False
         self._mutable_module_ref_list = ()
+        self._mutable_module_level = jax.core.cur_sublevel()
         self._rng_seed = None
         self._rng_key = None
 
@@ -50,6 +52,12 @@ class PaxThreadingLocalState(threading.local):
 
     def is_mutable(self, module):
         """Is `module` mutable?"""
+
+        # cannot modify a module whose level of abstraction
+        # is lower than the current level
+        if self._mutable_module_level < jax.core.cur_sublevel():
+            return False
+
         for ref in self._mutable_module_ref_list:
             if module is ref():
                 return True
@@ -74,12 +82,15 @@ class PaxThreadingLocalState(threading.local):
         modules = tuple(weakref.ref(mod) for mod in modules)
 
         prev = self._mutable_module_ref_list
+        prev_abstraction_level = self._mutable_module_level
         prev_rng_state = self.get_rng_state()
         try:
             self._mutable_module_ref_list = modules
+            self._mutable_module_level = jax.core.cur_sublevel()
             yield
         finally:
             self._mutable_module_ref_list = prev
+            self._mutable_module_level = prev_abstraction_level
             self.set_rng_state(prev_rng_state)
 
     def seed_rng_key(self, seed: int) -> None:

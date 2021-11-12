@@ -125,3 +125,16 @@ def test_module_weak_ref():
     assert mod_ref() is mod
     del mod
     assert mod_ref() is None
+
+
+def test_abstraction_level_checking():
+    def mutate(f):
+        @jax.jit
+        def g():
+            f.a = "hello"
+
+        g()
+
+    fc = pax.nn.Linear(3, 3)
+    with pytest.raises(ValueError):
+        pax.pure(mutate)(fc)
