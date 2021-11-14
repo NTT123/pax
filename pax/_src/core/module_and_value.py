@@ -35,6 +35,7 @@ def module_and_value(
     Returns:
         A pure function.
     """
+    is_bound_method = True
     if isinstance(module_or_method, MethodType):  # a method
         mod = module_or_method.__self__
         func = module_or_method.__func__
@@ -42,10 +43,11 @@ def module_and_value(
         mod = module_or_method
         assert hasattr(mod, "__call__"), "Expecting a callable module."
         func = module_or_method.__call__.__func__
+    elif callable(module_or_method):
+        is_bound_method = False
+        func = module_or_method
     else:
         raise ValueError("Expecting a module or a module's method.")
-
-    assert isinstance(mod, BaseModule), "Expecting a PAX module."
 
     if static_argnums is not None:
         if isinstance(static_argnums, int):
@@ -55,7 +57,11 @@ def module_and_value(
 
     @partial(pure, static_argnums=static_argnums, check_leaks=check_leaks)
     def _run(mod, *args, **kwargs):
+        assert isinstance(mod, BaseModule), "Expecting a PAX module."
         out = func(mod, *args, **kwargs)
         return mod, out
 
-    return partial(_run, mod)
+    if is_bound_method:
+        return partial(_run, mod)
+    else:
+        return _run

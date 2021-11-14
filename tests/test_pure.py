@@ -138,3 +138,18 @@ def test_abstraction_level_checking():
     fc = pax.nn.Linear(3, 3)
     with pytest.raises(ValueError):
         pax.pure(mutate)(fc)
+
+
+def test_decorate_method_with_module_and_value():
+    class M(pax.StateModule):
+        def __init__(self):
+            self.c = jnp.array(0)
+
+        @pax.module_and_value
+        def step(self):
+            self.c += 1
+
+    m = M()
+    assert m.c.item() == 0
+    m, _ = m.step()
+    assert m.c.item() == 1
