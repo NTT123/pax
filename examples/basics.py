@@ -49,7 +49,7 @@ def main():
     # model & optimizer
     net = Linear()
     print(net.summary())
-    opt = opax.adam(1e-1)(net.parameters())
+    opt = opax.adam(1e-1).init(net.parameters())
 
     # data
     x = jax.random.normal(pax.next_rng_key(), (32, 1))
