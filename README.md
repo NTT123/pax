@@ -21,7 +21,7 @@
 A `pax.Module` object has two sides:
 
 * It is a _normal_ python object which can be modified and called.
-* It is a _pytree_ object whose leaves are `ndarray`'s.
+* It is a _pytree_ object whose leaves are `ndarray`s.
 
 ``pax.Module`` object manages the pytree and executes functions that depend on the pytree. As a pytree object, it can be input and output to JAX functions running on CPU/GPU/TPU cores.
 

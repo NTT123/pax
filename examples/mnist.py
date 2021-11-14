@@ -91,13 +91,17 @@ def train(
 ):
     pax.seed_rng_key(42)
 
+    # model
     net = ConvNet()
     print(net.summary())
+
+    # optimizer
     optimizer = opax.chain(
         opax.clip_by_global_norm(1.0),
         opax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
     )(net.parameters())
 
+    # data
     train_data = load_dataset("train").shuffle(10 * batch_size).batch(batch_size)
     test_data = load_dataset("test").shuffle(10 * batch_size).batch(batch_size)
 

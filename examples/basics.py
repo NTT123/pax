@@ -58,7 +58,7 @@ def main():
     # training loop
     for _ in range(10):
         net, opt, loss = train_step(net, opt, x, y)
-        print(f"step {net.counter} loss {loss:.3f}")
+        print(f"step {net.counter:>2} loss {loss:.3f}")
 
 
 if __name__ == "__main__":
