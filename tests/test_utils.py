@@ -76,7 +76,7 @@ def test_Rng_Seq():
     rng_seq, r1 = pax.module_and_value(rng_seq.next_rng_key)()
     assert r1.shape == (2,)
     h1 = rng_seq._rng_key
-    rng_seq, rs = pax.module_and_value(rng_seq.next_rng_key, static_argnums=0)(2)
+    rng_seq, rs = pax.module_and_value(rng_seq.next_rng_key)(2)
     h2 = rng_seq._rng_key
     assert len(rs) == 2
     assert r1.tolist() != rs[0].tolist()

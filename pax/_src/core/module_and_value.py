@@ -2,7 +2,7 @@
 
 from functools import partial
 from types import MethodType
-from typing import Callable, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Callable, Tuple, TypeVar
 
 from .base import BaseModule
 from .pure import pure
@@ -11,11 +11,7 @@ O = TypeVar("O")
 T = TypeVar("T", bound=BaseModule)
 
 
-def module_and_value(
-    module_or_method: Callable[..., O],
-    static_argnums: Optional[Union[int, Sequence[int]]] = None,
-    check_leaks: bool = True,
-) -> Callable[..., Tuple[T, O]]:
+def module_and_value(module_or_method: Callable[..., O]) -> Callable[..., Tuple[T, O]]:
     """Return a pure function that executes a module's method.
 
     This pure function also returns the updated input module in the output.
@@ -29,8 +25,6 @@ def module_and_value(
 
     Arguments:
         module_or_method: Either a PAX module or a method of a PAX module.
-        static_argnums: a list of static arguments.
-        check_leaks: enable jax leak checking.
 
     Returns:
         A pure function.
@@ -49,13 +43,7 @@ def module_and_value(
     else:
         raise ValueError("Expecting a module or a module's method.")
 
-    if static_argnums is not None:
-        if isinstance(static_argnums, int):
-            static_argnums = [static_argnums]
-        # offset by 1 for `self` argument.
-        static_argnums = tuple(x + 1 for x in static_argnums)
-
-    @partial(pure, static_argnums=static_argnums, check_leaks=check_leaks)
+    @pure
     def _run(mod, *args, **kwargs):
         assert isinstance(mod, BaseModule), "Expecting a PAX module."
         out = func(mod, *args, **kwargs)
