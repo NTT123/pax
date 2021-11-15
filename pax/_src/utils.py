@@ -58,8 +58,6 @@ def grad(
     >>> net = pax.nn.Linear(1, 1)
     >>> x = jnp.ones((3, 1))
     >>> grads, (loss, net) = grad_fn(net, x, x)
-    >>> print(jax.tree_leaves(grads))
-    [DeviceArray([[-1.4543512]], dtype=float32), DeviceArray([-1.4543512], dtype=float32)]
     """
 
     def _fun(params: T, mod: T, *args, **kwargs):
