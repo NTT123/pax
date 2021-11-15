@@ -187,9 +187,11 @@ def scan(func, init, xs, length=None, unroll: int = 1, time_major=True):
     else:
         # data format: NT...
         if xs is not None:
-            xs = jnp.swapaxes(xs, 0, 1)  # swap batch and time axes
+            # swap batch and time axes
+            xs = jax.tree_map(lambda leaf: jnp.swapaxes(leaf, 0, 1), xs)
         state, output = jax.lax.scan(func, init, xs, length=length, unroll=unroll)
-        output = jnp.swapaxes(output, 0, 1)  # restore to NT...
+        # restore to format NT...
+        output = jax.tree_map(lambda leaf: jnp.swapaxes(leaf, 0, 1), output)
         return state, output
 
 

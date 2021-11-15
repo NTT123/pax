@@ -123,6 +123,17 @@ def test_scan_fn_not_time_major():
     assert ys[0, -1].item() == 45
 
 
+def test_scan_fn_not_time_major_pytree():
+    def loop(prev_state, x):
+        next_state = prev_state + x[0] + x[1]
+        return next_state, (next_state, next_state)
+
+    h0 = jnp.zeros((1,))
+    xs = jnp.arange(0, 10).reshape((1, -1))
+    _, (ys1, ys2) = pax.scan(loop, h0, (xs, xs), time_major=False)
+    assert ys1[0, -1].item() == 90
+
+
 def test_scan_fn_time_major():
     def loop(prev_state, x):
         next_state = prev_state + x
