@@ -84,7 +84,6 @@ class PaxThreadingLocalState(threading.local):
 
         prev = self._mutable_module_ref_list
         prev_abstraction_level = self._mutable_module_level
-        prev_rng_state = self.get_rng_state()
         try:
             self._mutable_module_ref_list = modules
             self._mutable_module_level = jax.core.cur_sublevel()
@@ -92,7 +91,6 @@ class PaxThreadingLocalState(threading.local):
         finally:
             self._mutable_module_ref_list = prev
             self._mutable_module_level = prev_abstraction_level
-            self.set_rng_state(prev_rng_state)
 
     def seed_rng_key(self, seed: int) -> None:
         """Set ``self.rng_seed = seed``.
