@@ -49,8 +49,6 @@ def pure(func: Callable):
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        rng_state = get_rng_state()
-
         for m in _get_modules((func, args, kwargs)):
             m.scan_bugs()
 
@@ -70,9 +68,7 @@ def pure(func: Callable):
         args, kwargs = _deepcopy((args, kwargs))
         modules = _get_all_submodules((args, kwargs))
         with allow_mutation(modules):
-            set_rng_state(rng_state)
             out = unbound_func(*args, **kwargs)
-            set_rng_state(rng_state)
 
         for m in _get_modules(out):
             m.scan_bugs()
