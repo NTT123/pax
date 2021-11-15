@@ -2,7 +2,7 @@
 Manage thread local states
 """
 
-import logging
+import random
 import threading
 import weakref
 from contextlib import contextmanager
@@ -22,14 +22,12 @@ class PaxThreadingLocalState(threading.local):
         "_enable_deep_copy",
         "_mutable_module_ref_list",
         "_mutable_module_level",
-        "_rng_seed",
-        "_rng_key",
+        "_rng",
     ]
     _enable_deep_copy: bool
     _mutable_module_ref_list: Tuple[weakref.ReferenceType, ...]
     _mutable_module_level: jax.core.Sublevel
-    _rng_seed: Optional[int]
-    _rng_key: Optional[KeyArray]
+    _rng: Optional[random.Random]
 
     def __init__(self):
         super().__init__()
@@ -37,8 +35,7 @@ class PaxThreadingLocalState(threading.local):
         self._enable_deep_copy = False
         self._mutable_module_ref_list = ()
         self._mutable_module_level = jax.core.cur_sublevel()
-        self._rng_seed = None
-        self._rng_key = None
+        self._rng = random.Random(42)
 
     def is_deep_copy_enabled(self):
         """use deepcopy to copy modules"""
@@ -93,54 +90,26 @@ class PaxThreadingLocalState(threading.local):
             self._mutable_module_level = prev_abstraction_level
 
     def seed_rng_key(self, seed: int) -> None:
-        """Set ``self.rng_seed = seed``.
-        Reset ``self.rng_key`` to ``None``.
+        """Set ``self._rng = random.Random(seed)``.
 
         Arguments:
             seed: an integer seed.
         """
         assert isinstance(seed, int)
-        self._rng_seed = seed
-        self._rng_key = None
+        self._rng = random.Random(seed)
 
     def next_rng_key(self) -> KeyArray:
-        """Return a random rng key.
-        Renew the global random key ``self.rng_key``.
-
-        If ``self.rng_key`` is ``None``,
-        generate a new ``self.rng_key`` from ``self.rng_seed``.
-        """
-        if self._rng_key is None:
-            if self._rng_seed is None:
-                seed = 42
-                logging.warning(
-                    "Seeding RNG key with seed %s. "
-                    "Use `pax.seed_rng_key` function to avoid this warning.",
-                    seed,
-                )
-                self.seed_rng_key(seed)
-
-            # Delay the generating of self.rng_key until `next_rng_key` is called.
-            # This helps to avoid the problem when `seed_rng_key` is called
-            # before jax found TPU cores.
-            if self._rng_seed is not None:
-                self._rng_key = jax.random.PRNGKey(self._rng_seed)
-            else:
-                raise ValueError("Impossible")
-
-        key, self._rng_key = jax.random.split(self._rng_key)
-
-        return key
+        """Return a random rng key. Renew the global random state."""
+        seed = self._rng.randint(1, 999999999)
+        return jax.random.PRNGKey(seed)
 
     def get_rng_state(self):
-        """Return internal states."""
-        return (self._rng_key, self._rng_seed)
+        """Return internal random states."""
+        return self._rng.getstate()
 
     def set_rng_state(self, state):
-        """Set internal states."""
-        rng_key, seed = state
-        self._rng_key = rng_key
-        self._rng_seed = seed
+        """Set internal random states."""
+        self._rng.setstate(state)
 
 
 PAX_STATE = PaxThreadingLocalState()

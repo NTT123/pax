@@ -31,7 +31,7 @@ def test_rng_unchanged():
 
     r1 = f1()
     r2 = f2()
-    assert_array_equal(r1, r2)
+    assert not jnp.array_equal(r1, r2)
 
     r3 = fn()
     _ = pax.next_rng_key()
