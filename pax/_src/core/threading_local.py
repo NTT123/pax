@@ -21,6 +21,7 @@ class PaxThreadingLocalState(threading.local):
     __slots__ = [
         "_enable_deep_copy",
         "_mutable_module_ref_list",
+        "_mutable_module_level",
         "_rng_seed",
         "_rng_key",
     ]
