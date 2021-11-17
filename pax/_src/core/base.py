@@ -96,6 +96,8 @@ class BaseModuleMetaclass(type):
                     cls.__init__(module, *args, **kwargs)
 
         # scan module after initialization for potential bugs
+        if hasattr(module, "__slots__"):
+            raise ValueError("`__slots__` is not supported by PAX modules.")
         module._assert_not_shared_module()
         module._assert_not_shared_weight()
         module._scan_fields(module.__dict__.keys())
@@ -113,8 +115,6 @@ class BaseModule(metaclass=BaseModuleMetaclass):
     BaseModule maintains a ``name_to_kind`` dictionary that tells if an attribute is part of
     the pytree and the kind of the tree part (parameter, state, module, etc.).
     """
-
-    __slots__ = ("_pax",)
 
     _pax: PaxModuleInfo
 
@@ -137,9 +137,6 @@ class BaseModule(metaclass=BaseModuleMetaclass):
                 default_kind=PaxKind.UNKNOWN,
             ),
         )
-
-        if obj.__slots__ != ("_pax",):
-            raise ValueError("`__slots__` is not supported by PAX modules.")
 
         # scan class attributes for unregistered modules and ndarrays.
         obj._scan_fields(obj._class_fields())
@@ -224,11 +221,8 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         """
         return self._default_kind(PaxKind.STATE)
 
-    def tree_flatten(
-        self,
-    ) -> Tuple[List[jnp.ndarray], Tuple[Mapping[str, Any], PaxModuleInfo]]:
+    def tree_flatten(self) -> Tuple[List[jnp.ndarray], Mapping[str, Any]]:
         """Convert a module to ``(children, treedef)``."""
-
         aux = dict(self.__dict__)
         children = [aux.pop(name) for name in self._pax.name_to_kind]
 
@@ -247,21 +241,15 @@ class BaseModule(metaclass=BaseModuleMetaclass):
                     new_leaves.append(leaf)
             aux = jax.tree_unflatten(treedef, new_leaves)
 
-        return children, (aux, self._pax)
+        return children, aux
 
     @classmethod
-    def tree_unflatten(cls, aux_pax, children):
+    def tree_unflatten(cls, aux, children):
         """Recreate a module from its ``(children, treedef)``."""
-        aux, pax_info = aux_pax
         module = object.__new__(cls)
-        super(BaseModule, module).__setattr__("_pax", pax_info)
         module_dict = module.__dict__
         module_dict.update(aux)
-        # don't have to copy `name_to_kind` anymore, speed thing up!
-        # md["name_to_kind"] = OrderedDict(module.name_to_kind)
-        # pylint: disable=protected-access
         module_dict.update(zip(module._pax.name_to_kind, children))
-
         return module
 
     def __init_subclass__(cls):
