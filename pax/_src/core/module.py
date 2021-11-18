@@ -1,18 +1,17 @@
 """PAX module."""
 
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
 
-from .base import BaseModule, PaxKind
+from .base import BaseModule, parameters_method
 from .module_and_value import module_and_value
 from .threading_local import allow_mutation
 from .transforms import (
     enable_eval_mode,
     enable_train_mode,
-    select_parameters,
     update_parameters,
     update_pytree,
 )
@@ -30,26 +29,28 @@ class Module(BaseModule):
     >>> class Counter(pax.Module):
     ...     def __init__(self):
     ...         super().__init__()
-    ...         with self.add_states():
-    ...             self.count = jnp.array(0)
+    ...         self.count = jnp.array(0)
     ...
     ...     def step(self, x):
     ...         self.count += 1
     """
 
-    name: Optional[str] = None
+    _name: Optional[str] = None
 
     def __init__(self, name: Optional[str] = None):
         """Initialize module.
-
-        Set module name.
 
         >>> linear = pax.nn.Linear(3, 3, name="input_layer")
         >>> print(linear)
         (input_layer) Linear(in_dim=3, out_dim=3, with_bias=True)
         """
         super().__init__()
-        self.name = name
+        self._training = True
+        self._name = name
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def training(self) -> bool:
@@ -62,47 +63,29 @@ class Module(BaseModule):
         >>> net.training
         False
         """
-        return self._pax.training
+        return self._training
 
-    def register_parameter(self, name: str, value: Any):
-        """Register a trainable parameter.
+    def apply_submodules(self: M, func: Callable[..., M]) -> M:
+        """Apply a function to all submodules, recursively."""
+        module = self.copy()
+        submod_fn = lambda x: isinstance(x, Module) and x is not module
+        leaves, treedef = jax.tree_flatten(module, is_leaf=submod_fn)
+        new_leaves = []
+        for value in leaves:
+            if isinstance(value, Module):
+                new_leaves.append(value.apply(func))
+            else:
+                new_leaves.append(value)
+        return jax.tree_unflatten(treedef, new_leaves)
 
-        >>> class M(pax.Module):
-        ...     def __init__(self):
-        ...         super().__init__()
-        ...         self.register_parameter("weight", jnp.array(0.))
-        ...
-        >>> m = M()
-        >>> m._pax
-        PaxModuleInfo[training=True, nodes={weight:PARAMETER}]
-        >>> m.weight
-        DeviceArray(0., dtype=float32, weak_type=True)
-        """
-        self.register_subtree(name, value, PaxKind.PARAMETER)
-
-    def register_state(self, name: str, value: Any):
-        """Register a non-trainable state.
-
-        >>> class Counter(pax.Module):
-        ...     def __init__(self):
-        ...         super().__init__()
-        ...         self.register_state("count", jnp.array(0))
-        ...
-        >>> counter = Counter()
-        >>> counter._pax
-        PaxModuleInfo[training=True, nodes={count:STATE}]
-        >>> counter.count
-        DeviceArray(0, dtype=int32, weak_type=True)
-        """
-        self.register_subtree(name, value, PaxKind.STATE)
-
-    def register_modules(self, name: str, value: Any):
-        """Register a module subtree."""
-        self.register_subtree(name, value, PaxKind.MODULE)
-
+    register_parameter = lambda self, n, v: setattr(self, n, v)
+    register_state = register_parameter
+    register_modules = register_parameter
     register_parameters = register_parameter
-    register_states = register_state
-    register_module = register_modules
+    register_states = register_parameter
+    register_module = register_parameter
+
+    parameters = parameters_method((), submodules=True)
 
     def copy(self: T) -> T:
         """Return a copy of the current module."""
@@ -117,31 +100,17 @@ class Module(BaseModule):
         """Return a module in evaluation mode."""
         return enable_eval_mode(self)
 
-    def parameters(self: T) -> T:
-        """Return trainable parameters."""
-        return select_parameters(self)
-
     def update_parameters(self: T, params: T) -> T:
         """Return a new module with updated parameters."""
         return update_parameters(self, params=params)
 
-    def replace(self: T, **kwargs) -> T:
-        """Return a new module with some attributes replaced.
-
-        >>> net = pax.nn.Linear(2, 2)
-        >>> net = net.replace(bias=jnp.zeros((2,)))
-        """
-
-        mod = self.copy()
-        with allow_mutation(mod):
-            for name, value in kwargs.items():
-                assert hasattr(mod, name)
-                setattr(mod, name, value)
-            # pylint: disable=protected-access
-            mod._find_and_register_pytree(PaxKind.MODULE)
-
-        mod.scan_bugs()
-        return mod
+    def replace_method(self: T, **methods) -> T:
+        cls = self.__class__
+        cls_name = cls.__name__
+        cls = type(cls_name, (cls,), methods)
+        obj = object.__new__(cls)
+        obj.__dict__.update(self.__dict__)
+        return obj
 
     # inspired by patrick-kidger/equinox `tree_at`
     def replace_node(self: T, node: jnp.ndarray, value: jnp.ndarray) -> T:
@@ -276,7 +245,6 @@ class Module(BaseModule):
         module = self.copy()
         with allow_mutation(module):
             setattr(module, name, value)
-            # pylint: disable=protected-access
-            module._find_and_register_pytree(PaxKind.MODULE)
+            module.find_and_register_pytree_attributes()
 
         return module
