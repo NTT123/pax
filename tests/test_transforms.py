@@ -8,7 +8,7 @@ def test_mutate_new_module_list():
     b = a.copy()
 
     def mutate(b):
-        b.register_module("lst", [pax.nn.Linear(4, 4)])
+        b.lst = [pax.nn.Linear(4, 4)]
         return b
 
     b = pax.pure(mutate)(b)

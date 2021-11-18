@@ -107,13 +107,6 @@ class Module(BaseModule):
                 new_leaves.append(value)
         return jax.tree_unflatten(treedef, new_leaves)
 
-    register_parameter = lambda self, n, v: setattr(self, n, v)
-    register_state = register_parameter
-    register_modules = register_parameter
-    register_parameters = register_parameter
-    register_states = register_parameter
-    register_module = register_parameter
-
     parameters = parameters_method((), submodules=True)
 
     def copy(self: T) -> T:

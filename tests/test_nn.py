@@ -846,7 +846,7 @@ def test_list_submodules_in_state():
         def __init__(self):
             super().__init__()
             self.fc = pax.nn.Linear(2, 2)
-            self.register_states("state_of_module", pax.nn.Linear(2, 5))
+            self.state_of_module = pax.nn.Linear(2, 5)
 
     m = M()
     mods = m.submodules()
