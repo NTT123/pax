@@ -7,15 +7,13 @@ def test_counter():
     class Counter(pax.Module):
         counter: jnp.ndarray
         bias: jnp.ndarray
+        parameters = pax.parameters_method(["counter"])
 
         def __init__(self, start_value: int = 0):
             super().__init__()
 
-            with self.add_states():
-                self.counter = jnp.array(start_value, dtype=jnp.int32)
-
-            with self.add_parameters():
-                self.bias = jnp.array(0.0)
+            self.counter = jnp.array(start_value, dtype=jnp.int32)
+            self.bias = jnp.array(0.0)
 
         def __call__(self, x):
             self.counter = self.counter + 1

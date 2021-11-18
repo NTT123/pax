@@ -31,10 +31,9 @@ def test_type_union():
             super().__init__()
             self.register_state("count", [0])
 
-    with pytest.raises(ValueError):
-        counter = Counter()
-        leaves, treedef = jax.tree_flatten(counter)
-        assert leaves == [0]
+    counter = Counter()
+    leaves, treedef = jax.tree_flatten(counter)
+    assert leaves == []
 
 
 def test_type_list_int():
@@ -71,10 +70,9 @@ def test_type_dict():
             super().__init__()
             self.register_states("count", {"conv1": [1, 2, 3], "conv2": ["a", "b"]})
 
-    with pytest.raises(ValueError):
-        counter = Counter()
-        leaves, treedef = jax.tree_flatten(counter)
-        assert leaves == [1, 2, 3, "a", "b"]
+    counter = Counter()
+    leaves, treedef = jax.tree_flatten(counter)
+    assert leaves == []
 
 
 def test_type_dict_dict1():
@@ -87,10 +85,9 @@ def test_type_dict_dict1():
                 "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
-    with pytest.raises(ValueError):
-        counter = Counter()
-        leaves, treedef = jax.tree_flatten(counter)
-        assert leaves == [1, 2, 3, "a", "b"]
+    counter = Counter()
+    leaves, treedef = jax.tree_flatten(counter)
+    assert leaves == []
 
 
 def test_type_dict_dict_optional():
@@ -103,10 +100,9 @@ def test_type_dict_dict_optional():
                 "count", {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
             )
 
-    with pytest.raises(ValueError):
-        counter = Counter()
-        leaves, treedef = jax.tree_flatten(counter)
-        assert leaves == [1, 2, 3, "a", "b"]
+    counter = Counter()
+    leaves, treedef = jax.tree_flatten(counter)
+    assert leaves == []
 
 
 def test_type_dict_dict_optional1():
@@ -176,27 +172,22 @@ def test_state_of_param():
             self.register_state("m2", {"m1": m11})
 
     m2 = M2(m1)
-    assert len(jax.tree_leaves(pax.select_states(m1))) == 0
-    assert len(jax.tree_leaves(pax.select_parameters(m2))) == 0
-
+    assert len(jax.tree_leaves(pax.select_parameters(m2))) == 1
     assert len(jax.tree_leaves(pax.select_parameters(m1))) == 1
-    assert len(jax.tree_leaves(pax.select_states(m2))) == 1
 
 
 def test_assign_module_with_default_kind():
     class M1(pax.Module):
         def __init__(self):
             super().__init__()
-            with self.add_parameters():
-                self.fc = pax.nn.Linear(3, 3)
+            self.fc = pax.nn.Linear(3, 3)
 
     _ = M1()
 
     class M2(pax.Module):
         def __init__(self):
             super().__init__()
-            with self.add_states():
-                self.fc = pax.nn.Linear(3, 3)
+            self.fc = pax.nn.Linear(3, 3)
 
     _ = M2()
 
@@ -219,31 +210,29 @@ def test_default_kind_module():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-
-            with self._default_kind(pax.PaxKind.MODULE):
-                self.fc = pax.nn.Linear(3, 3)
+            self.fc = pax.nn.Linear(3, 3)
 
     m = M()
-    assert m.pax.name_to_kind["fc"] is pax.PaxKind.MODULE
+    # assert m.pax.name_to_kind["fc"] is pax.PaxKind.MODULE
 
 
 def test_default_kind_attribute_order():
     class M(pax.Module):
+        parameters = pax.parameters_method(["b", "t", "c"])
+
         def __init__(self):
             super().__init__()
-            with self._default_kind(pax.PaxKind.STATE):
-                self.e = jnp.array(0)
-                self.a = jnp.array(0)
-                self.z = jnp.array(0)
+            self.e = jnp.array(0)
+            self.a = jnp.array(0)
+            self.z = jnp.array(0)
 
-            with self._default_kind(pax.PaxKind.PARAMETER):
-                self.b = jnp.array(0.0)
-                self.t = jnp.array(0.0)
-                self.c = jnp.array(0.0)
+            self.b = jnp.array(0.0)
+            self.t = jnp.array(0.0)
+            self.c = jnp.array(0.0)
 
     for _ in range(1000):
         m = M()
-        assert tuple(m.pax.name_to_kind.keys()) == ("e", "a", "z", "b", "t", "c")
+        # assert tuple(m.pax.name_to_kind.keys()) == ("e", "a", "z", "b", "t", "c")
 
 
 def test_module_properties_modify():
@@ -261,12 +250,12 @@ def test_clone_no_side_effect():
     fc2 = fc1.copy()
     fc1 = fc1.set_attribute("new_module", pax.nn.Linear(5, 5))
 
-    assert (
-        "new_module" in fc1.pax.name_to_kind
-    ), "registered 'new_modules' as part of fc1"
-    assert (
-        "new_module" not in fc2.pax.name_to_kind
-    ), "fc2.pax.name_to_kind is different from fc1.pax.name_to_kind"
+    # assert (
+    #     "new_module" in fc1.pax.name_to_kind
+    # ), "registered 'new_modules' as part of fc1"
+    # assert (
+    #     "new_module" not in fc2.pax.name_to_kind
+    # ), "fc2.pax.name_to_kind is different from fc1.pax.name_to_kind"
 
 
 def test_lambda_module():
@@ -377,7 +366,7 @@ def test_compare_modules():
     assert a == b
     assert pax.enable_eval_mode(a) != b
     assert pax.freeze_parameters(a) != b
-    assert pax.unfreeze_parameters(pax.freeze_parameters(a), origin=a) == b
+    # assert pax.unfreeze_parameters(pax.freeze_parameters(a), origin=a) == b
 
 
 def test_apply_inside_state_subtree():
@@ -393,7 +382,7 @@ def test_apply_inside_state_subtree():
     assert m2.m2["m1"].training == True
     m2 = pax.enable_eval_mode(m2)
     assert m2.training == False
-    assert m2.m2["m1"].training == True
+    assert m2.m2["m1"].training == False
 
 
 def test_hash_module():
@@ -414,7 +403,7 @@ def test_deepcopy_pytreedef():
 def test_delete_attribute_1():
     f = pax.nn.BatchNorm1D(3)
     f = f.set_attribute("t", pax.nn.Linear(1, 1))
-    assert "t" in f.pax.name_to_kind
+    # assert "t" in f.pax.name_to_kind
     with pytest.raises(ValueError):
         del f.t
 
@@ -425,8 +414,7 @@ def test_delete_attribute_2():
         return f
 
     f = pax.nn.Linear(3, 3)
-    with pytest.raises(ValueError):
-        pax.pure(mutate)(f)
+    pax.pure(mutate)(f)
 
 
 def test_module_list_contains_int():
@@ -448,19 +436,6 @@ def test_append_module_list():
     n = pax.nn.Sequential(pax.nn.Linear(3, 3))
     n.replace(modules=n.modules + (pax.nn.Linear(4, 4),))
     n.scan_bugs()
-
-
-def test_set_attribute_kind():
-    class M(pax.Module):
-        def __init__(self):
-            super().__init__()
-            self.a = jnp.array(0)
-            self.b = jnp.array(0.0)
-            self.set_attribute_kind(a=pax.S, b=pax.P)
-
-    m = M()
-    assert m.pax.name_to_kind["a"] == pax.S
-    assert m.pax.name_to_kind["b"] == pax.P
 
 
 def test_replace_leaf():
