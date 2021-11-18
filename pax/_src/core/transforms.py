@@ -3,33 +3,23 @@ from typing import Any, TypeVar
 
 import jax
 
-from .base import BaseModule, EmptyNode, parameters_method
+from .module import Module, parameters_method, update_pytree
 
 TreeDef = Any
 
-T = TypeVar("T", bound=BaseModule)
-K = TypeVar("K", bound=BaseModule)
-O = TypeVar("O", bound=BaseModule)
+T = TypeVar("T", bound=Module)
+K = TypeVar("K", bound=Module)
+O = TypeVar("O", bound=Module)
 
 
 def enable_train_mode(mod: T) -> T:
     """Return a module in training mode."""
-
-    def _train_apply_fn(mod: T) -> T:
-        # pylint: disable=protected-access
-        return mod.replace(_training=True)
-
-    return mod.apply(_train_apply_fn)
+    return mod.train()
 
 
 def enable_eval_mode(mod: T) -> T:
     """Return a module in evaluation mode."""
-
-    def _eval_apply_fn(mod: T) -> T:
-        # pylint: disable=protected-access
-        return mod.replace(_training=False)
-
-    return mod.apply(_eval_apply_fn)
+    return mod.eval()
 
 
 def freeze_parameters(mod: T) -> T:
@@ -51,20 +41,6 @@ def unfreeze_parameters(mod: T, *, origin: T) -> T:
 def select_parameters(mod: T) -> T:
     """Select `PARAMETER` leaves only."""
     return mod.parameters()
-
-
-def update_pytree(mod: T, *, other: T) -> T:
-    """Use non-EmptyNode leaves from other."""
-
-    def _select_fn(leaf_x, leaf_y):
-        if isinstance(leaf_y, EmptyNode):
-            return leaf_x
-        else:
-            return leaf_y
-
-    is_empty = lambda x: isinstance(x, EmptyNode)
-    new_mod = jax.tree_map(_select_fn, mod, other, is_leaf=is_empty)
-    return new_mod
 
 
 def update_parameters(mod: T, *, params: T) -> T:

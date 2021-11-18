@@ -1,24 +1,54 @@
 """PAX module."""
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
 
-from .base import BaseModule, parameters_method
+from .base import BaseModule, EmptyNode
 from .module_and_value import module_and_value
 from .threading_local import allow_mutation
-from .transforms import (
-    enable_eval_mode,
-    enable_train_mode,
-    update_parameters,
-    update_pytree,
-)
 
 T = TypeVar("T", bound="Module")
 M = TypeVar("M")
 TreeDef = Any
+
+
+def parameters_method(trainable_attributes: Iterable[str], submodules=True):
+    """Return a `parameters()` method."""
+
+    def _parameters_method(self: T) -> T:
+        mod = self.apply_submodules(lambda x: x.parameters())
+        for name in mod.pytree_attributes:
+            value = getattr(mod, name)
+            if submodules:
+                leaves, _ = jax.tree_flatten(
+                    value, is_leaf=lambda x: isinstance(x, BaseModule)
+                )
+                has_submod = any(mod for mod in leaves if isinstance(mod, BaseModule))
+                if not (has_submod or name in trainable_attributes):
+                    mod = mod.replace(**{name: EmptyNode()})
+            else:
+                if name not in trainable_attributes:
+                    mod = mod.replace(**{name: EmptyNode()})
+        return mod
+
+    return _parameters_method
+
+
+def update_pytree(mod: T, *, other: T) -> T:
+    """Use non-EmptyNode leaves from other."""
+
+    def _select_fn(leaf_x, leaf_y):
+        if isinstance(leaf_y, EmptyNode):
+            return leaf_x
+        else:
+            return leaf_y
+
+    is_empty = lambda x: isinstance(x, EmptyNode)
+    new_mod = jax.tree_map(_select_fn, mod, other, is_leaf=is_empty)
+    return new_mod
 
 
 class Module(BaseModule):
@@ -45,7 +75,6 @@ class Module(BaseModule):
         (input_layer) Linear(in_dim=3, out_dim=3, with_bias=True)
         """
         super().__init__()
-        self._training = True
         self._name = name
 
     @property
@@ -94,15 +123,15 @@ class Module(BaseModule):
 
     def train(self: T) -> T:
         """Return a module in training mode."""
-        return enable_train_mode(self)
+        return self.apply(lambda mod: mod.replace(_training=True))
 
     def eval(self: T) -> T:
         """Return a module in evaluation mode."""
-        return enable_eval_mode(self)
+        return self.apply(lambda mod: mod.replace(_training=False))
 
     def update_parameters(self: T, params: T) -> T:
         """Return a new module with updated parameters."""
-        return update_parameters(self, params=params)
+        return update_pytree(self, other=params.parameters())
 
     def replace_method(self: T, **methods) -> T:
         cls = self.__class__
@@ -111,6 +140,23 @@ class Module(BaseModule):
         obj = object.__new__(cls)
         obj.__dict__.update(self.__dict__)
         return obj
+
+    def replace(self: T, **kwargs) -> T:
+        """Return a new module with some attributes replaced.
+
+        >>> net = pax.nn.Linear(2, 2)
+        >>> net = net.replace(bias=jnp.zeros((2,)))
+        """
+
+        mod = self.copy()
+        with allow_mutation(mod):
+            for name, value in kwargs.items():
+                assert hasattr(mod, name)
+                setattr(mod, name, value)
+            mod.find_and_register_pytree_attributes()
+
+        mod.scan_bugs()
+        return mod
 
     # inspired by patrick-kidger/equinox `tree_at`
     def replace_node(self: T, node: jnp.ndarray, value: jnp.ndarray) -> T:

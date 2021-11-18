@@ -53,8 +53,13 @@ class BaseModule(metaclass=BaseModuleMetaclass):
     the pytree and the kind of the tree part (parameter, state, module, etc.).
     """
 
-    _training: bool = True
-    _pytree_attributes: Tuple[str, ...] = ()
+    _training: bool
+    _pytree_attributes: Tuple[str, ...]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._training = True
+        self._pytree_attributes = ()
 
     @property
     def pytree_attributes(self):
@@ -238,24 +243,6 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         leaves, _ = jax.tree_flatten(self, is_leaf=submod_fn)
         return [leaf for leaf in leaves if submod_fn(leaf)]
 
-    def replace(self: T, **kwargs) -> T:
-        """Return a new module with some attributes replaced.
-
-        >>> net = pax.nn.Linear(2, 2)
-        >>> net = net.replace(bias=jnp.zeros((2,)))
-        """
-
-        mod = self.copy()
-        with allow_mutation(mod):
-            for name, value in kwargs.items():
-                assert hasattr(mod, name)
-                setattr(mod, name, value)
-            # pylint: disable=protected-access
-            mod.find_and_register_pytree_attributes()
-
-        mod.scan_bugs()
-        return mod
-
     def _assert_not_shared_module(self):
         """Shared module is not allowed."""
         shared_module = _find_shared_module(self)
@@ -278,28 +265,6 @@ class BaseModule(metaclass=BaseModuleMetaclass):
                     f"Value={leaf}",
                 )
             leaf_ids.add(id(leaf))
-
-
-def parameters_method(trainable_attributes: Iterable[str], submodules=True):
-    """Return a `parameters()` method."""
-
-    def _parameters_method(self: T) -> T:
-        mod = self.apply_submodules(lambda x: x.parameters())
-        for name in mod.pytree_attributes:
-            value = getattr(mod, name)
-            if submodules:
-                leaves, _ = jax.tree_flatten(
-                    value, is_leaf=lambda x: isinstance(x, BaseModule)
-                )
-                has_submod = any(mod for mod in leaves if isinstance(mod, BaseModule))
-                if not (has_submod or name in trainable_attributes):
-                    mod = mod.replace(**{name: EmptyNode()})
-            else:
-                if not (name in trainable_attributes):
-                    mod = mod.replace(**{name: EmptyNode()})
-        return mod
-
-    return _parameters_method
 
 
 @jax.tree_util.register_pytree_node_class
