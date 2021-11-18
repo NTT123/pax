@@ -3,27 +3,13 @@
 import functools
 from typing import TypeVar
 
+import jax
 import jax.numpy as jnp
 import jmp
 
-from .module import Module, PaxKind
+from .module import Module
 
 T = TypeVar("T", bound=Module)
-
-# source: https://stackoverflow.com/a/21963090
-def _find_descriptor(cls, attrname):
-    """Find the descriptor of an attribute."""
-
-    def hasspecialmethod(obj, name):
-        return any(name in klass.__dict__ for klass in type(obj).__mro__)
-
-    for klass in cls.__mro__:
-        if attrname in klass.__dict__:
-            descriptor = klass.__dict__[attrname]
-            if not hasspecialmethod(descriptor, "__get__"):
-                return None
-            return descriptor
-    return None
 
 
 def _wrap_method(func):
@@ -47,9 +33,9 @@ def _wrap_method(func):
         # pylint: disable=protected-access
 
         # convert weights to compute dtype
-        for name, kind in self._pax.name_to_kind.items():
-            if kind in [PaxKind.PARAMETER, PaxKind.STATE]:
-                value = getattr(self, name)
+        for name in self.pytree_attributes:
+            value = getattr(self, name)
+            if not _has_module(value):
                 casted_value = self._pax_mp_policy.cast_to_compute(value)
                 self.__dict__[name] = casted_value
                 original_values[name] = value
@@ -60,9 +46,9 @@ def _wrap_method(func):
         output = func.__get__(self, type(self))(*args, **kwargs)  # type:ignore
 
         # convert weights to param dtype
-        for name, kind in self._pax.name_to_kind.items():
-            if kind in [PaxKind.PARAMETER, PaxKind.STATE]:
-                value = getattr(self, name)
+        for name in self.pytree_attributes:
+            value = getattr(self, name)
+            if not _has_module(value):
                 if value is not casted_original[name]:  # modified
                     casted_value = self._pax_mp_policy.cast_to_param(value)
                     setattr(self, name, casted_value)
@@ -141,11 +127,11 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
 
     cls = type(cls_name, (base,), methods)
     obj = object.__new__(cls)
-    object.__setattr__(obj, "_pax", module._pax)
     obj.__dict__.update(module.__dict__)
     obj.__dict__["_pax_mp_policy"] = mp_policy
-    for name, kind in obj._pax.name_to_kind.items():
-        if kind in [PaxKind.PARAMETER, PaxKind.STATE]:
+    for name in obj.pytree_attributes:
+        value = getattr(obj, name)
+        if not _has_module(value):
             obj.__dict__[name] = mp_policy.cast_to_param(obj.__dict__[name])
     return obj
 
@@ -168,7 +154,28 @@ def unwrap_mp_policy(module: T) -> T:
 
     base = module.__class__.__base__
     original = object.__new__(base)
-    object.__setattr__(original, "_pax", module._pax)
     original.__dict__.update(module.__dict__)
     del original.__dict__["_pax_mp_policy"]
     return original
+
+
+# source: https://stackoverflow.com/a/21963090
+def _find_descriptor(cls, attrname):
+    """Find the descriptor of an attribute."""
+
+    def hasspecialmethod(obj, name):
+        return any(name in klass.__dict__ for klass in type(obj).__mro__)
+
+    for klass in cls.__mro__:
+        if attrname in klass.__dict__:
+            descriptor = klass.__dict__[attrname]
+            if not hasspecialmethod(descriptor, "__get__"):
+                return None
+            return descriptor
+    return None
+
+
+def _has_module(mod):
+    is_mod = lambda x: x is not mod
+    leaves, _ = jax.tree_flatten(mod, is_leaf=is_mod)
+    return any(map(is_mod, leaves))
