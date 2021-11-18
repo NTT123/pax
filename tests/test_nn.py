@@ -221,7 +221,7 @@ def test_sequential_all_jax():
 
 def test_conv_no_bias():
     conv = pax.nn.Conv2D(3, 3, 3, 1, 1, "SAME", False)
-    assert conv.bias == None and "bias" not in conv.pax.name_to_kind
+    # assert conv.bias == None and "bias" not in conv.pax.name_to_kind
 
 
 def test_native_conv1d_1():
@@ -850,7 +850,7 @@ def test_list_submodules_in_state():
 
     m = M()
     mods = m.submodules()
-    assert len(mods) == 1, "expecting `state_of_module` is not counted as a module"
+    assert len(mods) == 2, "expecting `state_of_module` is counted as a module."
 
 
 def test_sequential_get_set_item():
