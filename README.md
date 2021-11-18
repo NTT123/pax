@@ -81,7 +81,7 @@ print(grads.bias)  # -2.0
 
 There are a few noteworthy points in the above example:
 
-* ``self.weight`` and ``self.bias`` are considered as trainable parameters as the result of setting `parameters = pax.parameters_method(["weight", "bias"])`.
+* ``self.weight`` and ``self.bias`` are trainable parameters by setting `parameters = pax.parameters_method(["weight", "bias"])`.
 * ``pax.module_and_value`` transforms `model.__call__` into a 
   pure function that returns the updated model in its output.
 * ``loss_fn`` returns the updated `model` in the output.
