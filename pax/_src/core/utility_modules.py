@@ -1,13 +1,12 @@
 """Utility Modules."""
 
 
-from typing import Any, Callable, Dict, List, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
 
-from .base import PaxKind, allow_mutation
-from .module import Module
+from .module import Module, parameters_method
 
 T = TypeVar("T", bound=Module)
 O = TypeVar("O")
@@ -16,23 +15,14 @@ O = TypeVar("O")
 class ParameterModule(Module):
     """A PAX module that registers attributes as parameters by default."""
 
-    def __new__(cls: Type[T], *args, **kwargs) -> T:
-        """Set the default kind to ``PaxKind.PARAMETER``."""
-        module = super().__new__(cls, *args, **kwargs)
-        with allow_mutation(module):
-            module._update_default_kind(PaxKind.PARAMETER)
-        return module
+    def parameters(self):
+        return self.copy()
 
 
 class StateModule(Module):
     """A PAX module that registers attributes as states by default."""
 
-    def __new__(cls: Type[T], *args, **kwargs) -> T:
-        """Set the default kind to ``PaxKind.STATE``."""
-        module = super().__new__(cls, *args, **kwargs)
-        with allow_mutation(module):
-            module._update_default_kind(PaxKind.STATE)
-        return module
+    parameters = parameters_method(())
 
 
 class LazyModule(Module):
@@ -61,7 +51,7 @@ class LazyModule(Module):
     └── Linear(in_dim=2, out_dim=3, with_bias=True)
     """
 
-    def get_or_create(self, name, create_fn: Callable[[], T], kind=PaxKind.MODULE) -> T:
+    def get_or_create(self, name, create_fn: Callable[[], T]) -> T:
         """Create and register a new attribute when it is not exist.
 
         Return the attribute.
@@ -71,16 +61,8 @@ class LazyModule(Module):
         else:
             assert callable(create_fn), "Expect a callable function"
             value = create_fn()
-            self.register_subtree(name, value, kind)
+            setattr(self, name, value)
         return value
-
-    def get_or_create_parameter(self, name, create_fn: Callable[[], O]) -> O:
-        """Get or create a trainable parameter."""
-        return self.get_or_create(name, create_fn=create_fn, kind=PaxKind.PARAMETER)
-
-    def get_or_create_state(self, name, create_fn: Callable[[], O]) -> O:
-        """Get or create a non-trainable state."""
-        return self.get_or_create(name, create_fn=create_fn, kind=PaxKind.STATE)
 
 
 class Lambda(Module):
@@ -141,6 +123,8 @@ class Flattener(Module):
     >>> print(opt.summary())
     chain.<locals>.Chain
     ├── scale_by_adam.<locals>.ScaleByAdam
+    │   ├── Linear(in_dim=3, out_dim=3, with_bias=True)
+    │   └── Linear(in_dim=3, out_dim=3, with_bias=True)
     └── scale.<locals>.Scale
     """
 
@@ -152,7 +136,6 @@ class Flattener(Module):
         super().__init__()
         self.treedef_dict = {}
         self.leaves_dict = {}
-        self.set_attribute_kind(leaves_dict=PaxKind.STATE)
 
         for name, value in kwargs.items():
             leaves, treedef = jax.tree_flatten(value)
