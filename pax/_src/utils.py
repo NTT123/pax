@@ -272,7 +272,7 @@ def save_weights_to_dict(module: Module) -> Dict[str, Any]:
         return save_weights_to_dict(v) if isinstance(v, Module) else v
 
     out = {}
-    for name in module.pax.name_to_kind:
+    for name in module.pytree_attributes:
         value = getattr(module, name)
         out[name] = jax.tree_map(
             _dict_or_array,
@@ -298,7 +298,7 @@ def load_weights_from_dict(module: T, state_dict: Dict[str, Any]) -> T:
         return load_weights_from_dict(m, s) if isinstance(m, Module) else s
 
     out = module
-    for name in module.pax.name_to_kind:
+    for name in module.pytree_attributes:
         value = getattr(module, name)
         value = jax.tree_map(
             _module_or_array,
