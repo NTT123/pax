@@ -53,16 +53,13 @@ class Linear(pax.Module):
     weight: jnp.ndarray
     bias: jnp.ndarray
     counter: jnp.ndarray
+    parameters = pax.parameters_method(["weight", "bias"])
 
     def __init__(self):
         super().__init__()
-
-        with self.add_parameters():
-            self.weight = jnp.array(0.0)
-            self.bias = jnp.array(0.0)
-
-        with self.add_states():
-            self.counter = jnp.array(0)
+        self.weight = jnp.array(0.0)
+        self.bias = jnp.array(0.0)
+        self.counter = jnp.array(0)
 
     def __call__(self, x):
         self.counter = self.counter + 1
@@ -84,8 +81,7 @@ print(grads.bias)  # -2.0
 
 There are a few noteworthy points in the above example:
 
-* ``self.weight`` and ``self.bias`` are registered as trainable parameters inside the ``add_parameters`` context.
-* ``self.counter`` is registered as a non-trainable state inside the ``add_states`` context.
+* ``self.weight`` and ``self.bias`` are considered as trainable parameters as the result of setting `parameters = pax.parameters_method(["weight", "bias"])`.
 * ``pax.module_and_value`` transforms `model.__call__` into a 
   pure function that returns the updated model in its output.
 * ``loss_fn`` returns the updated `model` in the output.

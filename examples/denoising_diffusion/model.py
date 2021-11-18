@@ -305,35 +305,34 @@ class GaussianDiffusion(pax.Module):
         self.num_timesteps = int(timesteps)
         self.loss_type = loss_type
 
-        with self.add_states():
-            self.betas = betas
-            self.alphas_cumprod = alphas_cumprod
-            self.alphas_cumprod_prev = alphas_cumprod_prev
+        self.betas = betas
+        self.alphas_cumprod = alphas_cumprod
+        self.alphas_cumprod_prev = alphas_cumprod_prev
 
-            # calculations for diffusion q(x_t | x_{t-1}) and others
-            self.sqrt_alphas_cumprod = np.sqrt(alphas_cumprod)
-            self.sqrt_one_minus_alphas_cumprod = np.sqrt(1.0 - alphas_cumprod)
-            self.log_one_minus_alphas_cumprod = np.log(1.0 - alphas_cumprod)
-            self.sqrt_recip_alphas_cumprod = np.sqrt(1.0 / alphas_cumprod)
-            self.sqrt_recipm1_alphas_cumprod = np.sqrt(1.0 / alphas_cumprod - 1)
+        # calculations for diffusion q(x_t | x_{t-1}) and others
+        self.sqrt_alphas_cumprod = np.sqrt(alphas_cumprod)
+        self.sqrt_one_minus_alphas_cumprod = np.sqrt(1.0 - alphas_cumprod)
+        self.log_one_minus_alphas_cumprod = np.log(1.0 - alphas_cumprod)
+        self.sqrt_recip_alphas_cumprod = np.sqrt(1.0 / alphas_cumprod)
+        self.sqrt_recipm1_alphas_cumprod = np.sqrt(1.0 / alphas_cumprod - 1)
 
-            # calculations for posterior q(x_{t-1} | x_t, x_0)
-            posterior_variance = (
-                betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
-            )
-            # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
-            self.posterior_variance = posterior_variance
-            # below: log calculation clipped because the posterior variance is 0
-            # at the beginning of the diffusion chain
-            self.posterior_log_variance_clipped = np.log(
-                np.maximum(posterior_variance, 1e-20)
-            )
-            self.posterior_mean_coef1 = (
-                betas * np.sqrt(alphas_cumprod_prev) / (1.0 - alphas_cumprod)
-            )
-            self.posterior_mean_coef2 = (
-                (1.0 - alphas_cumprod_prev) * np.sqrt(alphas) / (1.0 - alphas_cumprod)
-            )
+        # calculations for posterior q(x_{t-1} | x_t, x_0)
+        posterior_variance = (
+            betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
+        )
+        # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
+        self.posterior_variance = posterior_variance
+        # below: log calculation clipped because the posterior variance is 0
+        # at the beginning of the diffusion chain
+        self.posterior_log_variance_clipped = np.log(
+            np.maximum(posterior_variance, 1e-20)
+        )
+        self.posterior_mean_coef1 = (
+            betas * np.sqrt(alphas_cumprod_prev) / (1.0 - alphas_cumprod)
+        )
+        self.posterior_mean_coef2 = (
+            (1.0 - alphas_cumprod_prev) * np.sqrt(alphas) / (1.0 - alphas_cumprod)
+        )
 
     def q_mean_variance(self, x_start, t):
         mean = extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
