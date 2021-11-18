@@ -5,7 +5,7 @@ from typing import Optional, Sequence
 import jax
 import jax.numpy as jnp
 
-from ..core import Module
+from ..core import Module, parameters_method
 from .ema import EMA
 
 
@@ -19,6 +19,8 @@ class BatchNorm(Module):
 
     scale: Optional[jnp.ndarray]
     offset: Optional[jnp.ndarray]
+
+    parameters = parameters_method(["scale", "offset"])
 
     ema_mean: EMA
     ema_var: EMA
@@ -66,15 +68,14 @@ class BatchNorm(Module):
 
         self.reduced_axes = tuple(reduced_axes)
 
-        with self.add_parameters():
-            if create_scale:
-                self.scale = jnp.ones(param_shape, dtype=jnp.float32)
-            else:
-                self.scale = None
-            if create_offset:
-                self.offset = jnp.zeros(param_shape, dtype=jnp.float32)
-            else:
-                self.offset = None
+        if create_scale:
+            self.scale = jnp.ones(param_shape, dtype=jnp.float32)
+        else:
+            self.scale = None
+        if create_offset:
+            self.offset = jnp.zeros(param_shape, dtype=jnp.float32)
+        else:
+            self.offset = None
 
         self.ema_mean = EMA(jnp.zeros_like(self.offset), decay_rate, debias=True)
         self.ema_var = EMA(jnp.zeros_like(self.offset), decay_rate, debias=True)
