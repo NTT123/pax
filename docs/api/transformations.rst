@@ -8,11 +8,9 @@ A module transformation is a pure function that inputs PAX's modules and outputs
 .. autosummary::
 
    update_parameters
-   update_states
    enable_train_mode
    enable_eval_mode
    select_parameters
-   select_states
    freeze_parameters
    unfreeze_parameters
    apply_mp_policy
@@ -22,12 +20,6 @@ update_parameters
 -----------------
 
 .. autofunction:: update_parameters
-
-
-update_states
--------------
-
-.. autofunction:: update_states
 
 
 enable_train_mode
@@ -46,12 +38,6 @@ select_parameters
 -----------------
 
 .. autofunction:: select_parameters
-
-
-select_states
--------------
-
-.. autofunction:: select_states
 
 
 freeze_parameters

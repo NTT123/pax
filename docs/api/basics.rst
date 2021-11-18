@@ -20,12 +20,6 @@ PAX's Module
 .. autoclass:: Module
    :members:
       __init__,
-      register_parameter,
-      register_state,
-      register_module,
-      add_parameters,
-      add_states,
-      set_attribute_kind,
       parameters,
       training,
       train,
@@ -46,15 +40,6 @@ PAX's Module
 
 .. autoclass:: StateModule
    :members:
-
-
-.. autoclass:: PaxKind
-   :members:
-   
-   .. autoattribute:: STATE
-   .. autoattribute:: PARAMETER
-   .. autoattribute:: MODULE
-   .. autoattribute:: UNKNOWN
 
 
 
