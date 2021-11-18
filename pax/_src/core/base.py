@@ -49,8 +49,7 @@ class BaseModule(metaclass=BaseModuleMetaclass):
     - ``tree_flatten`` converts a module to ``(leaves, treedef)``
     - ``tree_unflatten`` restores the module.
 
-    BaseModule maintains a ``name_to_kind`` dictionary that tells if an attribute is part of
-    the pytree and the kind of the tree part (parameter, state, module, etc.).
+    BaseModule maintains a ``_pytree_attributes`` tuple that lists all subtree attribute names.
     """
 
     _training: bool
