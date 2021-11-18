@@ -211,7 +211,7 @@ class GraphModule(Module):
     def __init__(self, inputs, output, name: Optional[str] = None):
         super().__init__(name=name)
 
-        self.register_module("modules", [])
+        self.modules = []
 
         @lru_cache(maxsize=None)
         def transform(node: Node):

@@ -198,8 +198,6 @@ class BaseModule(metaclass=BaseModuleMetaclass):
         leaves = jax.tree_map(lambda x: (x.shape, x.dtype), leaves)
         return hash((tuple(leaves), treedef))
 
-    register_subtree = lambda self, name, value, _: setattr(self, name, value)
-
     def apply(self: T, apply_fn) -> T:
         """Apply a function to all submodules.
 
