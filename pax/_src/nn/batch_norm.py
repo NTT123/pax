@@ -20,7 +20,7 @@ class BatchNorm(Module):
     scale: Optional[jnp.ndarray]
     offset: Optional[jnp.ndarray]
 
-    parameters = parameters_method(["scale", "offset"])
+    parameters = parameters_method("scale", "offset")
 
     ema_mean: EMA
     ema_var: EMA

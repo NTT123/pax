@@ -22,7 +22,7 @@ class ParameterModule(Module):
 class StateModule(Module):
     """A PAX module that registers attributes as states by default."""
 
-    parameters = parameters_method(())
+    parameters = parameters_method()
 
 
 class LazyModule(Module):
