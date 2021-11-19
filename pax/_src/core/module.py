@@ -16,7 +16,7 @@ M = TypeVar("M")
 TreeDef = Any
 
 
-def parameters_method(trainable_attributes: Iterable[str], submodules=True):
+def parameters_method(*trainable_attributes, submodules=True):
     """Return a `parameters` method.
 
     Arguments:
@@ -27,7 +27,14 @@ def parameters_method(trainable_attributes: Iterable[str], submodules=True):
         A method that returns a module with only trainable weights.
     """
 
+    names = []
+    for name in trainable_attributes:
+        names.extend(name.split())
+
     def _parameters(self: T) -> T:
+        for name in names:
+            assert hasattr(self, name), f"Expecting an attribute with `{name}`."
+
         is_submodule = lambda x: x is not self and isinstance(x, SafeBaseModule)
         leaves, treedef = jax.tree_flatten(self, is_leaf=is_submodule)
         leaves = (
@@ -35,7 +42,7 @@ def parameters_method(trainable_attributes: Iterable[str], submodules=True):
             for leaf in leaves
         )
         mod = jax.tree_unflatten(treedef, leaves)
-        values = {name: getattr(self, name) for name in trainable_attributes}
+        values = {name: getattr(self, name) for name in names}
         mod = mod.replace(**values)
         return mod
 
@@ -87,7 +94,9 @@ class Module(SafeBaseModule):
         """
         return self._training
 
-    parameters = parameters_method((), submodules=True)
+    def parameters(self):
+        """Return a new module with trainable weights only."""
+        return parameters_method(submodules=True)(self)
 
     def copy(self: T) -> T:
         """Return a copy of the current module."""

@@ -21,7 +21,7 @@ class Linear(pax.Module):
     counter: jnp.ndarray = field(init=False)
     w_init: Callable = field(default=jax.nn.initializers.normal(), repr=False)
     b_init: Callable = field(default=jax.nn.initializers.zeros, repr=False)
-    parameters = pax.parameters_method(["weight", "bias"])
+    parameters = pax.parameters_method("weight", "bias")
 
     def __post_init__(self):
         self.weight = self.w_init(pax.next_rng_key(), (self.in_dim, self.out_dim))

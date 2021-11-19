@@ -26,7 +26,7 @@ def freeze_parameters(mod: T) -> T:
     """Return a copy module with all trainable parameters are converted to non-trainable states."""
 
     def _freeze_apply_fn(mod: T) -> T:
-        return mod.replace_method(parameters=parameters_method([]))
+        return mod.replace_method(parameters=parameters_method())
 
     return mod.apply(_freeze_apply_fn)
 

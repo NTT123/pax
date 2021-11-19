@@ -208,7 +208,7 @@ def test_default_kind_module():
 
 def test_default_kind_attribute_order():
     class M(pax.Module):
-        parameters = pax.parameters_method(["b", "t", "c"])
+        parameters = pax.parameters_method("b", "t", "c")
 
         def __init__(self):
             super().__init__()
