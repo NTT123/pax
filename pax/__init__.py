@@ -22,7 +22,7 @@ from pax._src.core.rng import next_rng_key, seed_rng_key
 from pax._src.nn.dropout import dropout
 from pax._src.utils import build_update_fn, grad, scan, value_and_grad
 
-__version__ = "0.4.4.dev"
+__version__ = "0.5.0.dev"
 
 __all__ = (
     "apply_mp_policy",
