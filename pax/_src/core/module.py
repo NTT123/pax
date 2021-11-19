@@ -33,7 +33,7 @@ def parameters_method(*trainable_attributes, submodules=True):
 
     def _parameters(self: T) -> T:
         for name in names:
-            assert hasattr(self, name), f"Expecting an attribute with `{name}`."
+            assert hasattr(self, name), f"Expecting an attribute with name `{name}`."
 
         is_submodule = lambda x: x is not self and isinstance(x, SafeBaseModule)
         leaves, treedef = jax.tree_flatten(self, is_leaf=is_submodule)
