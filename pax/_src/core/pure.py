@@ -7,12 +7,7 @@ from typing import Callable
 import jax
 
 from .base import BaseModule
-from .threading_local import (
-    allow_mutation,
-    enable_deep_copy,
-    get_rng_state,
-    set_rng_state,
-)
+from .threading_local import allow_mutation, enable_deep_copy
 
 
 def pure(func: Callable):
