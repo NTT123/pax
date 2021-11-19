@@ -24,7 +24,7 @@ def parameters_method(trainable_attributes: Iterable[str], submodules=True):
         submodules: include submodules if true.
 
     Returns:
-        A module with only trainable weights.
+        A method that returns a module with only trainable weights.
     """
 
     def _parameters(self: T) -> T:
