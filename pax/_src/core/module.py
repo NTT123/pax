@@ -278,7 +278,8 @@ class Module(SafeBaseModule):
     def __setattr__(self, name: str, value: Any) -> None:
         self._assert_mutability()
         super().__setattr__(name, value)
-        self.find_and_register_pytree_attributes()
+        if name != "_pytree_attributes":  # prevent infinite loop
+            self.find_and_register_pytree_attributes()
 
     def __delattr__(self, name: str) -> None:
         self._assert_mutability()

@@ -55,7 +55,7 @@ class BaseModule:
             )
             if any(map(is_pytree, leaves)):
                 pytree_attributes.append(name)
-        super().__setattr__("_pytree_attributes", tuple(pytree_attributes))
+        self._pytree_attributes = tuple(pytree_attributes)
 
     def tree_flatten(self) -> Tuple[List[jnp.ndarray], Mapping[str, Any]]:
         """Convert a module to ``(children, treedef)``."""
