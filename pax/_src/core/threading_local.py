@@ -19,27 +19,19 @@ class PaxThreadingLocalState(threading.local):
     """Manage all thread local states used by PAX"""
 
     __slots__ = [
-        "_enable_deep_copy",
         "_mutable_module_ref_list",
         "_mutable_module_level",
         "_rng",
     ]
-    _enable_deep_copy: bool
     _mutable_module_ref_list: Tuple[weakref.ReferenceType, ...]
     _mutable_module_level: jax.core.Sublevel
     _rng: Optional[random.Random]
 
     def __init__(self):
         super().__init__()
-
-        self._enable_deep_copy = False
         self._mutable_module_ref_list = ()
         self._mutable_module_level = jax.core.cur_sublevel()
         self._rng = random.Random(42)
-
-    def is_deep_copy_enabled(self):
-        """use deepcopy to copy modules"""
-        return self._enable_deep_copy
 
     def add_mutable_module(self, module):
         """add `module` to mutable list"""
@@ -61,16 +53,6 @@ class PaxThreadingLocalState(threading.local):
                 return True
 
         return False
-
-    @contextmanager
-    def enable_deep_copy(self):
-        r"""A context manager that turns on deepcopy mode."""
-        prev = self._enable_deep_copy
-        self._enable_deep_copy = True
-        try:
-            yield
-        finally:
-            self._enable_deep_copy = prev
 
     @contextmanager
     def allow_mutation(self, modules):
@@ -115,9 +97,7 @@ class PaxThreadingLocalState(threading.local):
 PAX_STATE = PaxThreadingLocalState()
 add_mutable_module = PAX_STATE.add_mutable_module
 allow_mutation = PAX_STATE.allow_mutation
-enable_deep_copy = PAX_STATE.enable_deep_copy
 get_rng_state = PAX_STATE.get_rng_state
-is_deep_copy_enabled = PAX_STATE.is_deep_copy_enabled
 is_mutable = PAX_STATE.is_mutable
 next_rng_key = PAX_STATE.next_rng_key
 seed_rng_key = PAX_STATE.seed_rng_key

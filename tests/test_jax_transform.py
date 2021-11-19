@@ -35,7 +35,7 @@ def test_grad_deepscan():
 
     m = M()
     x = jnp.zeros((1, 2))
-    m.__dict__["fc1"] = pax.nn.Linear(2, 2)
+    m.set_attribute("fc1", pax.nn.Linear(2, 2))
     y = jax.grad(loss_fn, has_aux=True)(pax.select_parameters(m), m, x)
 
 

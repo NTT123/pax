@@ -7,7 +7,7 @@ from typing import Callable
 import jax
 
 from .base import BaseModule
-from .threading_local import allow_mutation, enable_deep_copy
+from .threading_local import allow_mutation
 
 
 def pure(func: Callable):
@@ -60,7 +60,7 @@ def pure(func: Callable):
         else:
             raise ValueError("Not supported")
 
-        args, kwargs = _deepcopy((args, kwargs))
+        args, kwargs = _copy((args, kwargs))
         modules = _get_all_submodules((args, kwargs))
         with allow_mutation(modules):
             out = unbound_func(*args, **kwargs)
@@ -87,7 +87,6 @@ def _get_all_submodules(value):
     return out
 
 
-def _deepcopy(value):
-    with enable_deep_copy():
-        leaves, treedef = jax.tree_flatten(value)
+def _copy(value):
+    leaves, treedef = jax.tree_flatten(value)
     return jax.tree_unflatten(treedef, leaves)
