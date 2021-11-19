@@ -17,22 +17,26 @@ TreeDef = Any
 
 
 def parameters_method(trainable_attributes: Iterable[str], submodules=True):
-    """Return a `parameters` method."""
+    """Return a `parameters` method.
+
+    Arguments:
+        trainable_atributes: a list of trainable attribute names.
+        submodules: include submodules if true.
+
+    Returns:
+        A module with only trainable weights.
+    """
 
     def _parameters(self: T) -> T:
-        mod = self.apply_submodules(lambda x: x.parameters())
-        for name in mod.pytree_attributes:
-            value = getattr(mod, name)
-            if submodules:
-                leaves, _ = jax.tree_flatten(
-                    value, is_leaf=lambda x: isinstance(x, Module)
-                )
-                has_submod = any(mod for mod in leaves if isinstance(mod, Module))
-                if not (has_submod or name in trainable_attributes):
-                    mod = mod.replace(**{name: EmptyNode()})
-            else:
-                if name not in trainable_attributes:
-                    mod = mod.replace(**{name: EmptyNode()})
+        is_submodule = lambda x: x is not self and isinstance(x, SafeBaseModule)
+        leaves, treedef = jax.tree_flatten(self, is_leaf=is_submodule)
+        leaves = (
+            leaf.parameters() if submodules and is_submodule(leaf) else EmptyNode()
+            for leaf in leaves
+        )
+        mod = jax.tree_unflatten(treedef, leaves)
+        values = {name: getattr(self, name) for name in trainable_attributes}
+        mod = mod.replace(**values)
         return mod
 
     return _parameters
