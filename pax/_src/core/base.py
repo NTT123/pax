@@ -4,19 +4,12 @@
 # https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
 # which is under MIT License.
 
-import functools
-from copy import deepcopy
 from typing import Any, List, Mapping, Tuple, TypeVar
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
 import numpy as np
-
-# pylint: disable=no-name-in-module
-from jaxlib.xla_extension import CompiledFunction
-
-from .threading_local import is_deep_copy_enabled
 
 T = TypeVar("T", bound="BaseModule")
 M = TypeVar("M")
@@ -61,22 +54,6 @@ class BaseModule:
         """Convert a module to ``(children, treedef)``."""
         aux = dict(self.__dict__)
         children = [aux.pop(name) for name in self._pytree_attributes]
-
-        if is_deep_copy_enabled():
-            leaves, treedef = jax.tree_flatten(aux)
-            new_leaves = []
-            black_list = (jax.custom_jvp, functools.partial, CompiledFunction)
-            for leaf in leaves:
-                try:
-                    if isinstance(leaf, black_list):
-                        new_leaves.append(leaf)
-                    else:
-                        new_leaf = deepcopy(leaf)
-                        new_leaves.append(new_leaf)
-                except TypeError:
-                    new_leaves.append(leaf)
-            aux = jax.tree_unflatten(treedef, new_leaves)
-
         return children, aux
 
     @classmethod
