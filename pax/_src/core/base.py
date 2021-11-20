@@ -83,10 +83,10 @@ class BaseModule:
         module_dict.update(zip(module._pytree_attributes, children))
         if module._mixed_pytree_attributes is not None:
             L = len(module._pytree_attributes)
-            is_value_node = lambda x: isinstance(x, ValueNode)
-            unwrap = lambda x: x.value if is_value_node(x) else x
+            is_leaf = lambda x: isinstance(x, (ValueNode, BaseModule))
+            unwrap = lambda x: x.value if isinstance(x, ValueNode) else x
             for name, value in zip(module._mixed_pytree_attributes, children[L:]):
-                module_dict[name] = jax.tree_map(unwrap, value, is_leaf=is_value_node)
+                module_dict[name] = jax.tree_map(unwrap, value, is_leaf=is_leaf)
         return module
 
     def __init_subclass__(cls):
