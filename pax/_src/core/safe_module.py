@@ -79,27 +79,27 @@ class SafeBaseModule(BaseModule, metaclass=SafeBaseModuleMetaclass):
             leaves = jax.tree_leaves(value)
             has_mods = any(map(is_mod, mods))
 
-            # Check if a MODULE attribute contains non-module leafs.
-            if has_mods:
-                for mod in mods:
-                    if not isinstance(mod, BaseModule):
-                        raise ValueError(
-                            f"\n"
-                            f"Field `{self}.{name}`:\n"
-                            f"    value={value}\n"
-                            f"contains a non-module leaf:\n"
-                            f"    value={mod}\n"
-                            f"    type={type(mod)}\n"
-                        )
-
-            # Check if a pytree attribute contains non-ndarray values.
-            if name in self._pytree_attributes:
-                for leaf in leaves:
-                    if not isinstance(leaf, (np.ndarray, jnp.ndarray)):
-                        raise ValueError(
-                            f"Field `{self}.{name}` contains a non-ndarray value "
-                            f"(type={type(leaf)}, value={leaf})."
-                        )
+            # # Check if a MODULE attribute contains non-module leafs.
+            # if has_mods:
+            #     for mod in mods:
+            #         if not isinstance(mod, BaseModule):
+            #             raise ValueError(
+            #                 f"\n"
+            #                 f"Field `{self}.{name}`:\n"
+            #                 f"    value={value}\n"
+            #                 f"contains a non-module leaf:\n"
+            #                 f"    value={mod}\n"
+            #                 f"    type={type(mod)}\n"
+            #             )
+            #
+            # # Check if a pytree attribute contains non-ndarray values.
+            # if name in self._pytree_attributes:
+            #     for leaf in leaves:
+            #         if not isinstance(leaf, (np.ndarray, jnp.ndarray)):
+            #             raise ValueError(
+            #                 f"Field `{self}.{name}` contains a non-ndarray value "
+            #                 f"(type={type(leaf)}, value={leaf})."
+            #             )
 
 
 def _find_shared_module(module: BaseModule):

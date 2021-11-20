@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import jax
 import jax.numpy as jnp
+import jmp
 import pax
 import pytest
 from pax import Module
@@ -418,8 +419,8 @@ def test_module_list_contains_int():
             self.lst.append(pax.nn.Linear(3, 3))
             self.lst.append(0)  # type: ignore
 
-    with pytest.raises(ValueError):
-        m = M()
+    # with pytest.raises(ValueError):
+    m = M()
 
 
 def test_append_module_list():
@@ -486,3 +487,21 @@ def test_class_with_property():
     m = M()
     m, _ = pax.module_and_value(m)()
     print(m.counter)
+
+
+def test_mix_pytree_and_nonpytree():
+    class Mix(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.funcs = []
+            self.funcs.append(pax.nn.Linear(3, 3))
+            self.funcs.append(jax.nn.relu)
+            self.weight = jnp.array(0.0)
+            self.count = jnp.array(0)
+
+        parameters = pax.parameters_method("weight")
+
+    net = Mix()
+    net = jmp.cast_to_half(net)
+    params = net.parameters()
+    net.update_parameters(params)
