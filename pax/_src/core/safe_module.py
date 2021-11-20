@@ -84,8 +84,12 @@ class SafeBaseModule(BaseModule, metaclass=SafeBaseModuleMetaclass):
                 for mod in mods:
                     if not isinstance(mod, BaseModule):
                         raise ValueError(
-                            f"Field `{self}.{name}` (value={value}) "
-                            f"contains a non-module leaf (type={type(mod)}, value={mod})."
+                            f"\n"
+                            f"Field `{self}.{name}`:\n"
+                            f"    value={value}\n"
+                            f"contains a non-module leaf:\n"
+                            f"    value={mod}\n"
+                            f"    type={type(mod)}\n"
                         )
 
             # Check if a pytree attribute contains non-ndarray values.
