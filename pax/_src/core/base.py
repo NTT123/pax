@@ -26,11 +26,7 @@ class BaseModule:
     BaseModule maintains a ``_pytree_attributes`` tuple that lists all subtree attribute names.
     """
 
-    _pytree_attributes: Tuple[str, ...]
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._pytree_attributes = ()
+    _pytree_attributes: Tuple[str, ...] = ()
 
     @property
     def pytree_attributes(self):
