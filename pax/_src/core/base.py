@@ -4,7 +4,7 @@
 # https://raw.githubusercontent.com/cgarciae/treex/32e4cce5ca0cc991cda8076903853621d0aa4ab9/treex/module.py
 # which is under MIT License.
 
-from typing import Any, List, Mapping, Tuple, TypeVar
+from typing import Any, List, Mapping, Optional, Tuple, TypeVar
 
 import jax
 import jax.numpy as jnp
@@ -27,29 +27,51 @@ class BaseModule:
     """
 
     _pytree_attributes: Tuple[str, ...] = ()
+    _mixed_pytree_attributes: Optional[Tuple[str, ...]] = None
 
     @property
     def pytree_attributes(self):
-        return self._pytree_attributes
+        if self._mixed_pytree_attributes is not None:
+            return self._pytree_attributes + self._mixed_pytree_attributes
+        else:
+            return self._pytree_attributes
 
     def find_and_register_pytree_attributes(self: T):
         """Find and register ndarrays and submodules."""
+        is_mod_or_node = lambda x: isinstance(x, (BaseModule, EmptyNode))
+        is_pytree = lambda x: isinstance(x, pytree_cls)
+
         pytree_attributes = []
+        mixed_pytree_attributes = []
         for name, value in self.__dict__.items():
-            leaves, _ = jax.tree_flatten(
-                value, is_leaf=lambda x: isinstance(x, (BaseModule, EmptyNode))
-            )
-            is_pytree = lambda x: isinstance(
-                x, (jnp.ndarray, np.ndarray, BaseModule, EmptyNode)
-            )
-            if any(map(is_pytree, leaves)):
+            leaves, _ = jax.tree_flatten(value, is_leaf=is_mod_or_node)
+            pytree_cls = (jnp.ndarray, np.ndarray, BaseModule, EmptyNode)
+            any_pytree = any(map(is_pytree, leaves))
+            all_pyrtee = all(map(is_pytree, leaves))
+            if any_pytree and all_pyrtee:
                 pytree_attributes.append(name)
+            elif any_pytree:
+                mixed_pytree_attributes.append(name)
         self._pytree_attributes = tuple(pytree_attributes)
+        if len(mixed_pytree_attributes) > 0:
+            self._mixed_pytree_attributes = tuple(mixed_pytree_attributes)
+        else:
+            self._mixed_pytree_attributes = None
 
     def tree_flatten(self) -> Tuple[List[jnp.ndarray], Mapping[str, Any]]:
         """Convert a module to ``(children, treedef)``."""
         aux = dict(self.__dict__)
         children = [aux.pop(name) for name in self._pytree_attributes]
+        if self._mixed_pytree_attributes is not None:
+            is_module = lambda x: isinstance(x, BaseModule)
+            array_mod_cls = (jnp.ndarray, np.ndarray, BaseModule)
+            is_array_mod = lambda x: isinstance(x, array_mod_cls)
+            for name in self._mixed_pytree_attributes:
+                value = aux.pop(name)
+                leaves, treedef = jax.tree_flatten(value, is_leaf=is_module)
+                leaves = (v if is_array_mod(v) else ValueNode(v) for v in leaves)
+                value = jax.tree_unflatten(treedef, leaves)
+                children.append(value)
         return children, aux
 
     @classmethod
@@ -59,6 +81,12 @@ class BaseModule:
         module_dict = module.__dict__
         module_dict.update(aux)
         module_dict.update(zip(module._pytree_attributes, children))
+        if module._mixed_pytree_attributes is not None:
+            L = len(module._pytree_attributes)
+            is_value_node = lambda x: isinstance(x, ValueNode)
+            unwrap = lambda x: x.value if is_value_node(x) else x
+            for name, value in zip(module._mixed_pytree_attributes, children[L:]):
+                module_dict[name] = jax.tree_map(unwrap, value, is_leaf=is_value_node)
         return module
 
     def __init_subclass__(cls):
@@ -107,3 +135,19 @@ class EmptyNode(Tuple):
         """Unflatten empty node."""
         del aux, children
         return EmptyNode()
+
+
+@jax.tree_util.register_pytree_node_class
+class ValueNode:
+    """We use this class to store a value in treedef."""
+
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
+
+    def tree_flatten(self):
+        return (), self.value
+
+    @classmethod
+    def tree_unflatten(cls, value, children):
+        return ValueNode(value)
