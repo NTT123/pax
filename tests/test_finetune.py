@@ -11,13 +11,13 @@ def test_finetune():
     pax.seed_rng_key(42)
 
     class MLP(pax.Module):
-        layers: List[pax.nn.Linear]
+        layers: List[pax.Linear]
 
         def __init__(self, dims: List[int]):
             super().__init__()
             layers = []
             for in_dim, out_dim in zip(dims[:-1], dims[1:]):
-                layers.append(pax.nn.Linear(in_dim, out_dim))
+                layers.append(pax.Linear(in_dim, out_dim))
             self.layers = layers
 
         def __call__(self, x):
@@ -41,7 +41,7 @@ def test_finetune():
     for i in range(len(net.layers) - 1):
         net.layers[i] = pax.freeze_parameters(net.layers[i])
 
-    # net.layers[-1] = pax.nn.Linear(2, 10)
+    # net.layers[-1] = pax.Linear(2, 10)
     optimizer = opax.adam(1e-2)(net.parameters())
 
     @jax.jit

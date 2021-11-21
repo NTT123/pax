@@ -49,13 +49,13 @@ def grad(
     Example:
 
     >>> @pax.pure
-    ... def loss_fn(model: pax.nn.Linear, x, y):
+    ... def loss_fn(model: pax.Linear, x, y):
     ...     y_hat = model(x)
     ...     loss = jnp.mean(jnp.square(y - y_hat))
     ...     return loss, (loss, model)
     ...
     >>> grad_fn = pax.grad(loss_fn, has_aux=True)
-    >>> net = pax.nn.Linear(1, 1)
+    >>> net = pax.Linear(1, 1)
     >>> x = jnp.ones((3, 1))
     >>> grads, (loss, net) = grad_fn(net, x, x)
     """
@@ -112,7 +112,7 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
     ...     return loss, (loss, model)
     ...
     >>> update_fn = pax.utils.build_update_fn(mse_loss)
-    >>> net = pax.nn.Linear(2, 2)
+    >>> net = pax.Linear(2, 2)
     >>> optimizer = opax.adam(1e-4)(net.parameters())
     >>> x = jnp.ones((32, 2))
     >>> y = jnp.zeros((32, 2))
@@ -200,7 +200,7 @@ def apply_scaled_gradients(model: T, optimizer: Callable, loss_scale, grads: T):
 
     >>> import jmp
     >>> from pax.experimental import apply_scaled_gradients
-    >>> net = pax.nn.Linear(2, 2)
+    >>> net = pax.Linear(2, 2)
     >>> opt = opax.adam(1e-4)(net.parameters())
     >>> loss_scale = jmp.DynamicLossScale(jmp.half_dtype()(2**15))
     >>> grads = net.parameters()
@@ -237,7 +237,7 @@ def default_mp_policy(module: T) -> T:
 
     Example:
 
-    >>> net = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.BatchNorm1D(3))
+    >>> net = pax.Sequential(pax.Linear(3, 3), pax.BatchNorm1D(3))
     >>> net = net.apply(pax.experimental.default_mp_policy)
     >>> print(net.summary())
     Sequential
@@ -262,7 +262,7 @@ def default_mp_policy(module: T) -> T:
 def save_weights_to_dict(module: Module) -> Dict[str, Any]:
     """Save module weights to a dictionary.
 
-    >>> net = pax.nn.Sequential(pax.nn.Linear(1, 2), jax.nn.relu, pax.nn.Linear(2, 3))
+    >>> net = pax.Sequential(pax.Linear(1, 2), jax.nn.relu, pax.Linear(2, 3))
     >>> weights = pax.experimental.save_weights_to_dict(net)
     >>> weights
     {'modules': ({'weight': ..., 'bias': ...}, {}, {'weight':..., 'bias': ...})}
@@ -287,9 +287,9 @@ def save_weights_to_dict(module: Module) -> Dict[str, Any]:
 def load_weights_from_dict(module: T, state_dict: Dict[str, Any]) -> T:
     """Load module weights from a dictionary.
 
-    >>> a = pax.nn.Sequential(pax.nn.Linear(1, 2), jax.nn.relu, pax.nn.Linear(2, 3))
+    >>> a = pax.Sequential(pax.Linear(1, 2), jax.nn.relu, pax.Linear(2, 3))
     >>> weights = pax.experimental.save_weights_to_dict(a)
-    >>> b = pax.nn.Sequential(pax.nn.Linear(1, 2), jax.nn.relu, pax.nn.Linear(2, 3))
+    >>> b = pax.Sequential(pax.Linear(1, 2), jax.nn.relu, pax.Linear(2, 3))
     >>> b = pax.experimental.load_weights_from_dict(b, weights)
     >>> assert a == b
     """

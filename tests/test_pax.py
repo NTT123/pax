@@ -136,7 +136,7 @@ def test_type_optional():
 
 
 def test_train_eval():
-    net = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(3, 3))
+    net = pax.Sequential(pax.Linear(3, 3), pax.Linear(3, 3))
 
     assert net.training == True
     net = pax.enable_eval_mode(net)
@@ -171,28 +171,28 @@ def test_assign_module_with_default_kind():
     class M1(pax.Module):
         def __init__(self):
             super().__init__()
-            self.fc = pax.nn.Linear(3, 3)
+            self.fc = pax.Linear(3, 3)
 
     _ = M1()
 
     class M2(pax.Module):
         def __init__(self):
             super().__init__()
-            self.fc = pax.nn.Linear(3, 3)
+            self.fc = pax.Linear(3, 3)
 
     _ = M2()
 
     class M11(pax.ParameterModule):
         def __init__(self):
             super().__init__()
-            self.fc = pax.nn.Linear(3, 3)
+            self.fc = pax.Linear(3, 3)
 
     _ = M11()
 
     class M22(pax.StateModule):
         def __init__(self):
             super().__init__()
-            self.fc = pax.nn.Linear(3, 3)
+            self.fc = pax.Linear(3, 3)
 
     _ = M22()
 
@@ -201,7 +201,7 @@ def test_default_kind_module():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            self.fc = pax.nn.Linear(3, 3)
+            self.fc = pax.Linear(3, 3)
 
     m = M()
     # assert m.pax.name_to_kind["fc"] is pax.PaxKind.MODULE
@@ -227,7 +227,7 @@ def test_default_kind_attribute_order():
 
 
 def test_module_properties_modify():
-    fc = pax.nn.Linear(3, 3)
+    fc = pax.Linear(3, 3)
     assert fc.training == True
     fc1 = fc.copy()
     assert fc1.training == True
@@ -237,9 +237,9 @@ def test_module_properties_modify():
 
 
 def test_clone_no_side_effect():
-    fc1 = pax.nn.BatchNorm1D(3)
+    fc1 = pax.BatchNorm1D(3)
     fc2 = fc1.copy()
-    fc1 = fc1.set_attribute("new_module", pax.nn.Linear(5, 5))
+    fc1 = fc1.set_attribute("new_module", pax.Linear(5, 5))
 
     # assert (
     #     "new_module" in fc1.pax.name_to_kind
@@ -250,7 +250,7 @@ def test_clone_no_side_effect():
 
 
 def test_lambda_module():
-    f = pax.nn.Lambda(jax.nn.relu)
+    f = pax.Lambda(jax.nn.relu)
     x = jnp.array(5.0)
     y = f(x)
     assert x.item() == y.item()
@@ -263,7 +263,7 @@ def test_lambda_module():
 def test_forget_call_super_at_init():
     class M(pax.Module):
         def __init__(self):
-            self.fc = pax.nn.Linear(3, 3)
+            self.fc = pax.Linear(3, 3)
 
     # with initialization in the `__new__` method,
     # no need to call `super().__init__()` anymore.
@@ -271,17 +271,17 @@ def test_forget_call_super_at_init():
 
 
 def test_name_repr():
-    fc = pax.nn.Linear(2, 3, name="fc1")
+    fc = pax.Linear(2, 3, name="fc1")
     assert "(fc1)" in fc.__repr__()
 
 
 def test_not_tree_clone():
-    net = pax.nn.Sequential(
-        pax.nn.Linear(2, 3),
+    net = pax.Sequential(
+        pax.Linear(2, 3),
         jax.nn.relu,
-        pax.nn.Linear(3, 4),
+        pax.Linear(3, 4),
         jnp.tanh,
-        pax.nn.Linear(4, 2),
+        pax.Linear(4, 2),
         jax.nn.one_hot,
     )
     net = net.copy()
@@ -293,7 +293,7 @@ def test_class_attribute_copy():
 
         def __init__(self):
             super().__init__()
-            self.fc = pax.nn.Linear(3, 3)
+            self.fc = pax.Linear(3, 3)
 
     m = M()
     print(m.__class__.__dict__)
@@ -303,7 +303,7 @@ def test_class_attribute_copy():
 
 
 def test_assign_empty_list_dict():
-    fc = pax.nn.Linear(3, 3)
+    fc = pax.Linear(3, 3)
     fc = fc.set_attribute("a", [])
     fc.a.append(1)  # type: ignore
     assert fc.a == [1]  # type: ignore
@@ -319,7 +319,7 @@ def test_automatic_assign_module_list_1():
             super().__init__()
             self.fc = []
             for i in range(5):
-                self.fc.append(pax.nn.Linear(3, 3))
+                self.fc.append(pax.Linear(3, 3))
 
     m = M()
     m.scan_bugs()
@@ -331,7 +331,7 @@ def test_automatic_assign_module_dict_1():
             super().__init__()
             self.fc = {}
             for i in range(5):
-                self.fc[i] = pax.nn.Linear(3, 3)
+                self.fc[i] = pax.Linear(3, 3)
 
     m = M()
     m.scan_bugs()
@@ -345,14 +345,14 @@ def test_assign_empty_list_2():
             super().__init__()
             self.fc = []
             for i in range(5):
-                self.fc.append(pax.nn.Linear(3, 3))
+                self.fc.append(pax.Linear(3, 3))
 
     m = M()
     m.scan_bugs()
 
 
 def test_compare_modules():
-    a = pax.nn.Sequential(pax.nn.Linear(3, 3), pax.nn.Linear(4, 4))
+    a = pax.Sequential(pax.Linear(3, 3), pax.Linear(4, 4))
     b = a.copy()
     assert a == b
     assert pax.enable_eval_mode(a) != b
@@ -368,7 +368,7 @@ def test_apply_inside_state_subtree():
             super().__init__()
             self.m2 = {"m1": m11}
 
-    m2 = M2(pax.nn.Linear(2, 2))
+    m2 = M2(pax.Linear(2, 2))
     assert m2.training == True
     assert m2.m2["m1"].training == True
     m2 = pax.enable_eval_mode(m2)
@@ -377,13 +377,13 @@ def test_apply_inside_state_subtree():
 
 
 def test_hash_module():
-    a = pax.nn.LSTM(3, 3)
+    a = pax.LSTM(3, 3)
     b = a.copy()
     assert hash(a) == hash(b)
 
 
 def test_deepcopy_pytreedef():
-    f = pax.nn.Linear(3, 3)
+    f = pax.Linear(3, 3)
     f = f.set_attribute("de", jax.tree_structure(f))
     g = f.copy()
 
@@ -392,19 +392,19 @@ def test_deepcopy_pytreedef():
 
 @pax.pure
 def test_delete_attribute_1():
-    f = pax.nn.BatchNorm1D(3)
-    f = f.set_attribute("t", pax.nn.Linear(1, 1))
+    f = pax.BatchNorm1D(3)
+    f = f.set_attribute("t", pax.Linear(1, 1))
     # assert "t" in f.pax.name_to_kind
     with pytest.raises(ValueError):
         del f.t
 
 
 def test_delete_attribute_2():
-    def mutate(f: pax.nn.Linear):
+    def mutate(f: pax.Linear):
         del f.in_dim
         return f
 
-    f = pax.nn.Linear(3, 3)
+    f = pax.Linear(3, 3)
     pax.pure(mutate)(f)
 
 
@@ -416,7 +416,7 @@ def test_module_list_contains_int():
             super().__init__()
 
             self.lst = []
-            self.lst.append(pax.nn.Linear(3, 3))
+            self.lst.append(pax.Linear(3, 3))
             self.lst.append(0)  # type: ignore
 
     # with pytest.raises(ValueError):
@@ -424,38 +424,38 @@ def test_module_list_contains_int():
 
 
 def test_append_module_list():
-    n = pax.nn.Sequential(pax.nn.Linear(3, 3))
-    n.replace(modules=n.modules + (pax.nn.Linear(4, 4),))
+    n = pax.Sequential(pax.Linear(3, 3))
+    n.replace(modules=n.modules + (pax.Linear(4, 4),))
     n.scan_bugs()
 
 
 def test_replace_leaf():
-    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(2, 3))
+    a = pax.Sequential(pax.Linear(2, 2), pax.Linear(2, 3))
     a = a.replace_node(a[0].weight, jnp.zeros((3, 2)))
     assert a[0].weight.shape == (3, 2)
 
 
 def test_replace_node():
-    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(2, 3))
-    relu = pax.nn.Lambda(jax.nn.relu)
+    a = pax.Sequential(pax.Linear(2, 2), pax.Linear(2, 3))
+    relu = pax.Lambda(jax.nn.relu)
     a = a.replace_node(a[1], relu)
     assert a[1] is relu
     print(a.summary())
 
 
 def test_replace_no_node():
-    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(2, 3))
-    relu = pax.nn.Lambda(jax.nn.relu)
+    a = pax.Sequential(pax.Linear(2, 2), pax.Linear(2, 3))
+    relu = pax.Lambda(jax.nn.relu)
     with pytest.raises(ValueError):
         a = a.replace_node(3, relu)
 
 
 def test_shared_weight():
-    fc1 = pax.nn.Linear(2, 3)
-    fc2 = pax.nn.Linear(2, 3)
+    fc1 = pax.Linear(2, 3)
+    fc2 = pax.Linear(2, 3)
     fc2 = fc2.replace(weight=fc1.weight)
     with pytest.raises(ValueError):
-        _ = pax.nn.Sequential(fc1, fc2)
+        _ = pax.Sequential(fc1, fc2)
 
 
 def test_shared_module():
@@ -463,7 +463,7 @@ def test_shared_module():
         def __init__(self):
             super().__init__()
 
-            mod = pax.nn.Linear(3, 3)
+            mod = pax.Linear(3, 3)
             self.fc1 = mod
             self.fc2 = mod
 
@@ -494,7 +494,7 @@ def test_mix_pytree_and_nonpytree():
         def __init__(self):
             super().__init__()
             self.funcs = []
-            self.funcs.append(pax.nn.Linear(3, 3))
+            self.funcs.append(pax.Linear(3, 3))
             self.funcs.append(jax.nn.relu)
             self.weight = jnp.array(0.0)
             self.count = jnp.array(0)

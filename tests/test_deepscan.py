@@ -8,7 +8,7 @@ def test_list_of_mod():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            self.a = [pax.nn.Linear(3, 3)]
+            self.a = [pax.Linear(3, 3)]
 
     m = M()
     # m.pax.name_to_kind["a"] == pax.PaxKind.MODULE
@@ -70,7 +70,7 @@ def test_assign_int_to_param_deepscan():
 #     class M(pax.Module):
 #         def __init__(self):
 #             super().__init__()
-#             self.a_list = [pax.nn.Linear(2, 2)]
+#             self.a_list = [pax.Linear(2, 2)]
 
 #         def __call__(self, x):
 #             self.a_list.append(0)

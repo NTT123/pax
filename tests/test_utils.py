@@ -3,11 +3,11 @@ import jax.numpy as jnp
 import numpy as np
 import opax
 import pax
-from pax.nn import EMA, RngSeq
+from pax import EMA, RngSeq
 
 
 def test_grad():
-    def loss_fn(model: pax.nn.Linear, inputs):
+    def loss_fn(model: pax.Linear, inputs):
         x, target = inputs
         y = model(x)
         loss = jnp.mean(jnp.square(y - target))
@@ -19,7 +19,7 @@ def test_grad():
         model, optimizer = opax.apply_gradients(model, opt, grads=grads)
         return model, optimizer, loss
 
-    net = pax.nn.Linear(2, 1)
+    net = pax.Linear(2, 1)
     opt = opax.adamw(learning_rate=1e-2)(net.parameters())
     x = np.random.normal(size=(32, 2))
     y = np.random.normal(size=(32, 1))
@@ -30,7 +30,7 @@ def test_grad():
 
 
 def test_value_and_grad():
-    def loss_fn(model: pax.nn.Linear, inputs):
+    def loss_fn(model: pax.Linear, inputs):
         x, target = inputs
         y = model(x)
         loss = jnp.mean(jnp.square(y - target))
@@ -42,7 +42,7 @@ def test_value_and_grad():
         model, optimizer = opax.apply_gradients(model, opt, grads)
         return model, optimizer, loss
 
-    net = pax.nn.Linear(2, 1)
+    net = pax.Linear(2, 1)
     opt = opax.adamw(learning_rate=1e-2)(net.parameters())
     x = np.random.normal(size=(32, 2))
     y = np.random.normal(size=(32, 1))
@@ -53,12 +53,12 @@ def test_value_and_grad():
 
 
 def test_util_update_fn():
-    def loss_fn(model: pax.nn.Linear, x, target):
+    def loss_fn(model: pax.Linear, x, target):
         y = model(x)
         loss = jnp.mean(jnp.square(y - target))
         return loss, (loss, model)
 
-    net = pax.nn.Linear(2, 1)
+    net = pax.Linear(2, 1)
     opt = opax.adamw(learning_rate=1e-1)(net.parameters())
     update_fn = jax.jit(pax.utils.build_update_fn(loss_fn, scan_mode=True))
     x = np.random.normal(size=(32, 2))

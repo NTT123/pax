@@ -4,11 +4,11 @@ import pax
 
 
 def test_mutate_new_module_list():
-    a = pax.nn.Linear(3, 3)
+    a = pax.Linear(3, 3)
     b = a.copy()
 
     def mutate(b):
-        b.lst = [pax.nn.Linear(4, 4)]
+        b.lst = [pax.Linear(4, 4)]
         return b
 
     b = pax.pure(mutate)(b)
@@ -20,7 +20,7 @@ def test_mp_policy_method_name():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            self.f = pax.nn.Linear(3, 3)
+            self.f = pax.Linear(3, 3)
 
         def __call__(self, x):
             return self.f(x)

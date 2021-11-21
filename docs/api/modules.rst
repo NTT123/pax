@@ -1,7 +1,7 @@
 Common Modules
 ==============
 
-.. currentmodule:: pax.nn
+.. currentmodule:: pax
 
 .. autosummary::
     Linear

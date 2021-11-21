@@ -18,19 +18,19 @@ Batch = Mapping[str, jnp.ndarray]
 class ConvNet(pax.Module):
     """ConvNet module."""
 
-    layers: List[Tuple[pax.nn.Conv2D, pax.nn.BatchNorm2D]]
-    output: pax.nn.Conv2D
+    layers: List[Tuple[pax.Conv2D, pax.BatchNorm2D]]
+    output: pax.Conv2D
 
     def __init__(self):
         super().__init__()
         self.layers = []
         for i in range(5):
             conv_in = 1 if i == 0 else 32
-            conv = pax.nn.Conv2D(conv_in, 32, 6, padding="VALID")
-            bn = pax.nn.BatchNorm2D(32)
+            conv = pax.Conv2D(conv_in, 32, 6, padding="VALID")
+            bn = pax.BatchNorm2D(32)
             self.layers.append((conv, bn))
 
-        self.output = pax.nn.Conv2D(32, 10, 3, padding="VALID")
+        self.output = pax.Conv2D(32, 10, 3, padding="VALID")
 
     def __call__(self, x: jnp.ndarray):
         for conv, bn in self.layers:
@@ -99,9 +99,9 @@ def mp_policy_fn(mod):
     linear_policy = jmp.Policy(compute_dtype=half, param_dtype=full, output_dtype=full)
     bn_policy = jmp.Policy(compute_dtype=full, param_dtype=full, output_dtype=full)
 
-    if isinstance(mod, pax.nn.Conv2D):
+    if isinstance(mod, pax.Conv2D):
         return pax.apply_mp_policy(mod, mp_policy=linear_policy)
-    elif isinstance(mod, pax.nn.BatchNorm2D):
+    elif isinstance(mod, pax.BatchNorm2D):
         return pax.apply_mp_policy(mod, mp_policy=bn_policy)
     else:
         return mod  # unchanged

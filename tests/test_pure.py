@@ -120,7 +120,7 @@ def test_deep_compare_2():
 
 
 def test_module_weak_ref():
-    mod = pax.nn.Linear(3, 3)
+    mod = pax.Linear(3, 3)
     mod_ref = weakref.ref(mod)
     assert mod_ref() is mod
     del mod
@@ -135,7 +135,7 @@ def test_abstraction_level_checking():
 
         g()
 
-    fc = pax.nn.Linear(3, 3)
+    fc = pax.Linear(3, 3)
     with pytest.raises(ValueError):
         pax.pure(mutate)(fc)
 

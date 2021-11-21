@@ -10,13 +10,7 @@ pax.seed_rng_key(42)
 
 def residual_net(x: Node):
     _, D = x.shape
-    y = (
-        x
-        >> pax.nn.Linear(D, D)
-        >> jax.nn.relu
-        >> pax.nn.Linear(D, D)
-        >> pax.nn.Dropout(0.2)
-    )
+    y = x >> pax.Linear(D, D) >> jax.nn.relu >> pax.Linear(D, D) >> pax.Dropout(0.2)
     z = (x | y) >> jax.lax.add
     return z
 

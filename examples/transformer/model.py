@@ -39,7 +39,7 @@ class LM(pax.Module):
         super().__init__()
         self.vocab_size = vocab_size
         self.hidden_dim = hidden_dim
-        self.embed = pax.nn.Embed(
+        self.embed = pax.Embed(
             vocab_size,
             hidden_dim,
             w_init=jax.nn.initializers.variance_scaling(
@@ -49,7 +49,7 @@ class LM(pax.Module):
         self.transformer = Transformer(
             hidden_dim, hidden_dim // 64, num_layers, dropout_rate=dropout
         )
-        self.output = pax.nn.Linear(hidden_dim, vocab_size)
+        self.output = pax.Linear(hidden_dim, vocab_size)
 
     def __call__(self, x):
         x = self.embed(x)

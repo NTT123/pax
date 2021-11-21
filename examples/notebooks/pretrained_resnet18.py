@@ -7,10 +7,10 @@ IMAGENET_STD = np.array((0.229, 0.224, 0.225))
 
 
 def convert_conv(conv, name=None):
-    """Return a pax.nn.Conv2D module with weights from pretrained ``conv``."""
+    """Return a pax.Conv2D module with weights from pretrained ``conv``."""
     weight = conv.weight.data.contiguous().permute(2, 3, 1, 0).contiguous().numpy()[:]
 
-    pax_conv = pax.nn.Conv2D(
+    pax_conv = pax.Conv2D(
         in_features=conv.in_channels,
         out_features=conv.out_channels,
         kernel_shape=conv.kernel_size,
@@ -25,13 +25,13 @@ def convert_conv(conv, name=None):
 
 
 def convert_bn(bn, name=None):
-    """Return a pax.nn.BatchNorm2D module from pretrained ``bn``."""
+    """Return a pax.BatchNorm2D module from pretrained ``bn``."""
     weight = bn.weight.data.numpy()[None, :, None, None]
     bias = bn.bias.data.numpy()[None, :, None, None]
     running_mean = bn.running_mean.data.numpy()[None, :, None, None]
     running_var = bn.running_var.data.numpy()[None, :, None, None]
 
-    pax_bn = pax.nn.BatchNorm2D(
+    pax_bn = pax.BatchNorm2D(
         num_channels=bias.shape[1],
         create_offset=True,
         create_scale=True,
@@ -75,7 +75,7 @@ def convert_block_group(group):
 def convert_linear(linear):
     weight = linear.weight.data.numpy()
     bias = linear.bias.data.numpy()
-    pax_linear = pax.nn.Linear(
+    pax_linear = pax.Linear(
         in_dim=weight.shape[1], out_dim=weight.shape[0], with_bias=True
     )
     weight = np.transpose(weight)

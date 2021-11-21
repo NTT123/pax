@@ -39,7 +39,7 @@ class LazyModule(Module):
     ...     def __call__(self, x):
     ...         sizes = zip(self.features[:-1], self.features[1:])
     ...         for i, (in_dim, out_dim) in enumerate(sizes):
-    ...             fc = self.get_or_create(f"fc_{i}", lambda: pax.nn.Linear(in_dim, out_dim))
+    ...             fc = self.get_or_create(f"fc_{i}", lambda: pax.Linear(in_dim, out_dim))
     ...             x = jax.nn.relu(fc(x))
     ...         return x
     ...
@@ -70,7 +70,7 @@ class Lambda(Module):
 
     Example:
 
-    >>> net = pax.nn.Lambda(jax.nn.relu)
+    >>> net = pax.Lambda(jax.nn.relu)
     >>> print(net.summary())
     x => relu(x)
     >>> y = net(jnp.array(-1))
@@ -114,7 +114,7 @@ class Flattener(Module):
 
     Example:
 
-    >>> net = pax.nn.Linear(3, 3)
+    >>> net = pax.Linear(3, 3)
     >>> opt = opax.adam(1e-3)(net.parameters())
     >>> flat_mods = pax.experimental.Flattener(model=net, optimizer=opt)
     >>> net, opt = flat_mods.model, flat_mods.optimizer
@@ -156,9 +156,9 @@ class Flattener(Module):
 
         Example:
 
-        >>> net = pax.nn.Linear(3, 3)
+        >>> net = pax.Linear(3, 3)
         >>> flats = pax.experimental.Flattener(net=net)
-        >>> flats = flats.update(net=pax.nn.Linear(4, 4))
+        >>> flats = flats.update(net=pax.Linear(4, 4))
         >>> print(flats.net.summary())
         Linear(in_dim=4, out_dim=4, with_bias=True)
         """
