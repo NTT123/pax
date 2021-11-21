@@ -85,7 +85,7 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
 
     >>> import jmp
     >>> mp_policy = jmp.get_policy("params=float32,compute=float16,output=float32")
-    >>> net = pax.nn.Linear(3, 3)
+    >>> net = pax.Linear(3, 3)
     >>> net = pax.apply_mp_policy(net, mp_policy)
     >>> print(net.summary())
     Linear(in_dim=3, out_dim=3, with_bias=True, mp_policy=FHF)
@@ -141,7 +141,7 @@ def unwrap_mp_policy(module: T) -> T:
 
     >>> import jmp
     >>> mp_policy = jmp.get_policy("params=float32,compute=float16,output=float32")
-    >>> net = pax.nn.Linear(3, 3)
+    >>> net = pax.Linear(3, 3)
     >>> net = pax.apply_mp_policy(net, mp_policy)
     >>> print(net.summary())
     Linear(in_dim=3, out_dim=3, with_bias=True, mp_policy=FHF)

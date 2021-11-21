@@ -4,7 +4,7 @@ import pytest
 
 
 def test_immutability():
-    f = pax.nn.Linear(3, 3)
+    f = pax.Linear(3, 3)
     with pytest.raises(ValueError):
         f.c = 123
     g = pax.freeze_parameters(f)
@@ -27,6 +27,6 @@ def test_new_unregistered_array():
 
 def test_new_unregistered_module():
     class M(pax.Module):
-        a = pax.nn.Linear(3, 3)
+        a = pax.Linear(3, 3)
 
     m = M()

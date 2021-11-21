@@ -148,22 +148,22 @@ In this example, `pax.module_and_value` transforms `net.__call__` into a pure fu
 For convenience, PAX provides utility methods to modify a module in a functional way.
 
 The `replace` method creates a new module with attributes replaced. 
-For example, to replace `weight` and `bias` of a `pax.nn.Linear` module:
+For example, to replace `weight` and `bias` of a `pax.Linear` module:
 
 ```python
-fc = pax.nn.Linear(2, 2)
+fc = pax.Linear(2, 2)
 fc = fc.replace(weight=jnp.ones((2,2)), bias=jnp.zeros((2,)))
 ```
 
 The `replace_node` method replaces a pytree node of a module:
 
 ```python
-f = pax.nn.Sequential(
-    pax.nn.Linear(2, 3),
-    pax.nn.Linear(3, 4),
+f = pax.Sequential(
+    pax.Linear(2, 3),
+    pax.Linear(3, 4),
 )
 
-f = f.replace_node(f[-1], pax.nn.Linear(3, 5))
+f = f.replace_node(f[-1], pax.Linear(3, 5))
 print(f.summary())
 # Sequential
 # ├── Linear(in_dim=2, out_dim=3, with_bias=True)
@@ -211,12 +211,12 @@ A good way to learn about ``PAX`` is to see examples in the [examples/](./exampl
 
 At the moment, PAX includes: 
 
-* ``pax.nn.Embed``,
-* ``pax.nn.Linear``, 
-* ``pax.nn.{GRU, LSTM}``,
-* ``pax.nn.{BatchNorm1D, BatchNorm2D, LayerNorm, GroupNorm}``, 
-* ``pax.nn.{Conv1D, Conv2D, Conv1DTranspose, Conv2DTranspose}``, 
-* ``pax.nn.{Dropout, Sequential, Identity, Lambda, RngSeq, EMA}``.
+* ``pax.Embed``,
+* ``pax.Linear``, 
+* ``pax.{GRU, LSTM}``,
+* ``pax.{BatchNorm1D, BatchNorm2D, LayerNorm, GroupNorm}``, 
+* ``pax.{Conv1D, Conv2D, Conv1DTranspose, Conv2DTranspose}``, 
+* ``pax.{Dropout, Sequential, Identity, Lambda, RngSeq, EMA}``.
 
 We are intent to add new modules in the near future.
 
@@ -244,14 +244,14 @@ PAX provides several module transformations:
 PAX's Module provides the ``pax.freeze_parameters`` transformation to convert all trainable parameters to non-trainable states.
 
 ```python
-net = pax.nn.Sequential(
-    pax.nn.Linear(28*28, 64),
-    jax.nn.relu,
-    pax.nn.Linear(64, 10),
+net = pax.Sequential(
+    pax.Linear(28*28, 64),
+    jax.relu,
+    pax.Linear(64, 10),
 )
 
 net = pax.freeze_parameters(net) 
-net = net.set(-1, pax.nn.Linear(64, 2))
+net = net.set(-1, pax.Linear(64, 2))
 ```
 
 After this, ``net.parameters()`` will only return trainable parameters of the last layer.

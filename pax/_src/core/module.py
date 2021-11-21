@@ -69,7 +69,7 @@ class Module(SafeBaseModule):
     def __init__(self, name: Optional[str] = None):
         """Initialize module.
 
-        >>> linear = pax.nn.Linear(3, 3, name="input_layer")
+        >>> linear = pax.Linear(3, 3, name="input_layer")
         >>> print(linear)
         (input_layer) Linear(in_dim=3, out_dim=3, with_bias=True)
         """
@@ -85,7 +85,7 @@ class Module(SafeBaseModule):
     def training(self) -> bool:
         """Return `True` if a module is in training mode.
 
-        >>> net = pax.nn.Linear(1, 1)
+        >>> net = pax.Linear(1, 1)
         >>> net.training
         True
         >>> net = net.eval()
@@ -126,7 +126,7 @@ class Module(SafeBaseModule):
     def replace(self: T, **kwargs) -> T:
         """Return a new module with some attributes replaced.
 
-        >>> net = pax.nn.Linear(2, 2)
+        >>> net = pax.Linear(2, 2)
         >>> net = net.replace(bias=jnp.zeros((2,)))
         """
 
@@ -146,8 +146,8 @@ class Module(SafeBaseModule):
 
         Example:
 
-        >>> mod = pax.nn.Sequential(
-        ...     pax.nn.Linear(2,2),
+        >>> mod = pax.Sequential(
+        ...     pax.Linear(2,2),
         ...     jax.nn.relu
         ... )
         >>> mod = mod.replace_node(mod[0].weight, jnp.zeros((2, 3)))
@@ -181,7 +181,7 @@ class Module(SafeBaseModule):
         Arguments:
             return_list: return a list of lines instead of a joined string.
 
-        >>> net = pax.nn.Sequential(pax.nn.Linear(2, 3), jax.nn.relu, pax.nn.Linear(3, 4))
+        >>> net = pax.Sequential(pax.Linear(2, 3), jax.nn.relu, pax.Linear(3, 4))
         >>> print(net.summary())
         Sequential
         ├── Linear(in_dim=2, out_dim=3, with_bias=True)
@@ -223,7 +223,7 @@ class Module(SafeBaseModule):
         ...     print(f"{count}\t{mod}")
         ...     return mod
         ...
-        >>> net = pax.nn.Sequential(pax.nn.Linear(1, 1), jax.nn.relu)
+        >>> net = pax.Sequential(pax.Linear(1, 1), jax.nn.relu)
         >>> net = net.apply(print_param_count)
         2 Linear(in_dim=1, out_dim=1, with_bias=True)
         0 Lambda(relu)
@@ -303,7 +303,7 @@ class Module(SafeBaseModule):
     def __mod__(self: T, args: Union[Any, Tuple]) -> Tuple[T, Any]:
         """An alternative to `pax.module_and_value`.
 
-        >>> bn = pax.nn.BatchNorm1D(3)
+        >>> bn = pax.BatchNorm1D(3)
         >>> x = jnp.ones((5, 8, 3))
         >>> bn, y = bn % x
         >>> bn
@@ -319,8 +319,8 @@ class Module(SafeBaseModule):
     def __or__(self: T, other: T) -> T:
         """Merge two modules.
 
-        >>> a = pax.nn.Linear(2, 2)
-        >>> b = pax.nn.Linear(2, 2)
+        >>> a = pax.Linear(2, 2)
+        >>> b = pax.Linear(2, 2)
         >>> c = a | b
         >>> d = b | a
         >>> c == d

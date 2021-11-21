@@ -15,10 +15,10 @@ class Sequential(Module):
 
     For example:
 
-    >>> net = pax.nn.Sequential(
-    ...              pax.nn.Linear(2, 32),
+    >>> net = pax.Sequential(
+    ...              pax.Linear(2, 32),
     ...              jax.nn.relu,
-    ...              pax.nn.Linear(32, 3)
+    ...              pax.Linear(32, 3)
     ... )
     >>> print(net.summary())
     Sequential

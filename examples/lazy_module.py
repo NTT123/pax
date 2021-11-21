@@ -8,9 +8,9 @@ import pax
 
 @pax.pure
 def forward(net: pax.experimental.LazyModule, x):
-    fc1 = net.get_or_create("fc1", lambda: pax.nn.Linear(1, 1))
+    fc1 = net.get_or_create("fc1", lambda: pax.Linear(1, 1))
     x = jax.nn.relu(fc1(x))
-    fc2 = net.get_or_create("fc2", lambda: pax.nn.Linear(1, 1))
+    fc2 = net.get_or_create("fc2", lambda: pax.Linear(1, 1))
     x = fc2(x)
     return net, x
 

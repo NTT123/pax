@@ -19,7 +19,7 @@ def pure(func: Callable):
 
     Example:
 
-    >>> f = pax.nn.Linear(3,3)
+    >>> f = pax.Linear(3,3)
     >>> f.a_list = []
     Traceback (most recent call last):
       ...

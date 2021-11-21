@@ -250,7 +250,7 @@ def build_graph_module(func):
     Example:
 
     >>> def residual_forward(x):
-    ...     y = x >> pax.nn.Linear(x.shape[-1], x.shape[-1])
+    ...     y = x >> pax.Linear(x.shape[-1], x.shape[-1])
     ...     y >>= jax.nn.relu
     ...     z = (x | y) >> jax.lax.add
     ...     return z

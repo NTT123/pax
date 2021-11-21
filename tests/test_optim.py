@@ -14,7 +14,7 @@ def test_optim_model_update_state():
 
         def __init__(self):
             super().__init__()
-            self.fc = pax.nn.Linear(2, 2)
+            self.fc = pax.Linear(2, 2)
             self.count = 0
 
         def __call__(self, x):
@@ -58,6 +58,6 @@ def test_sgd():
             new_params = jax.tree_map(lambda p, v: p - v, params, self.velocity)
             return new_params
 
-    f = pax.nn.Linear(2, 2)
+    f = pax.Linear(2, 2)
     sgd = SGD(f, 0.9, 1e-4)
     pax.pure(sgd.step)(f, f)

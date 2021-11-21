@@ -10,7 +10,7 @@ def test_perf_transformer_flatten_unflatten():
         def __init__(self, num_layers: int):
             super().__init__()
             self.layers = [
-                pax.nn.MultiHeadAttention(8, 512 // 8, 1.0) for i in range(num_layers)
+                pax.MultiHeadAttention(8, 512 // 8, 1.0) for i in range(num_layers)
             ]
 
     f = MyTransformer(16)

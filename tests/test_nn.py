@@ -8,7 +8,7 @@ import pytest
 
 
 # def test_batchnorm_train():
-#     bn = pax.nn.BatchNorm(
+#     bn = pax.BatchNorm(
 #         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
 #     )
 #     bn = pax.enable_train_mode(bn)
@@ -22,7 +22,7 @@ import pytest
 
 
 def test_batchnorm1D_train():
-    bn = pax.nn.BatchNorm1D(3, True, True, 0.9)
+    bn = pax.BatchNorm1D(3, True, True, 0.9)
     bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 3))
     old_state = bn.ema_mean.averages
@@ -34,7 +34,7 @@ def test_batchnorm1D_train():
 
 
 def test_batchnorm2D_train():
-    bn = pax.nn.BatchNorm2D(3, True, True, 0.9)
+    bn = pax.BatchNorm2D(3, True, True, 0.9)
     bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 8, 3))
     old_state = bn.scale
@@ -46,7 +46,7 @@ def test_batchnorm2D_train():
 
 
 # def test_batchnorm_eval():
-#     bn = pax.nn.BatchNorm(
+#     bn = pax.BatchNorm(
 #         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
 #     )
 #     bn = pax.enable_eval_mode(bn)
@@ -59,7 +59,7 @@ def test_batchnorm2D_train():
 
 
 # def test_batchnorm_params_filter():
-#     bn = pax.nn.BatchNorm(
+#     bn = pax.BatchNorm(
 #         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
 #     )
 #     params = pax.select_parameters(bn)
@@ -67,14 +67,14 @@ def test_batchnorm2D_train():
 
 
 def test_conv_1d_basic():
-    conv = pax.nn.Conv1D(3, 5, 3, padding="SAME", with_bias=False)
+    conv = pax.Conv1D(3, 5, 3, padding="SAME", with_bias=False)
     x = jnp.ones((1, 10, 3), dtype=jnp.float32)
     y = conv(x)
     assert y.shape == (1, 10, 5)
 
 
 def test_conv_2d_basic():
-    conv = pax.nn.Conv2D(3, 5, 3, padding="SAME", with_bias=True)
+    conv = pax.Conv2D(3, 5, 3, padding="SAME", with_bias=True)
     x = jnp.ones((1, 10, 10, 3), dtype=jnp.float32)
     y = conv(x)
     assert y.shape == (1, 10, 10, 5)
@@ -82,7 +82,7 @@ def test_conv_2d_basic():
 
 def test_layer_norm_1():
     """Make sure our LayerNorm behaves the same as hk.LayerNorm."""
-    layer_norm = pax.nn.LayerNorm(3, -1, True, True)
+    layer_norm = pax.LayerNorm(3, -1, True, True)
     print(layer_norm.summary())
     x = np.random.randn(32, 3).astype(np.float32)
     fwd = hk.transform(lambda x: hk.LayerNorm(-1, True, True)(x))
@@ -97,7 +97,7 @@ def test_layer_norm_1():
 
 def test_layer_norm_2():
     """Make sure our LayerNorm behaves the same as hk.LayerNorm."""
-    layer_norm = pax.nn.LayerNorm(3, -1, False, False)
+    layer_norm = pax.LayerNorm(3, -1, False, False)
     print(layer_norm.summary())
     x = np.random.randn(32, 3).astype(np.float32)
     fwd = hk.transform(lambda x: hk.LayerNorm(-1, False, False)(x))
@@ -112,7 +112,7 @@ def test_layer_norm_2():
 
 def test_layer_norm_init():
     """Make sure our LayerNorm behaves the same as hk.LayerNorm."""
-    layer_norm = pax.nn.LayerNorm(
+    layer_norm = pax.LayerNorm(
         3,
         -1,
         True,
@@ -138,7 +138,7 @@ def test_layer_norm_init():
 
 def test_group_norm_1():
     """Make sure our GroupNorm behaves the same as hk.GroupNorm."""
-    group_norm = pax.nn.GroupNorm(8, 32, -1)
+    group_norm = pax.GroupNorm(8, 32, -1)
     x = np.random.randn(32, 4, 4, 32).astype(np.float32)
     fwd = hk.transform(lambda x: hk.GroupNorm(8, -1, True, True)(x))
     rng = jax.random.PRNGKey(42)
@@ -151,7 +151,7 @@ def test_group_norm_1():
 
 
 def test_linear_computation():
-    fc = pax.nn.Linear(1, 1)
+    fc = pax.Linear(1, 1)
     x = jnp.array([[5.0]], dtype=jnp.float32)
     y = fc(x)
     target = x * fc.weight + fc.bias
@@ -159,7 +159,7 @@ def test_linear_computation():
 
 
 def test_linear():
-    fc = pax.nn.Linear(5, 7)
+    fc = pax.Linear(5, 7)
     x = jnp.zeros((32, 5), dtype=jnp.float32)
     y = fc(x)
     assert y.shape == (32, 7)
@@ -167,7 +167,7 @@ def test_linear():
 
 
 def test_linear_1():
-    fc = pax.nn.Linear(5, 7, b_init=jax.nn.initializers.normal())
+    fc = pax.Linear(5, 7, b_init=jax.nn.initializers.normal())
     rng_key = jax.random.PRNGKey(42)
     x = jax.random.normal(rng_key, (32, 5), dtype=jnp.float32)
     y = fc(x)
@@ -176,7 +176,7 @@ def test_linear_1():
 
 
 def test_linear_wo_bias():
-    fc = pax.nn.Linear(5, 7, with_bias=False)
+    fc = pax.Linear(5, 7, with_bias=False)
     x = jnp.zeros((32, 5), dtype=jnp.float32)
     y = fc(x)
     assert y.shape == (32, 7)
@@ -184,7 +184,7 @@ def test_linear_wo_bias():
 
 
 def test_linear_input_shape_error():
-    fc = pax.nn.Linear(2, 3, b_init=jax.nn.initializers.normal())
+    fc = pax.Linear(2, 3, b_init=jax.nn.initializers.normal())
     rng_key = jax.random.PRNGKey(42)
     x = jax.random.normal(rng_key, (2,), dtype=jnp.float32)
     with pytest.raises(AssertionError):
@@ -192,7 +192,7 @@ def test_linear_input_shape_error():
 
 
 def test_sequential_mix():
-    net = pax.nn.Sequential(pax.nn.Linear(1, 2), jax.nn.relu, pax.nn.Linear(2, 3))
+    net = pax.Sequential(pax.Linear(1, 2), jax.nn.relu, pax.Linear(2, 3))
     params = net.parameters()
     x = jnp.zeros((2, 1))
     y = net(x)
@@ -200,10 +200,10 @@ def test_sequential_mix():
 
 
 # def test_sequential_non_mix():
-#     net = pax.nn.Sequential(
-#         pax.nn.Linear(1, 2),
-#         pax.nn.BatchNorm(2, True, True, 0.99, reduced_axes=[0], param_shape=[1, 2]),
-#         pax.nn.Linear(2, 3),
+#     net = pax.Sequential(
+#         pax.Linear(1, 2),
+#         pax.BatchNorm(2, True, True, 0.99, reduced_axes=[0], param_shape=[1, 2]),
+#         pax.Linear(2, 3),
 #     )
 #     params = net.parameters()
 #     x = jnp.zeros((2, 1))
@@ -212,7 +212,7 @@ def test_sequential_mix():
 
 
 def test_sequential_all_jax():
-    net = pax.nn.Sequential(jax.nn.relu, jax.nn.relu, jax.nn.relu)
+    net = pax.Sequential(jax.nn.relu, jax.nn.relu, jax.nn.relu)
     params = net.parameters()
     x = jnp.zeros((2, 1))
     y = net(x)
@@ -220,13 +220,13 @@ def test_sequential_all_jax():
 
 
 def test_conv_no_bias():
-    conv = pax.nn.Conv2D(3, 3, 3, 1, 1, "SAME", False)
+    conv = pax.Conv2D(3, 3, 3, 1, 1, "SAME", False)
     # assert conv.bias == None and "bias" not in conv.pax.name_to_kind
 
 
 def test_native_conv1d_1():
     rng_key = jax.random.PRNGKey(42)
-    conv1d = pax.nn.Conv1D(
+    conv1d = pax.Conv1D(
         in_features=3,
         out_features=5,
         kernel_shape=3,
@@ -244,7 +244,7 @@ def test_native_conv1d_1():
 
 def test_native_conv1d_2():
     rng_key = jax.random.PRNGKey(42)
-    conv1d = pax.nn.Conv1D(
+    conv1d = pax.Conv1D(
         in_features=7,
         out_features=5,
         kernel_shape=3,
@@ -269,7 +269,7 @@ def test_native_conv1d_2():
 
 def test_native_conv1d_3():
     rng_key = jax.random.PRNGKey(42)
-    conv1d = pax.nn.Conv1D(
+    conv1d = pax.Conv1D(
         in_features=7,
         out_features=5,
         kernel_shape=3,
@@ -294,7 +294,7 @@ def test_native_conv1d_3():
 
 def test_native_conv1d_4():
     rng_key = jax.random.PRNGKey(42)
-    conv1d = pax.nn.Conv1D(
+    conv1d = pax.Conv1D(
         in_features=7,
         out_features=5,
         kernel_shape=30,
@@ -319,7 +319,7 @@ def test_native_conv1d_4():
 
 def test_native_conv2d_1():
     rng_key = jax.random.PRNGKey(42)
-    conv2d = pax.nn.Conv2D(
+    conv2d = pax.Conv2D(
         in_features=3,
         out_features=5,
         kernel_shape=3,
@@ -337,7 +337,7 @@ def test_native_conv2d_1():
 
 def test_native_conv2d_2():
     rng_key = jax.random.PRNGKey(11)
-    conv2d = pax.nn.Conv2D(
+    conv2d = pax.Conv2D(
         in_features=7,
         out_features=5,
         kernel_shape=(20, 30),
@@ -364,7 +364,7 @@ def test_native_conv2d_2():
 
 def test_native_conv2d_3():
     rng_key = jax.random.PRNGKey(55)
-    conv2d = pax.nn.Conv2D(
+    conv2d = pax.Conv2D(
         in_features=7,
         out_features=5,
         kernel_shape=(20, 30),
@@ -391,7 +391,7 @@ def test_native_conv2d_3():
 
 def test_native_conv2d_4():
     rng_key = jax.random.PRNGKey(66)
-    conv2d = pax.nn.Conv2D(
+    conv2d = pax.Conv2D(
         in_features=7,
         out_features=5,
         kernel_shape=(20, 30),
@@ -418,7 +418,7 @@ def test_native_conv2d_4():
 
 def test_native_conv2d_5():
     rng_key = jax.random.PRNGKey(99)
-    conv2d = pax.nn.Conv2D(
+    conv2d = pax.Conv2D(
         in_features=7,
         out_features=5,
         kernel_shape=(10, 20),
@@ -445,7 +445,7 @@ def test_native_conv2d_5():
 
 def test_native_conv2d_6():
     rng_key = jax.random.PRNGKey(40)
-    conv2d = pax.nn.Conv2D(
+    conv2d = pax.Conv2D(
         in_features=7,
         out_features=5,
         kernel_shape=(10, 20),
@@ -472,7 +472,7 @@ def test_native_conv2d_6():
 
 def test_native_conv2d_7():
     rng_key = jax.random.PRNGKey(46)
-    conv2d = pax.nn.Conv2D(
+    conv2d = pax.Conv2D(
         in_features=7,
         out_features=5,
         kernel_shape=(10, 20),
@@ -502,7 +502,7 @@ def test_native_conv2d_7():
 
 def test_native_linear_wo_bias():
     rng_key = jax.random.PRNGKey(44)
-    fc = pax.nn.Linear(3, 5, with_bias=False, rng_key=rng_key)
+    fc = pax.Linear(3, 5, with_bias=False, rng_key=rng_key)
     hk_fc = hk.transform(lambda x: hk.Linear(5, with_bias=False)(x))
     x = jax.random.normal(rng_key, (7, 4, 3), dtype=jnp.float32)
     y = fc(x)
@@ -512,7 +512,7 @@ def test_native_linear_wo_bias():
 
 def test_native_linear_w_bias():
     rng_key = jax.random.PRNGKey(44)
-    fc = pax.nn.Linear(
+    fc = pax.Linear(
         9,
         5,
         with_bias=True,
@@ -528,7 +528,7 @@ def test_native_linear_w_bias():
 
 def test_native_conv2d_transpose_1():
     rng_key = jax.random.PRNGKey(42)
-    conv2d_t = pax.nn.Conv2DTranspose(
+    conv2d_t = pax.Conv2DTranspose(
         in_features=3,
         out_features=5,
         kernel_shape=3,
@@ -544,7 +544,7 @@ def test_native_conv2d_transpose_1():
 
 def test_native_conv2d_transpose_2():
     rng_key = jax.random.PRNGKey(45)
-    conv2d_t = pax.nn.Conv2DTranspose(
+    conv2d_t = pax.Conv2DTranspose(
         in_features=7,
         out_features=5,
         kernel_shape=(10, 20),
@@ -575,7 +575,7 @@ def test_native_conv2d_transpose_2():
 
 def test_native_conv2d_transpose_3():
     rng_key = jax.random.PRNGKey(45)
-    conv2d_t = pax.nn.Conv2DTranspose(
+    conv2d_t = pax.Conv2DTranspose(
         in_features=7,
         out_features=5,
         kernel_shape=(8, 8),
@@ -616,7 +616,7 @@ def test_native_conv2d_transpose_3():
 
 def test_native_conv2d_transpose_4():
     rng_key = jax.random.PRNGKey(45)
-    conv2d_t = pax.nn.Conv2DTranspose(
+    conv2d_t = pax.Conv2DTranspose(
         in_features=7,
         out_features=5,
         kernel_shape=(8, 8),
@@ -650,7 +650,7 @@ def test_native_conv2d_transpose_4():
 
 def test_native_conv1d_transpose_1():
     rng_key = jax.random.PRNGKey(42)
-    conv1d_t = pax.nn.Conv1DTranspose(
+    conv1d_t = pax.Conv1DTranspose(
         in_features=3,
         out_features=5,
         kernel_shape=3,
@@ -666,7 +666,7 @@ def test_native_conv1d_transpose_1():
 
 def test_native_conv1d_transpose_2():
     rng_key = jax.random.PRNGKey(45)
-    conv1d_t = pax.nn.Conv1DTranspose(
+    conv1d_t = pax.Conv1DTranspose(
         in_features=7,
         out_features=5,
         kernel_shape=(10,),
@@ -697,7 +697,7 @@ def test_native_conv1d_transpose_2():
 
 def test_native_conv1d_transpose_3():
     rng_key = jax.random.PRNGKey(45)
-    conv1d_t = pax.nn.Conv1DTranspose(
+    conv1d_t = pax.Conv1DTranspose(
         in_features=7,
         out_features=5,
         kernel_shape=(8,),
@@ -738,7 +738,7 @@ def test_native_conv1d_transpose_3():
 
 def test_native_conv1d_transpose_4():
     rng_key = jax.random.PRNGKey(45)
-    conv1d_t = pax.nn.Conv1DTranspose(
+    conv1d_t = pax.Conv1DTranspose(
         in_features=7,
         out_features=5,
         kernel_shape=(8,),
@@ -771,7 +771,7 @@ def test_native_conv1d_transpose_4():
 
 
 def test_dropout():
-    drop = pax.nn.Dropout(0.9)
+    drop = pax.Dropout(0.9)
     rng_key = jax.random.PRNGKey(42)
     x = jax.random.normal(rng_key, (1, 2, 50), dtype=jnp.float32)
     drop = pax.enable_eval_mode(drop)
@@ -787,11 +787,11 @@ def test_dropout():
     assert jnp.max(y).item() == 10.0
 
     with pytest.raises(AssertionError):
-        drop = pax.nn.Dropout(1.0)
+        drop = pax.Dropout(1.0)
 
 
 def test_embed():
-    embed = pax.nn.Embed(5, 7)
+    embed = pax.Embed(5, 7)
     x = jnp.array([[[1, 2, 4]]], dtype=jnp.int32)
     y = embed(x)
     assert y.shape == (1, 1, 3, 7)
@@ -801,7 +801,7 @@ def test_embed():
 
 
 def test_gru():
-    gru = pax.nn.GRU(3, 7)
+    gru = pax.GRU(3, 7)
     state = gru.initial_state(2)
     assert state.hidden.shape == (2, 7)
     x = jnp.ones((2, 3), dtype=jnp.float32)
@@ -811,7 +811,7 @@ def test_gru():
 
 
 def test_lstm():
-    lstm = pax.nn.LSTM(3, 7)
+    lstm = pax.LSTM(3, 7)
     state = lstm.initial_state(2)
     assert state.hidden.shape == (2, 7)
     assert state.cell.shape == (2, 7)
@@ -824,18 +824,18 @@ def test_lstm():
 
 def test_avg_pool():
     x = np.zeros((3, 5, 3), dtype=np.float32)
-    y = pax.nn.avg_pool(x, (2, 1), (2, 1), "SAME", -1)
+    y = pax.avg_pool(x, (2, 1), (2, 1), "SAME", -1)
     assert y.shape == (3, 3, 3)
 
 
 def test_haiku_max_pool():
     x = np.zeros((3, 5, 3), dtype=np.float32)
-    y = pax.nn.max_pool(x, (2, 1), (3, 1), "SAME", -1)
+    y = pax.max_pool(x, (2, 1), (3, 1), "SAME", -1)
     assert y.shape == (3, 2, 3)
 
 
 def test_conv_wrong_input_size():
-    conv1 = pax.nn.Conv2D(3, 6, 3)
+    conv1 = pax.Conv2D(3, 6, 3)
     x = jnp.zeros((2, 9, 9, 7), dtype=jnp.float32)
     with pytest.raises(ValueError):
         y = conv1(x)
@@ -845,8 +845,8 @@ def test_list_submodules_in_state():
     class M(pax.Module):
         def __init__(self):
             super().__init__()
-            self.fc = pax.nn.Linear(2, 2)
-            self.state_of_module = pax.nn.Linear(2, 5)
+            self.fc = pax.Linear(2, 2)
+            self.state_of_module = pax.Linear(2, 5)
 
     m = M()
     mods = m.submodules()
@@ -854,10 +854,10 @@ def test_list_submodules_in_state():
 
 
 def test_sequential_get_set_item():
-    fc1 = pax.nn.Linear(1, 2)
-    fc2 = pax.nn.Linear(2, 3)
-    fc3 = pax.nn.Linear(2, 1)
-    a = pax.nn.Sequential(fc1, jax.nn.relu, fc2)
+    fc1 = pax.Linear(1, 2)
+    fc2 = pax.Linear(2, 3)
+    fc3 = pax.Linear(2, 1)
+    a = pax.Sequential(fc1, jax.nn.relu, fc2)
     assert a[-1] == fc2
     a = a.set(-1, fc3)
     assert a[-1] == fc3
@@ -865,7 +865,7 @@ def test_sequential_get_set_item():
 
 
 def test_apply_mutate_no_side_effect():
-    a = pax.nn.Sequential(pax.nn.Linear(2, 2), pax.nn.Linear(4, 4))
+    a = pax.Sequential(pax.Linear(2, 2), pax.Linear(4, 4))
 
     @pax.pure
     def f(mod):
@@ -878,14 +878,14 @@ def test_apply_mutate_no_side_effect():
 
 
 def test_new_method_mutate():
-    init_fn = pax.nn.Linear.__init__
-    a = pax.nn.Linear(1, 1)
-    b = pax.nn.Linear(2, 2)
-    assert pax.nn.Linear.__init__ == init_fn
+    init_fn = pax.Linear.__init__
+    a = pax.Linear(1, 1)
+    b = pax.Linear(2, 2)
+    assert pax.Linear.__init__ == init_fn
 
 
 def test_identity_module():
-    ident = pax.nn.Identity()
+    ident = pax.Identity()
     x = jnp.zeros((3, 3))
     y = ident(x)
     assert jnp.array_equal(x, y) == True
@@ -916,7 +916,7 @@ def test_slot():
 
 def test_ema_eval():
     x = jnp.ones((3, 3))
-    ema = pax.nn.EMA(x, 0.0, True)
+    ema = pax.EMA(x, 0.0, True)
     y = ema.eval()(x)
     np.testing.assert_array_equal(x, y)
 

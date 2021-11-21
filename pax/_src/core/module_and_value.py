@@ -18,7 +18,7 @@ def module_and_value(module_or_method: Callable[..., O]) -> Callable[..., Tuple[
 
     Example:
 
-    >>> net = pax.nn.Linear(1, 1)
+    >>> net = pax.Linear(1, 1)
     >>> x = jnp.ones((32, 1))
     >>> net, y = pax.module_and_value(net)(x)  # note: `net` is also returned.
 

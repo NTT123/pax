@@ -8,18 +8,18 @@ import pax
 class UpsamplingNetwork(pax.Module):
     def __init__(self, n_mels, num_output_channels):
         super().__init__()
-        self.input_conv = pax.nn.Conv1D(n_mels, 512, 3, padding="VALID", with_bias=True)
+        self.input_conv = pax.Conv1D(n_mels, 512, 3, padding="VALID", with_bias=True)
 
-        dilated_conv = partial(pax.nn.Conv1D, 512, 512, 2, padding="VALID")
+        dilated_conv = partial(pax.Conv1D, 512, 512, 2, padding="VALID")
         self.dilated_conv_1 = dilated_conv(rate=1)
         self.dilated_conv_2 = dilated_conv(rate=2)
         self.dilated_conv_3 = dilated_conv(rate=4)
 
-        conv1d_transpose = partial(pax.nn.Conv1DTranspose, 512, 512, padding="SAME")
+        conv1d_transpose = partial(pax.Conv1DTranspose, 512, 512, padding="SAME")
         self.upsample_conv_1 = conv1d_transpose(kernel_shape=4, stride=4)
         self.upsample_conv_2 = conv1d_transpose(kernel_shape=2, stride=2)
         self.upsample_conv_3 = conv1d_transpose(kernel_shape=2, stride=2)
-        self.output_conv = pax.nn.Conv1D(512, num_output_channels, 1, padding="VALID")
+        self.output_conv = pax.Conv1D(512, num_output_channels, 1, padding="VALID")
 
     def __call__(self, mel):
         x = self.input_conv(mel)
@@ -51,9 +51,9 @@ class WaveGRU(pax.Module):
         self.hidden_dim = hidden_dim
 
         self.upsampling = UpsamplingNetwork(n_mels, hidden_dim)
-        self.gru = pax.nn.GRU(hidden_dim, hidden_dim)
-        self.logits = pax.nn.Linear(hidden_dim, 2 ** n_mu_bits)
-        self.embed = pax.nn.Embed(2 ** n_mu_bits, hidden_dim)
+        self.gru = pax.GRU(hidden_dim, hidden_dim)
+        self.logits = pax.Linear(hidden_dim, 2 ** n_mu_bits)
+        self.embed = pax.Embed(2 ** n_mu_bits, hidden_dim)
 
     def __call__(self, inputs):
         logmel, wav = inputs

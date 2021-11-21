@@ -19,16 +19,16 @@ Batch = Mapping[str, jnp.ndarray]
 class ConvNet(pax.Module):
     """ConvNet module."""
 
-    layers: pax.nn.Sequential
+    layers: pax.Sequential
 
     def __init__(self):
         super().__init__()
-        self.layers = pax.nn.Sequential()
+        self.layers = pax.Sequential()
         for i in range(5):
-            self.layers >>= pax.nn.Conv2D((1 if i == 0 else 32), 32, 6, padding="VALID")
-            self.layers >>= pax.nn.BatchNorm2D(32, True, True, 0.9)
+            self.layers >>= pax.Conv2D((1 if i == 0 else 32), 32, 6, padding="VALID")
+            self.layers >>= pax.BatchNorm2D(32, True, True, 0.9)
             self.layers >>= jax.nn.relu
-        self.layers >>= pax.nn.Conv2D(32, 10, 3, padding="VALID")
+        self.layers >>= pax.Conv2D(32, 10, 3, padding="VALID")
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         x = self.layers(x)

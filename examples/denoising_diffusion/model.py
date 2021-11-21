@@ -11,7 +11,7 @@ import jax.numpy as jnp
 import numpy as np
 import pax
 from einops import rearrange
-from pax.nn import GroupNorm, LayerNorm
+from pax import GroupNorm, LayerNorm
 
 
 def exists(x):
@@ -55,7 +55,7 @@ class Mish(pax.Module):
 class Upsample(pax.Module):
     def __init__(self, dim):
         super().__init__()
-        self.conv = pax.nn.Conv2DTranspose(dim, dim, 4, 2, padding="SAME")
+        self.conv = pax.Conv2DTranspose(dim, dim, 4, 2, padding="SAME")
 
     def __call__(self, x):
         return self.conv(x)
@@ -64,7 +64,7 @@ class Upsample(pax.Module):
 class Downsample(pax.Module):
     def __init__(self, dim):
         super().__init__()
-        self.conv = pax.nn.Conv2D(dim, dim, 3, 2, padding="SAME")
+        self.conv = pax.Conv2D(dim, dim, 3, 2, padding="SAME")
 
     def __call__(self, x):
         return self.conv(x)
@@ -84,8 +84,8 @@ class PreNorm(pax.Module):
 class Block(pax.Module):
     def __init__(self, dim, dim_out, groups: int = 8):
         super().__init__()
-        self.blocks = pax.nn.Sequential(
-            pax.nn.Conv2D(dim, dim_out, 3, padding="SAME"),
+        self.blocks = pax.Sequential(
+            pax.Conv2D(dim, dim_out, 3, padding="SAME"),
             GroupNorm(groups, dim_out),
             Mish(),
         )
@@ -98,7 +98,7 @@ class ResnetBlock(pax.Module):
     def __init__(self, dim, dim_out, *, time_emb_dim=None, groups=8):
         super().__init__()
         self.mlp = (
-            pax.nn.Sequential(Mish(), pax.nn.Linear(time_emb_dim, dim_out))
+            pax.Sequential(Mish(), pax.Linear(time_emb_dim, dim_out))
             if exists(time_emb_dim)
             else None
         )
@@ -106,9 +106,9 @@ class ResnetBlock(pax.Module):
         self.block2 = Block(dim_out, dim_out, groups=groups)
 
         if dim != dim_out:
-            self.res_conv = pax.nn.Conv2D(dim, dim_out, 1)
+            self.res_conv = pax.Conv2D(dim, dim_out, 1)
         else:
-            self.res_conv = pax.nn.Identity()
+            self.res_conv = pax.Identity()
 
     def __call__(self, x, time_emb):
         h = self.block1(x)
@@ -125,8 +125,8 @@ class LinearAttention(pax.Module):
         super().__init__()
         self.heads = heads
         hidden_dim = dim_head * heads
-        self.to_qkv = pax.nn.Conv2D(dim, hidden_dim * 3, 1, with_bias=False)
-        self.to_out = pax.nn.Conv2D(hidden_dim, dim, 1)
+        self.to_qkv = pax.Conv2D(dim, hidden_dim * 3, 1, with_bias=False)
+        self.to_out = pax.Conv2D(hidden_dim, dim, 1)
 
     def __call__(self, x):
         b, h, w, c = x.shape
@@ -167,11 +167,11 @@ class UNet(pax.Module):
 
         if with_time_emb:
             time_dim = dim
-            self.time_mlp = pax.nn.Sequential(
+            self.time_mlp = pax.Sequential(
                 SinusoidalPosEmbed(dim),
-                pax.nn.Linear(dim, dim * 4),
+                pax.Linear(dim, dim * 4),
                 Mish(),
-                pax.nn.Linear(dim * 4, dim),
+                pax.Linear(dim * 4, dim),
             )
         else:
             time_dim = None
@@ -188,7 +188,7 @@ class UNet(pax.Module):
                     ResnetBlock(dim_in, dim_out, time_emb_dim=time_dim, groups=groups),
                     ResnetBlock(dim_out, dim_out, time_emb_dim=time_dim, groups=groups),
                     Residual(PreNorm(dim_out, LinearAttention(dim_out))),
-                    Downsample(dim_out) if not is_last else pax.nn.Identity(),
+                    Downsample(dim_out) if not is_last else pax.Identity(),
                 ]
             )
 
@@ -211,15 +211,15 @@ class UNet(pax.Module):
                     ),
                     ResnetBlock(dim_in, dim_in, time_emb_dim=time_dim, groups=groups),
                     Residual(PreNorm(dim_in, LinearAttention(dim_in))),
-                    Upsample(dim_in) if not is_last else pax.nn.Identity(),
+                    Upsample(dim_in) if not is_last else pax.Identity(),
                 ]
             )
 
         out_dim = default(out_dim, channels)
 
-        self.final_conv = pax.nn.Sequential(
+        self.final_conv = pax.Sequential(
             Block(dim, dim, groups=groups),
-            pax.nn.Conv2D(dim, out_dim, 1),
+            pax.Conv2D(dim, out_dim, 1),
         )
 
     def __call__(self, x, time):
@@ -291,7 +291,7 @@ class GaussianDiffusion(pax.Module):
         self.channels = channels
         self.image_size = image_size
         self.denoise_fn = denoise_fn
-        self.rng_seq = pax.nn.RngSeq(random_seed)
+        self.rng_seq = pax.RngSeq(random_seed)
 
         if exists(betas):
             betas = jnp.array(betas)

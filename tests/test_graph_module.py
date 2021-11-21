@@ -12,13 +12,13 @@ from pax.experimental.graph import GraphModule, InputNode, build_graph_module
 
 def test_simple_graph():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
+    y = x >> pax.Linear(3, 4) >> jax.nn.relu
     assert y.value.shape == (3, 4)
 
 
 def test_cat_graph():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
+    y = x >> pax.Linear(3, 4) >> jax.nn.relu
     z = x & y
     t = z >> partial(jnp.concatenate, axis=-1)
     assert t.value.shape == (3, 7)
@@ -26,7 +26,7 @@ def test_cat_graph():
 
 def test_cat_merge_left():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
+    y = x >> pax.Linear(3, 4) >> jax.nn.relu
     q = y & y
     z = q & x
     assert z.parents == (y, y, x)
@@ -34,7 +34,7 @@ def test_cat_merge_left():
 
 def test_cat_merge_right():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
+    y = x >> pax.Linear(3, 4) >> jax.nn.relu
     q = y & y
     z = x & q
     assert z.parents == (x, y, y)
@@ -42,7 +42,7 @@ def test_cat_merge_right():
 
 def test_merge_2_cat():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
+    y = x >> pax.Linear(3, 4) >> jax.nn.relu
     q = y & y
     t = x & x
     k = q & t
@@ -51,7 +51,7 @@ def test_merge_2_cat():
 
 def test_3_cat_graph():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
+    y = x >> pax.Linear(3, 4) >> jax.nn.relu
     z = x & y & x
     t = z >> partial(jnp.concatenate, axis=-1)
     assert t.value.shape == (3, 10)
@@ -59,7 +59,7 @@ def test_3_cat_graph():
 
 def test_3_cat_graph_module():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
+    y = x >> pax.Linear(3, 4) >> jax.nn.relu
     z = x & y & y
     t = z >> partial(jnp.concatenate, axis=-1)
     _ = GraphModule((x,), t)
@@ -67,14 +67,14 @@ def test_3_cat_graph_module():
 
 def test_or_graph():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 3) >> jax.nn.relu
+    y = x >> pax.Linear(3, 3) >> jax.nn.relu
     z = (x | y) >> jax.lax.add
     assert z.value.shape == (3, 3)
 
 
 def test_merge_2_or():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
+    y = x >> pax.Linear(3, 4) >> jax.nn.relu
     q = y | y
     t = x | x
     k = t | q
@@ -83,7 +83,7 @@ def test_merge_2_or():
 
 def test_or_merge_left():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 3) >> jax.nn.relu
+    y = x >> pax.Linear(3, 3) >> jax.nn.relu
     z = x | y
     t = z | x
     assert t.parents == (x, y, x)
@@ -91,7 +91,7 @@ def test_or_merge_left():
 
 def test_or_merge_right():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 3) >> jax.nn.relu
+    y = x >> pax.Linear(3, 3) >> jax.nn.relu
     z = x | y
     t = x | z
     assert t.parents == (x, x, y)
@@ -99,7 +99,7 @@ def test_or_merge_right():
 
 def test_cat_graph_merge():
     x = InputNode(jnp.zeros((3, 3)))
-    y = x >> pax.nn.Linear(3, 4) >> jax.nn.relu
+    y = x >> pax.Linear(3, 4) >> jax.nn.relu
     q = y | y
     z = x | q
     assert z.parents == (x, y, y)
@@ -121,8 +121,8 @@ def test_type_shape():
 
 def test_build_residual_net():
     def residual(x):
-        y = x >> pax.nn.Linear(3, 3) >> jax.nn.relu
-        t = x >> pax.nn.Linear(3, 3) >> jax.nn.tanh
+        y = x >> pax.Linear(3, 3) >> jax.nn.relu
+        t = x >> pax.Linear(3, 3) >> jax.nn.tanh
         z = (y | t) >> jax.lax.add
         return z
 
@@ -134,7 +134,7 @@ def test_build_residual_net():
 
 def test_reuse_module_error():
     def reuse(x):
-        mod = pax.nn.Linear(3, 3)
+        mod = pax.Linear(3, 3)
         y = x >> mod >> jax.nn.relu
         t = x >> mod
         z = (y | t) >> jax.lax.add
