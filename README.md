@@ -246,7 +246,7 @@ PAX's Module provides the ``pax.freeze_parameters`` transformation to convert al
 ```python
 net = pax.Sequential(
     pax.Linear(28*28, 64),
-    jax.relu,
+    jax.nn.relu,
     pax.Linear(64, 10),
 )
 
