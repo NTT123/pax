@@ -21,7 +21,7 @@
 A `pax.Module` object has two sides:
 
 * It is a _normal_ python object which can be modified and called.
-* It is a _pytree_ object whose leaves are `ndarray`s.
+* It is a _pytree_ object whose leaves are `ndarrays`.
 
 ``pax.Module`` object manages the pytree and executes functions that depend on the pytree. As a pytree object, it can be input and output to JAX functions running on CPU/GPU/TPU cores.
 
@@ -53,7 +53,7 @@ class Linear(pax.Module):
     weight: jnp.ndarray
     bias: jnp.ndarray
     counter: jnp.ndarray
-    parameters = pax.parameters_method("weight bias")
+    parameters = pax.parameters_method("weight", "bias")
 
     def __init__(self):
         super().__init__()
@@ -81,7 +81,7 @@ print(grads.bias)  # -2.0
 
 There are a few noteworthy points in the above example:
 
-* ``weight`` and ``bias`` are trainable parameters by setting `parameters = pax.parameters_method("weight bias")`.
+* ``weight`` and ``bias`` are trainable parameters by setting `parameters = pax.parameters_method("weight", "bias")`.
 * ``pax.module_and_value`` transforms `model.__call__` into a 
   pure function that returns the updated model in its output.
 * ``loss_fn`` returns the updated `model` in the output.
