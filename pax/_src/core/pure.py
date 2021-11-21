@@ -2,12 +2,14 @@
 
 import functools
 from types import MethodType
-from typing import Callable
+from typing import Callable, TypeVar
 
 import jax
 
 from .base import BaseModule
 from .threading_local import allow_mutation
+
+T = TypeVar("T")
 
 
 def pure(func: Callable):
@@ -61,7 +63,7 @@ def pure(func: Callable):
             raise ValueError("Not supported")
 
         args, kwargs = _copy((args, kwargs))
-        modules = _get_all_submodules((args, kwargs))
+        modules = get_all_submodules((args, kwargs))
         with allow_mutation(modules):
             out = unbound_func(*args, **kwargs)
 
@@ -79,14 +81,14 @@ def _get_modules(tree):
     return modules
 
 
-def _get_all_submodules(value):
+def get_all_submodules(value):
     submods = _get_modules(value)
     out = list(submods)
     for mod in submods:
-        out.extend(_get_all_submodules(mod.submodules()))
+        out.extend(get_all_submodules(mod.submodules()))
     return out
 
 
-def _copy(value):
+def _copy(value: T) -> T:
     leaves, treedef = jax.tree_flatten(value)
     return jax.tree_unflatten(treedef, leaves)

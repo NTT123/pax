@@ -5,6 +5,7 @@ Experimental
 
 
 .. autosummary::
+    mutable
     Flattener
     LazyModule
     graph.build_graph_module
@@ -12,6 +13,12 @@ Experimental
     apply_scaled_gradients
     save_weights_to_dict
     load_weights_from_dict
+
+
+Mutable
+-------
+
+.. autofunction:: mutable
 
 
 Flattener
