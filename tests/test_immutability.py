@@ -22,11 +22,13 @@ def test_new_unregistered_array():
     class M(pax.Module):
         a = [jnp.zeros((3, 3))]
 
-    m = M()
+    with pytest.raises(ValueError):
+        m = M()
 
 
 def test_new_unregistered_module():
     class M(pax.Module):
         a = pax.Linear(3, 3)
 
-    m = M()
+    with pytest.raises(ValueError):
+        m = M()

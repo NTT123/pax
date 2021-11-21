@@ -281,8 +281,6 @@ class Module(SafeBaseModule):
             assert isinstance(mod, Module)
             # pylint: disable=protected-access
             mod._scan_fields(mod._class_fields())
-            # pylint: disable=protected-access
-            mod._scan_fields(mod.__dict__.keys())
             return mod
 
         self.apply(_scan_field_fn)

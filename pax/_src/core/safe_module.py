@@ -1,5 +1,6 @@
 """Safeguards to prevent potential bugs."""
 
+import inspect
 from typing import Iterable, List, Type, TypeVar
 
 import jax
@@ -27,7 +28,7 @@ class SafeBaseModuleMetaclass(type):
             raise ValueError("`__slots__` is not supported by PAX modules.")
         module._assert_not_shared_module()
         module._assert_not_shared_weight()
-        module._scan_fields(module.__dict__.keys())
+        module._scan_fields(module._class_fields())
         return module
 
 
@@ -35,9 +36,18 @@ class SafeBaseModule(BaseModule, metaclass=SafeBaseModuleMetaclass):
     """Adding safe guards to BaseModule to prevent bugs."""
 
     def _class_fields(self):
-        for name, value in self.__class__.__dict__.items():
-            if not hasattr(value, "__get__"):  # ignore descriptors
-                yield name
+        for name, value in inspect.getmembers(self):
+            if name.startswith("__") or inspect.ismethod(value):
+                continue
+
+            if name in self.__dict__:
+                continue
+
+            if find_descriptor(self.__class__, name) is not None:
+                # ignore descriptors
+                continue
+
+            yield name
 
     def _assert_mutability(self):
         if not is_mutable(self):
@@ -73,33 +83,32 @@ class SafeBaseModule(BaseModule, metaclass=SafeBaseModuleMetaclass):
         """Scan fields for *potential* bugs."""
 
         for name in fields:
+            if name in self.pytree_attributes:
+                continue
+
             value = getattr(self, name)
             is_mod = lambda x: isinstance(x, BaseModule)
+            is_ndarray = lambda x: isinstance(x, (jnp.ndarray, np.ndarray))
             mods, _ = jax.tree_flatten(value, is_leaf=is_mod)
             leaves = jax.tree_leaves(value)
             has_mods = any(map(is_mod, mods))
+            has_arrays = any(map(is_ndarray, mods))
 
-            # # Check if a MODULE attribute contains non-module leafs.
-            # if has_mods:
-            #     for mod in mods:
-            #         if not isinstance(mod, BaseModule):
-            #             raise ValueError(
-            #                 f"\n"
-            #                 f"Field `{self}.{name}`:\n"
-            #                 f"    value={value}\n"
-            #                 f"contains a non-module leaf:\n"
-            #                 f"    value={mod}\n"
-            #                 f"    type={type(mod)}\n"
-            #             )
-            #
-            # # Check if a pytree attribute contains non-ndarray values.
-            # if name in self._pytree_attributes:
-            #     for leaf in leaves:
-            #         if not isinstance(leaf, (np.ndarray, jnp.ndarray)):
-            #             raise ValueError(
-            #                 f"Field `{self}.{name}` contains a non-ndarray value "
-            #                 f"(type={type(leaf)}, value={leaf})."
-            #             )
+            if has_mods:
+                raise ValueError(
+                    f"\n"
+                    f"Unregistered field `{self}.{name}`:\n"
+                    f"    value={value}\n"
+                    f"contains a module leaf.\n"
+                )
+
+            if has_arrays:
+                raise ValueError(
+                    f"\n"
+                    f"Unregistered field `{self}.{name}`:\n"
+                    f"    value={value}\n"
+                    f"contains a ndarray leaf.\n"
+                )
 
 
 def _find_shared_module(module: BaseModule):
@@ -125,4 +134,20 @@ def _find_shared_module(module: BaseModule):
             return m
         module_ids.add(id(m))
 
+    return None
+
+
+# source: https://stackoverflow.com/a/21963090
+def find_descriptor(cls, attrname):
+    """Find the descriptor of an attribute."""
+
+    def hasspecialmethod(obj, name):
+        return any(name in klass.__dict__ for klass in type(obj).__mro__)
+
+    for klass in cls.__mro__:
+        if attrname in klass.__dict__:
+            descriptor = klass.__dict__[attrname]
+            if not hasspecialmethod(descriptor, "__get__"):
+                return None
+            return descriptor
     return None

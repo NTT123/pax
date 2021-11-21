@@ -8,6 +8,7 @@ import jax.numpy as jnp
 import jmp
 
 from .module import Module
+from .safe_module import find_descriptor
 
 T = TypeVar("T", bound=Module)
 
@@ -109,7 +110,7 @@ def apply_mp_policy(module: T, mp_policy: jmp.Policy) -> T:
         if name == "__call__" or name not in module_methods:
             value = getattr(base, name)
             if callable(value):
-                value = _find_descriptor(base, name)
+                value = find_descriptor(base, name)
                 if value is None:
                     continue
                 if isinstance(value, (staticmethod, classmethod)):
@@ -157,22 +158,6 @@ def unwrap_mp_policy(module: T) -> T:
     original.__dict__.update(module.__dict__)
     del original.__dict__["_pax_mp_policy"]
     return original
-
-
-# source: https://stackoverflow.com/a/21963090
-def _find_descriptor(cls, attrname):
-    """Find the descriptor of an attribute."""
-
-    def hasspecialmethod(obj, name):
-        return any(name in klass.__dict__ for klass in type(obj).__mro__)
-
-    for klass in cls.__mro__:
-        if attrname in klass.__dict__:
-            descriptor = klass.__dict__[attrname]
-            if not hasspecialmethod(descriptor, "__get__"):
-                return None
-            return descriptor
-    return None
 
 
 def _has_module(mod):
