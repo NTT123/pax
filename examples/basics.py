@@ -15,7 +15,7 @@ class Linear(pax.Module):
     weight: jnp.ndarray
     bias: jnp.ndarray
     counter: jnp.ndarray
-    parameters = pax.parameters_method("weight bias")
+    parameters = pax.parameters_method("weight", "bias")
 
     def __init__(self):
         super().__init__()
