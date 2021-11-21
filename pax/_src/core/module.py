@@ -19,6 +19,14 @@ TreeDef = Any
 def parameters_method(*trainable_attributes, submodules=True):
     """Return a `parameters` method.
 
+    >>> class Linear(pax.Module):
+    ...     parameters = pax.parameters_method("weight")
+    ...     def __init__(self):
+    ...         self.weight = jnp.array(1.0)
+    >>> fc = Linear()
+    >>> fc == fc.parameters()
+    True
+
     Arguments:
         trainable_atributes: a list of trainable attribute names.
         submodules: include submodules if true.
