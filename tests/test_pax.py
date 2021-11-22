@@ -520,3 +520,16 @@ def test_parameter_module():
 
     d = D()
     assert len(jax.tree_leaves(d.parameters())) == 0
+
+
+def test_state_dict_mixed_attribute():
+    class Counter(pax.ParameterModule):
+        def __init__(self):
+            super().__init__()
+            self.f = [jnp.array(0), jax.nn.relu]
+
+    c = Counter()
+    st = c.state_dict()
+    assert st["f"][-1] is None
+    c = c.load_state_dict(st)
+    assert c.f[-1] is jax.nn.relu

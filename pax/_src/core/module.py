@@ -390,7 +390,7 @@ def save_weights_to_dict(module: Module) -> Dict[str, Any]:
         elif isinstance(v, (jnp.ndarray, np.ndarray)):
             return v
         else:
-            return ValueNode(())
+            return None
 
     out = {}
     for name in module.pytree_attributes:
@@ -420,7 +420,7 @@ def load_weights_from_dict(module: T, state_dict: Dict[str, Any]) -> T:
             return load_weights_from_dict(m, s)
         elif isinstance(m, (jnp.ndarray, np.ndarray)):
             return s
-        elif isinstance(s, ValueNode):
+        elif s is None:
             return m
         else:
             raise ValueError("Impossible")
