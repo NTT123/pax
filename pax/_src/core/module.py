@@ -242,7 +242,6 @@ class Module(SafeBaseModule):
 
         Arguments:
             apply_fn: a function which inputs a module and outputs a transformed module.
-            check_treedef: check treedef before applying the function.
         """
 
         def rec_fn(mod_or_ndarray):
