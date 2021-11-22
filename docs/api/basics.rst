@@ -29,6 +29,8 @@ PAX's Module
       replace_node,
       summary,
       apply,
+      state_dict,
+      load_state_dict,
       __or__,
       __mod__
 

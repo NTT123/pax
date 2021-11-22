@@ -298,9 +298,11 @@ class Module(SafeBaseModule):
         return self
 
     def state_dict(self) -> Dict[str, Any]:
+        """Return module's state dictionary."""
         return save_weights_to_dict(self)
 
     def load_state_dict(self: T, state_dict: Dict[str, Any]) -> T:
+        """Return a new module from the state dictionary."""
         return load_weights_from_dict(self, state_dict)
 
     def __setattr__(self, name: str, value: Any) -> None:
