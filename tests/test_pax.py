@@ -505,3 +505,18 @@ def test_mix_pytree_and_nonpytree():
     net = jmp.cast_to_half(net)
     params = net.parameters()
     net.update_parameters(params)
+
+
+def test_parameter_module():
+    class C(pax.StateModule):
+        def __init__(self):
+            super().__init__()
+            self.b = jnp.array(0)
+
+    class D(pax.ParameterModule):
+        def __init__(self) -> None:
+            super().__init__()
+            self.c1 = C()
+
+    d = D()
+    assert len(jax.tree_leaves(d.parameters())) == 0

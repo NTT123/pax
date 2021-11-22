@@ -16,7 +16,7 @@ class ParameterModule(Module):
     """A PAX module that registers attributes as parameters by default."""
 
     def parameters(self):
-        return self.copy()
+        return self.apply_submodules(lambda x: x.parameters())
 
 
 class StateModule(Module):
