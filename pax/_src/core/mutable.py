@@ -7,8 +7,7 @@ from .threading_local import allow_mutation
 
 @contextmanager
 def mutable(module: Module):
-    """A context manager that creates a copy module
-    which is mutable inside the context.
+    """A context manager that allows a copy module to be mutable inside the context.
 
     >>> net = pax.Linear(1, 2)
     >>> with pax.experimental.mutable(net) as net:
