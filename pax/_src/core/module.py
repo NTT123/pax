@@ -1,13 +1,15 @@
 """PAX module."""
 
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
 import jax.tree_util
+import numpy as np
 
-from .base import EmptyNode
+from .base import EmptyNode, ValueNode
 from .module_and_value import module_and_value
+from .pure import pure
 from .safe_module import SafeBaseModule
 from .threading_local import allow_mutation
 
@@ -294,6 +296,12 @@ class Module(SafeBaseModule):
         self.apply(_scan_field_fn)
         return self
 
+    def state_dict(self) -> Dict[str, Any]:
+        return save_weights_to_dict(self)
+
+    def load_state_dict(self: T, state_dict: Dict[str, Any]) -> T:
+        return load_weights_from_dict(self, state_dict)
+
     def __setattr__(self, name: str, value: Any) -> None:
         self._assert_mutability()
         super().__setattr__(name, value)
@@ -363,3 +371,67 @@ def update_pytree(mod: T, *, other: T) -> T:
     is_empty = lambda x: isinstance(x, EmptyNode)
     new_mod = jax.tree_map(_select_fn, mod, other, is_leaf=is_empty)
     return new_mod
+
+
+def save_weights_to_dict(module: Module) -> Dict[str, Any]:
+    """Save module weights to a dictionary.
+
+    >>> net = pax.Sequential(pax.Linear(1, 2), jax.nn.relu, pax.Linear(2, 3))
+    >>> weights = pax.experimental.save_weights_to_dict(net)
+    >>> weights
+    {'modules': ({'weight': ..., 'bias': ...}, {}, {'weight':..., 'bias': ...})}
+    """
+
+    def _dict_or_array(v):
+        if isinstance(v, Module):
+            return save_weights_to_dict(v)
+        elif isinstance(v, (jnp.ndarray, np.ndarray)):
+            return v
+        else:
+            return ValueNode(())
+
+    out = {}
+    for name in module.pytree_attributes:
+        value = getattr(module, name)
+        out[name] = jax.tree_map(
+            _dict_or_array,
+            value,
+            is_leaf=lambda x: isinstance(x, Module),
+        )
+
+    return out
+
+
+@pure
+def load_weights_from_dict(module: T, state_dict: Dict[str, Any]) -> T:
+    """Load module weights from a dictionary.
+
+    >>> a = pax.Sequential(pax.Linear(1, 2), jax.nn.relu, pax.Linear(2, 3))
+    >>> weights = pax.experimental.save_weights_to_dict(a)
+    >>> b = pax.Sequential(pax.Linear(1, 2), jax.nn.relu, pax.Linear(2, 3))
+    >>> b = pax.experimental.load_weights_from_dict(b, weights)
+    >>> assert a == b
+    """
+
+    def _module_or_array(m, s):
+        if isinstance(m, Module):
+            return load_weights_from_dict(m, s)
+        elif isinstance(m, (jnp.ndarray, np.ndarray)):
+            return s
+        elif isinstance(s, ValueNode):
+            return m
+        else:
+            raise ValueError("Impossible")
+
+    out = module
+    for name in module.pytree_attributes:
+        value = getattr(module, name)
+        value = jax.tree_map(
+            _module_or_array,
+            value,
+            state_dict[name],
+            is_leaf=lambda x: isinstance(x, Module),
+        )
+        setattr(out, name, value)
+
+    return out

@@ -1,7 +1,7 @@
 """Useful functions."""
 
 import functools
-from typing import Any, Callable, Dict, Tuple, TypeVar, Union
+from typing import Any, Callable, Tuple, TypeVar, Union
 
 import jax
 import jax.numpy as jnp
@@ -11,10 +11,10 @@ from .core import (
     Module,
     apply_mp_policy,
     module_and_value,
-    pure,
     select_parameters,
     update_parameters,
 )
+from .core.module import load_weights_from_dict, save_weights_to_dict
 from .nn import (
     BatchNorm1D,
     BatchNorm2D,
@@ -257,55 +257,3 @@ def default_mp_policy(module: T) -> T:
         return apply_mp_policy(module, mp_policy=norm_policy)
     else:
         return module  # unchanged
-
-
-def save_weights_to_dict(module: Module) -> Dict[str, Any]:
-    """Save module weights to a dictionary.
-
-    >>> net = pax.Sequential(pax.Linear(1, 2), jax.nn.relu, pax.Linear(2, 3))
-    >>> weights = pax.experimental.save_weights_to_dict(net)
-    >>> weights
-    {'modules': ({'weight': ..., 'bias': ...}, {}, {'weight':..., 'bias': ...})}
-    """
-
-    def _dict_or_array(v):
-        return save_weights_to_dict(v) if isinstance(v, Module) else v
-
-    out = {}
-    for name in module.pytree_attributes:
-        value = getattr(module, name)
-        out[name] = jax.tree_map(
-            _dict_or_array,
-            value,
-            is_leaf=lambda x: isinstance(x, Module),
-        )
-
-    return out
-
-
-@pure
-def load_weights_from_dict(module: T, state_dict: Dict[str, Any]) -> T:
-    """Load module weights from a dictionary.
-
-    >>> a = pax.Sequential(pax.Linear(1, 2), jax.nn.relu, pax.Linear(2, 3))
-    >>> weights = pax.experimental.save_weights_to_dict(a)
-    >>> b = pax.Sequential(pax.Linear(1, 2), jax.nn.relu, pax.Linear(2, 3))
-    >>> b = pax.experimental.load_weights_from_dict(b, weights)
-    >>> assert a == b
-    """
-
-    def _module_or_array(m, s):
-        return load_weights_from_dict(m, s) if isinstance(m, Module) else s
-
-    out = module
-    for name in module.pytree_attributes:
-        value = getattr(module, name)
-        value = jax.tree_map(
-            _module_or_array,
-            value,
-            state_dict[name],
-            is_leaf=lambda x: isinstance(x, Module),
-        )
-        setattr(out, name, value)
-
-    return out
