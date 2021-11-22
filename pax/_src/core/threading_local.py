@@ -56,7 +56,8 @@ class PaxThreadingLocalState(threading.local):
 
     @contextmanager
     def allow_mutation(self, modules):
-        r"""A context manager that turns on mutability."""
+        """A context manager that turns on mutability."""
+
         if not isinstance(modules, (tuple, list)):
             modules = (modules,)
         modules = tuple(weakref.ref(mod) for mod in modules)
