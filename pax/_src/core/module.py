@@ -223,7 +223,8 @@ class Module(SafeBaseModule):
             return "\n".join(output)
 
     def map(self: T, func, *mods) -> T:
-        return jax.tree_map(func, self, *mods)
+        mods = [mods.state_dict() for mods in mods]
+        return self.load_state_dict(jax.tree_map(func, self.state_dict(), *mods))
 
     def apply(self: T, apply_fn) -> T:
         """Apply a function to all submodules.
