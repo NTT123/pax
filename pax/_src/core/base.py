@@ -23,7 +23,7 @@ class BaseModule:
     - ``tree_flatten`` converts a module to ``(leaves, treedef)``
     - ``tree_unflatten`` restores the module.
 
-    BaseModule maintains a ``_pytree_attributes`` tuple that lists all subtree attribute names.
+    BaseModule maintains a ``pytree_attributes`` tuple that lists all subtree attribute names.
     """
 
     _pytree_attributes: Tuple[str, ...] = ()
