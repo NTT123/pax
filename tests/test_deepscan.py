@@ -14,7 +14,6 @@ def test_list_of_mod():
     # m.pax.name_to_kind["a"] == pax.PaxKind.MODULE
 
 
-@pax.pure
 def test_assigned_field_an_array():
     class M(pax.ParameterModule):
         def __init__(self):
@@ -33,12 +32,12 @@ def test_assigned_field_an_array():
 
     n.scan_bugs()
     # no error because we will automatically assign `a` to kind PARAMETER
-    def mutate(n):
+    def mutate(n: N) -> N:
         n.b = jnp.array([1, 2, 3], dtype=jnp.float32)
-        n.find_and_register_pytree_attributes()
         return n
 
     n = pax.pure(mutate)(n)
+    assert "b" in n.pytree_attributes
 
     # assert n.pax.name_to_kind["b"] == pax.PaxKind.PARAMETER
 

@@ -67,8 +67,9 @@ def pure(func: Callable):
         with allow_mutation(modules):
             out = unbound_func(*args, **kwargs)
 
-        for m in _get_modules(out):
-            m.scan_bugs()
+            for m in modules:
+                m.find_and_register_pytree_attributes()
+                m.scan_bugs()
         return out
 
     return wrapper
