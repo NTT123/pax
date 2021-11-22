@@ -136,6 +136,9 @@ class EmptyNode(Tuple):
         del aux, children
         return EmptyNode()
 
+    def __repr__(self) -> str:
+        return "EmptyNode"
+
 
 @jax.tree_util.register_pytree_node_class
 class ValueNode:
@@ -151,3 +154,6 @@ class ValueNode:
     @classmethod
     def tree_unflatten(cls, value, children):
         return ValueNode(value)
+
+    def __repr__(self) -> str:
+        return f"ValueNode({self.value})"
