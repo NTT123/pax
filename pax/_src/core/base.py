@@ -47,8 +47,8 @@ class BaseModule:
             leaves, _ = jax.tree_flatten(value, is_leaf=is_mod_or_node)
             pytree_cls = (jnp.ndarray, np.ndarray, BaseModule, EmptyNode)
             any_pytree = any(map(is_pytree, leaves))
-            all_pyrtee = all(map(is_pytree, leaves))
-            if any_pytree and all_pyrtee:
+            all_pytree = all(map(is_pytree, leaves))
+            if any_pytree and all_pytree:
                 pytree_attributes.append(name)
             elif any_pytree:
                 mixed_pytree_attributes.append(name)
