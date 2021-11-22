@@ -67,19 +67,17 @@ def load_dataset(split: str):
     return ds
 
 
-def save_ckpt(epoch: int, model: pax.Module, path: Path):
+def save_ckpt(epoch: int, model: ConvNet, path: Path):
     model = jax.device_get(model)
-    leaves = jax.tree_leaves(model)
     with open(path, "wb") as f:
-        pickle.dump({"epoch": epoch, "leaves": leaves}, f)
+        pickle.dump({"epoch": epoch, "state_dict": model.state_dict()}, f)
 
 
-def load_ckpt(model, path: Path):
+def load_ckpt(model: ConvNet, path: Path):
     """Load model from saved tree leaves"""
-    treedef = jax.tree_structure(model)
     with open(path, "rb") as f:
         dic = pickle.load(f)
-    return dic["epoch"], jax.tree_unflatten(treedef, dic["leaves"])
+    return dic["epoch"], model.load_state_dict(dic["state_dict"])
 
 
 def train(
