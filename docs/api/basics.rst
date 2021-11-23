@@ -6,7 +6,7 @@ PAX Basics
 .. autosummary::
     Module
     pure
-    module_and_value
+    purecall
     seed_rng_key
     next_rng_key
 
@@ -52,7 +52,7 @@ Purify functions and methods
 
 .. autofunction:: pure
 
-.. autofunction:: module_and_value 
+.. autofunction:: purecall
 
 
 Random Number Generator

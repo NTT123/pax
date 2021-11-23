@@ -5,7 +5,7 @@ from .mixed_precision import apply_mp_policy, unwrap_mp_policy
 from .module import Module, parameters_method
 from .module_and_value import module_and_value
 from .mutable import mutable
-from .pure import pure
+from .pure import pure, purecall
 from .transforms import (
     enable_eval_mode,
     enable_train_mode,

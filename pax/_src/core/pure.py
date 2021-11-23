@@ -2,7 +2,7 @@
 
 import functools
 from types import MethodType
-from typing import Callable, TypeVar
+from typing import Any, Callable, Tuple, TypeVar
 
 import jax
 
@@ -10,6 +10,7 @@ from .base import BaseModule
 from .threading_local import allow_mutation
 
 T = TypeVar("T")
+O = TypeVar("O")
 
 
 def pure(func: Callable):
@@ -73,6 +74,17 @@ def pure(func: Callable):
         return out
 
     return wrapper
+
+
+@pure
+def purecall(module: Callable[..., O], *args, **kwargs) -> Tuple[Any, O]:
+    """Call a module and return the updated module.
+
+    A shortcut for `pax.pure(lambda f, x: [f, f(x)])`.
+    """
+    assert isinstance(module, BaseModule)
+    assert callable(module)
+    return module, module(*args, **kwargs)
 
 
 def _get_modules(tree):

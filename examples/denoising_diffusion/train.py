@@ -66,7 +66,7 @@ def train(
     )
 
     def loss_fn(model, inputs):
-        model, loss = pax.module_and_value(model)(inputs)
+        model, loss = pax.purecall(model, inputs)
         return loss, (loss, model)
 
     update_fn = pax.utils.build_update_fn(loss_fn)

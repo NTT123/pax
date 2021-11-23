@@ -18,4 +18,4 @@ def residual_net(x: Node):
 inputs = jnp.ones((3, 8))
 net = build_graph_module(residual_net)(inputs)
 print(net.summary())
-net, _ = pax.module_and_value(net)(inputs)
+net, _ = pax.purecall(net, inputs)

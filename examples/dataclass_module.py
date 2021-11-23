@@ -42,6 +42,6 @@ fc = Linear(3, 4, name="fc1")
 
 print("Before:", fc)
 dummy_x = jnp.empty((32, 3))
-fc, y = pax.module_and_value(fc)(dummy_x)
+fc, y = pax.purecall(fc, dummy_x)
 assert y.shape == (32, 4)
 print("After :", fc)

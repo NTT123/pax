@@ -95,11 +95,11 @@ def test_ema_debias():
     assert ema.debias.item() == False
     assert ema.averages.item() == 1.0
 
-    ema, _ = pax.module_and_value(ema)(jnp.array(2.0))
+    ema, _ = pax.purecall(ema, jnp.array(2.0))
     assert ema.averages.item() == 2.0
     assert ema.debias.item() == True
 
-    ema, _ = pax.module_and_value(ema)(jnp.array(1.0))
+    ema, _ = pax.purecall(ema, jnp.array(1.0))
     np.testing.assert_almost_equal(ema.averages.item(), 0.9 * 2.0 + 0.1 * 1.0)
 
 
@@ -108,7 +108,7 @@ def test_ema_bias():
     assert ema.debias is None
     assert ema.averages.item() == 1.0
 
-    ema, _ = pax.module_and_value(ema)(jnp.array(2.0))
+    ema, _ = pax.purecall(ema, jnp.array(2.0))
     np.testing.assert_almost_equal(ema.averages.item(), 0.1 * 2.0 + 0.9 * 1.0)
 
 

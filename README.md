@@ -66,7 +66,7 @@ class Linear(pax.Module):
         return self.weight * x + self.bias
 
 def loss_fn(model: Linear, x: jnp.ndarray, y: jnp.ndarray):
-    model, y_hat = pax.module_and_value(model)(x)
+    model, y_hat = pax.purecall(model, x)
     loss = jnp.mean(jnp.square(y_hat - y))
     return loss, (loss, model)
 
@@ -82,7 +82,7 @@ print(grads.bias)  # -2.0
 There are a few noteworthy points in the above example:
 
 * ``weight`` and ``bias`` are trainable parameters by setting `parameters = pax.parameters_method("weight", "bias")`.
-* ``pax.module_and_value`` transforms `model.__call__` into a 
+* ``pax.purecall(model, x)`` executes `model(x)` and returns the updated `model` in the output.
   pure function that returns the updated model in its output.
 * ``loss_fn`` returns the updated `model` in the output.
 * ``jax.grad(..., allow_int=True)`` allows gradients with respect to integer ndarray leaves (e.g., `counter`).
@@ -127,21 +127,18 @@ print(net.counter) # increased by 1
 # 1
 ```
 
-### `pax.module_and_value`
+### `pax.purecall`
 
-It is a good practice to keep functions decorated by `pax.pure` as small as possible.
-
-PAX provides the `pax.module_and_value` function that transforms a module's method into a pure function. The pure function also returns the updated module in its output. For example:
+For convenient, PAX provides the `pax.purecall` function. 
+It is a shortcut for `pax.pure(lambda f, x: [f, f(x)]`.
+Note that the function also returns the updated module in its output. For example:
 
 ```python
 net = Linear()
 print(net.counter) # 0
-net, y = pax.module_and_value(net)(0)
+net, y = pax.purecall(net, 0)
 print(net.counter) # 1
 ```
-
-In this example, `pax.module_and_value` transforms `net.__call__` into a pure function which returns the updated `net` in its output.
-
 
 ### Replacing parts
 

@@ -26,7 +26,7 @@ def test_batchnorm1D_train():
     bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 3))
     old_state = bn.ema_mean.averages
-    bn, y = pax.module_and_value(bn)(x)
+    bn, y = pax.purecall(bn, x)
     new_state = bn.ema_mean.averages
     chex.assert_tree_all_equal_shapes(old_state, new_state)
     chex.assert_tree_all_finite(new_state)
@@ -38,7 +38,7 @@ def test_batchnorm2D_train():
     bn = pax.enable_train_mode(bn)
     x = jnp.ones((1, 10, 8, 3))
     old_state = bn.scale
-    bn, y = pax.module_and_value(bn)(x)
+    bn, y = pax.purecall(bn, x)
     new_state = bn.scale
     chex.assert_tree_all_equal_shapes(old_state, new_state)
     chex.assert_tree_all_finite(new_state)
@@ -779,11 +779,11 @@ def test_dropout():
     assert y is x
     drop = pax.enable_train_mode(drop)
 
-    drop, y = pax.module_and_value(drop)(x)
+    drop, y = pax.purecall(drop, x)
     assert jnp.sum(y == 0).item() > 80
 
     x = jnp.ones_like(x)
-    drop, y = pax.module_and_value(drop)(x)
+    drop, y = pax.purecall(drop, x)
     assert jnp.max(y).item() == 10.0
 
     with pytest.raises(AssertionError):
@@ -921,5 +921,5 @@ def test_ema_eval():
     np.testing.assert_array_equal(x, y)
 
     x0 = jnp.zeros((3, 3))
-    ema, y = pax.module_and_value(ema)(x0)
+    ema, y = pax.purecall(ema, x0)
     np.testing.assert_array_equal(y, jnp.zeros_like(x))
