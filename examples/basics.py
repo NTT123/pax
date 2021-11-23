@@ -6,8 +6,6 @@ import opax
 import pax
 from opax import GradientTransformation
 
-pax.seed_rng_key(42)
-
 
 class Linear(pax.Module):
     """A linear module with counter."""
@@ -43,6 +41,9 @@ def train_step(model: Linear, optimizer: GradientTransformation, x, y):
 
 
 def main():
+    # random seed
+    pax.seed_rng_key(42)
+
     # model & optimizer
     net = Linear()
     print(net.summary())
