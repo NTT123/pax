@@ -83,7 +83,6 @@ There are a few noteworthy points in the above example:
 
 * ``weight`` and ``bias`` are trainable parameters by setting `parameters = pax.parameters_method("weight", "bias")`.
 * ``pax.purecall(model, x)`` executes `model(x)` and returns the updated `model` in the output.
-  pure function that returns the updated model in its output.
 * ``loss_fn`` returns the updated `model` in the output.
 * ``jax.grad(..., allow_int=True)`` allows gradients with respect to integer ndarray leaves (e.g., `counter`).
 
