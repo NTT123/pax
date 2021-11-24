@@ -128,7 +128,7 @@ print(net.counter) # increased by 1
 
 ### `pax.purecall`
 
-For convenient, PAX provides the `pax.purecall` function. 
+For convenience, PAX provides the `pax.purecall` function. 
 It is a shortcut for `pax.pure(lambda f, x: [f, f(x)]`.
 Note that the function also returns the updated module in its output. For example:
 
@@ -141,7 +141,7 @@ print(net.counter) # 1
 
 ### Replacing parts
 
-For convenience, PAX provides utility methods to modify a module in a functional way.
+PAX provides utility methods to modify a module in a functional way.
 
 The `replace` method creates a new module with attributes replaced. 
 For example, to replace `weight` and `bias` of a `pax.Linear` module:
