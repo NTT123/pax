@@ -313,8 +313,12 @@ class Module(SafeBaseModule):
 
     def __delattr__(self, name: str) -> None:
         self._assert_mutability()
+        if name in self.pytree_attributes:
+            raise ValueError(
+                "Cannot delete a pytree attribute.\n"
+                "This is to avoid potential bugs related to the order of pytree attributes.\n"
+            )
         super().__delattr__(name)
-        self.find_and_register_pytree_attributes()
 
     def __mod__(self: T, args: Union[Any, Tuple]) -> Tuple[T, Any]:
         """An alternative to `pax.module_and_value`.
