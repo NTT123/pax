@@ -2,6 +2,7 @@
 
 from pax import experimental, nets, utils
 from pax._src.core import (
+    EmptyNode,
     Module,
     ParameterModule,
     StateModule,
@@ -65,6 +66,7 @@ __all__ = (
     "Dropout",
     "EMA",
     "Embed",
+    "EmptyNode",
     "enable_eval_mode",
     "enable_train_mode",
     "experimental",

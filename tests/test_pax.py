@@ -533,3 +533,18 @@ def test_state_dict_mixed_attribute():
     assert st["f"][-1] is None
     c = c.load_state_dict(st)
     assert c.f[-1] is jax.nn.relu
+
+
+def test_uninitialized_node():
+    class Att(pax.Module):
+        def __init__(self):
+            self.hidden = pax.EmptyNode()
+
+        def __call__(self, x):
+            self.hidden = x
+            return x
+
+    att = Att()
+    assert att.parameters() == att
+    assert att.pytree_attributes == ("hidden",)
+    assert att.hidden == pax.EmptyNode()

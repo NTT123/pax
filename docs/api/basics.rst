@@ -5,6 +5,7 @@ PAX Basics
 
 .. autosummary::
     Module
+    EmptyNode
     pure
     purecall
     seed_rng_key
@@ -43,6 +44,9 @@ PAX's Module
 .. autoclass:: StateModule
    :members:
 
+
+.. autoclass:: EmptyNode
+   :members:
 
 
 Purify functions and methods

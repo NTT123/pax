@@ -119,12 +119,10 @@ class BaseModule:
         return hash((tuple(leaves), treedef))
 
 
+#  Note: this class is inspired by treex's `Nothing` class.
 @jax.tree_util.register_pytree_node_class
-class EmptyNode(Tuple):
-    """We use this class to mark deleted nodes.
-
-    Note: this is inspired by treex's `Nothing` class.
-    """
+class EmptyNode:
+    """Mark an uninitialized or deleted pytree node."""
 
     def tree_flatten(self):
         """Flatten empty node."""
@@ -138,6 +136,11 @@ class EmptyNode(Tuple):
 
     def __repr__(self) -> str:
         return "EmptyNode"
+
+    def __eq__(self, o: object) -> bool:
+        if isinstance(o, EmptyNode):
+            return True
+        return False
 
 
 @jax.tree_util.register_pytree_node_class
