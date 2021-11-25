@@ -540,10 +540,6 @@ def test_uninitialized_node():
         def __init__(self):
             self.hidden = pax.EmptyNode()
 
-        def __call__(self, x):
-            self.hidden = x
-            return x
-
     att = Att()
     assert att.parameters() == att
     assert att.pytree_attributes == ("hidden",)
