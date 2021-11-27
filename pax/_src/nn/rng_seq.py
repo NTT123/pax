@@ -52,12 +52,5 @@ class RngSeq(StateModule):
         Arguments:
             num_keys: return more than one key.
         """
-        new_rng_key, *rng_keys = jax.random.split(self._rng_key, num_keys + 1)
-
-        # only update internal state in `train` mode.
-        if self.training:
-            self._rng_key = new_rng_key
-        if num_keys == 1:
-            return rng_keys[0]
-        else:
-            return rng_keys
+        self._rng_key, *rng_keys = jax.random.split(self._rng_key, num_keys + 1)
+        return rng_keys[0] if num_keys == 1 else rng_keys

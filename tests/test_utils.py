@@ -85,9 +85,9 @@ def test_Rng_Seq():
     rng_seq = pax.enable_eval_mode(rng_seq)
     rng_seq, r3 = pax.module_and_value(rng_seq.next_rng_key)()
     rng_seq, r4 = pax.module_and_value(rng_seq.next_rng_key)()
-    assert r3.tolist() == r4.tolist()
+    assert r3.tolist() != r4.tolist()
     h3 = rng_seq._rng_key
-    assert h2.tolist() == h3.tolist(), "o update internal state in `eval` mode"
+    assert h2.tolist() != h3.tolist(), "update internal state even in `eval` mode"
 
 
 def test_ema_debias():
