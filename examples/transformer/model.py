@@ -58,6 +58,7 @@ class LM(pax.Module):
         logits = self.output(x)
         return logits
 
+    @pax.pure
     def inference(self, prompt: Sequence[int] = (), length=1024, train_seq_len=256):
         def step(inputs, _):
             logits = self(inputs)
