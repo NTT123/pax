@@ -923,3 +923,19 @@ def test_ema_eval():
     x0 = jnp.zeros((3, 3))
     ema, y = pax.purecall(ema, x0)
     np.testing.assert_array_equal(y, jnp.zeros_like(x))
+
+
+def test_ema_allow_int_1():
+    x = jnp.ones((3, 3), dtype=jnp.int16)
+    with pytest.raises(ValueError):
+        ema = pax.EMA(x, 0.9)
+
+    ema = pax.EMA(x, 0.9, allow_int=True)
+
+
+def test_ema_allow_int_2():
+    x = (jnp.ones((3, 3), dtype=jnp.int16), jnp.ones((3, 3), dtype=jnp.float16))
+    ema = pax.EMA(x, 0.9, allow_int=True)
+    ema, x = pax.purecall(ema, x)
+    assert x[0].dtype == jnp.int16
+    assert x[1].dtype == jnp.float16
