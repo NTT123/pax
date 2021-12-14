@@ -5,34 +5,36 @@ import jax.numpy as jnp
 import pax
 
 
-class UpsamplingNetwork(pax.Module):
+class UpsampleNet(pax.Module):
+    """Upsampling melspectrogram."""
+
     def __init__(self, n_mels, num_output_channels):
         super().__init__()
-        self.input_conv = pax.Conv1D(n_mels, 512, 3, padding="VALID", with_bias=True)
-
-        dilated_conv = partial(pax.Conv1D, 512, 512, 2, padding="VALID")
-        self.dilated_conv_1 = dilated_conv(rate=1)
-        self.dilated_conv_2 = dilated_conv(rate=2)
-        self.dilated_conv_3 = dilated_conv(rate=4)
-
-        conv1d_transpose = partial(pax.Conv1DTranspose, 512, 512, padding="SAME")
-        self.upsample_conv_1 = conv1d_transpose(kernel_shape=4, stride=4)
-        self.upsample_conv_2 = conv1d_transpose(kernel_shape=2, stride=2)
-        self.upsample_conv_3 = conv1d_transpose(kernel_shape=2, stride=2)
+        self.input_conv = pax.Conv1D(n_mels, 512, 1, padding="VALID")
+        self.dilated_convs = []
+        self.bns = []
+        for i in range(5):
+            conv = pax.Conv1D(512, 512, 3, rate=2 ** i, padding="VALID")
+            self.dilated_convs.append(conv)
+            self.bns.append(pax.BatchNorm1D(512, True, True, 0.99))
+        self.upsample_conv_1 = pax.Conv1DTranspose(512, 512, 4, stride=4)
+        self.upsample_bn1 = pax.BatchNorm1D(512, True, True, 0.99)
+        self.upsample_conv_2 = pax.Conv1DTranspose(512, 512, 4, stride=4)
+        self.upsample_bn2 = pax.BatchNorm1D(512, True, True, 0.99)
         self.output_conv = pax.Conv1D(512, num_output_channels, 1, padding="VALID")
 
     def __call__(self, mel):
         x = self.input_conv(mel)
-        res_1 = jax.nn.relu(self.dilated_conv_1(x))
-        x = x[:, 1:] + res_1
-        res_2 = jax.nn.relu(self.dilated_conv_2(x))
-        x = x[:, 2:] + res_2
-        res_3 = jax.nn.relu(self.dilated_conv_3(x))
-        x = x[:, 4:] + res_3
 
-        x = jax.nn.relu(self.upsample_conv_1(x))
-        x = jax.nn.relu(self.upsample_conv_2(x))
-        x = jax.nn.relu(self.upsample_conv_3(x))
+        # Large receptive fields
+        for conv, batch_norm in zip(self.dilated_convs, self.bns):
+            residual = jax.nn.relu(batch_norm(conv(x)))
+            pad = (x.shape[1] - residual.shape[1]) // 2
+            x = x[:, pad:-pad] + residual
+
+        # upsample
+        x = jax.nn.relu(self.upsample_bn1(self.upsample_conv_1(x)))
+        x = jax.nn.relu(self.upsample_bn2(self.upsample_conv_2(x)))
 
         x = self.output_conv(x)
 
@@ -50,7 +52,7 @@ class WaveGRU(pax.Module):
         self.n_mu_bits = n_mu_bits
         self.hidden_dim = hidden_dim
 
-        self.upsampling = UpsamplingNetwork(n_mels, hidden_dim)
+        self.upsampling = UpsampleNet(n_mels, hidden_dim)
         self.gru = pax.GRU(hidden_dim, hidden_dim)
         self.logits = pax.Linear(hidden_dim, 2 ** n_mu_bits)
         self.embed = pax.Embed(2 ** n_mu_bits, hidden_dim)

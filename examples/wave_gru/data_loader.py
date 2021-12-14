@@ -17,6 +17,7 @@ def data_loader(
     mu: int,
     n_frames: int,
     split="train",
+    pad: int = 31,
 ):
     if not os.path.exists("/tmp/wave_gru_clip.wav"):
         os.system("bash /tmp/prepare_clip.sh")
@@ -52,10 +53,10 @@ def data_loader(
 
     batch = []
     while True:
-        left = random.randint(8, logmel.shape[0] - n_frames - 9)
-        right = left + n_frames
-        cond = logmel[(left - 8) : (right + 1)]  # padding purposes
-        x = mu_wav[left * hop_length : right * hop_length + 1]
+        left = random.randint(0, logmel.shape[0] - n_frames - pad * 2)
+        right = left + pad + n_frames + pad
+        cond = logmel[left:right]  # included padding
+        x = mu_wav[(left + pad) * hop_length : (right - pad) * hop_length + 1]
         batch.append((cond, x))
         if len(batch) == batch_size:
             conds, xs = zip(*batch)
