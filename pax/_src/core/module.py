@@ -73,19 +73,27 @@ class Module(SafeBaseModule):
     ...         self.count += 1
     """
 
-    _name: Optional[str] = None
+    _name: Optional[str]
     _training: bool
 
-    def __init__(self, name: Optional[str] = None):
-        """Initialize module.
+    def __new__(cls, *args, **kwargs):
+        """Creata a new module.
 
-        >>> linear = pax.Linear(3, 3, name="input_layer")
-        >>> print(linear)
-        (input_layer) Linear(in_dim=3, out_dim=3, with_bias=True)
+        Add `_name` and `_training` to __dict__ to make sure that
+        the module works correctly even if the __init__ method is
+        not called.
         """
+        del args, kwargs
+        obj = super().__new__(cls)
+        obj.__dict__["_name"] = None
+        obj.__dict__["_training"] = True
+        return obj
+
+    def __init__(self, *, training: bool = True, name: Optional[str] = None):
+        """Initialize module."""
         super().__init__()
         self._name = name
-        self._training = True
+        self._training = training
 
     @property
     def name(self):

@@ -1,5 +1,6 @@
 """Test important pax stuffs."""
 
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import jax
@@ -544,3 +545,12 @@ def test_uninitialized_node():
     assert att.parameters() == att
     assert att.pytree_attributes == ("hidden",)
     assert att.hidden == pax.EmptyNode()
+
+
+def test_dataclass_eval():
+    @dataclass
+    class M(pax.Module):
+        core: pax.Module
+
+    m = M(pax.Linear(3, 3))
+    m = m.eval()
