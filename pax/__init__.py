@@ -51,7 +51,7 @@ from pax._src.nn import (
 from pax._src.nn.dropout import dropout
 from pax._src.utils import build_update_fn, grad, scan, value_and_grad
 
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 
 __all__ = (
     "apply_mp_policy",
