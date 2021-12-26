@@ -87,7 +87,6 @@ __all__ = (
     "MultiHeadAttention",
     "nets",
     "next_rng_key",
-    "nn",
     "ParameterModule",
     "parameters_method",
     "pure",
