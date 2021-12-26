@@ -84,7 +84,7 @@ class VanillaRNN(RNN):
         info = {"input_dim": self.input_dim, "hidden_dim": self.hidden_dim}
         return self._repr(info)
 
-    def initial_state(self, batch_size) -> LSTMState:
+    def initial_state(self, batch_size) -> VanillaRNNState:
         shape = (batch_size, self.hidden_dim)
         hidden = jnp.zeros(shape=shape, dtype=jnp.float32)
         return VanillaRNNState(hidden=hidden)
