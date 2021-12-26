@@ -12,6 +12,6 @@ from .lambda_module import Lambda
 from .layer_norm import LayerNorm
 from .linear import Linear
 from .pool import avg_pool, max_pool
-from .recurrent import GRU, LSTM, GRUState, LSTMState
+from .recurrent import GRU, LSTM, GRUState, LSTMState, VanillaRNN, VanillaRNNState
 from .rng_seq import RngSeq
 from .sequential import Sequential

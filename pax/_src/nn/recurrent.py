@@ -23,6 +23,12 @@ class GRUState(NamedTuple):
     hidden: jnp.ndarray
 
 
+class VanillaRNNState(NamedTuple):
+    """VanillaRNNState."""
+
+    hidden: jnp.ndarray
+
+
 class RNN(Module):
     """Base class for all recurrent modules."""
 
@@ -31,6 +37,57 @@ class RNN(Module):
 
     def initial_state(self, batch_size):
         raise NotImplementedError()
+
+
+class VanillaRNN(RNN):
+    """Basic recurrent neural network."""
+
+    input_dim: int
+    hidden_dim: int
+    fc: Linear
+
+    def __init__(
+        self,
+        input_dim: int,
+        hidden_dim: int,
+        *,
+        rng_key: KeyArray = None,
+        name: Optional[str] = None
+    ):
+        """Create a vanilla RNN module.
+
+        Arguments:
+            input_dim: input dimension.
+            hidden_dim: hidden dimension.
+            rng_key: random key.
+            name: module name.
+        """
+        super().__init__(name=name)
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.fc = Linear(
+            input_dim + hidden_dim,
+            hidden_dim,
+            rng_key=rng_key,
+            name="vanilla_rnn_fc",
+        )
+
+    def __call__(
+        self, state: VanillaRNNState, x: jnp.ndarray
+    ) -> Tuple[VanillaRNNState, jnp.ndarray]:
+        """A single rnn step."""
+        xh = jnp.concatenate((x, state.hidden), axis=-1)
+        hidden = jnp.tanh(self.fc(xh))
+        return VanillaRNNState(hidden), hidden
+
+    def __repr__(self):
+        info = {"input_dim": self.input_dim, "hidden_dim": self.hidden_dim}
+        return self._repr(info)
+
+    def initial_state(self, batch_size) -> LSTMState:
+        shape = (batch_size, self.hidden_dim)
+        hidden = jnp.zeros(shape=shape, dtype=jnp.float32)
+        return VanillaRNNState(hidden=hidden)
 
 
 class LSTM(RNN):

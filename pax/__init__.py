@@ -43,6 +43,8 @@ from pax._src.nn import (
     MultiHeadAttention,
     RngSeq,
     Sequential,
+    VanillaRNN,
+    VanillaRNNState,
     avg_pool,
     max_pool,
 )
@@ -102,6 +104,8 @@ __all__ = (
     "update_parameters",
     "utils",
     "value_and_grad",
+    "VanillaRNN",
+    "VanillaRNNState",
 )
 
 

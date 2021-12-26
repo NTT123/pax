@@ -800,6 +800,16 @@ def test_embed():
     np.testing.assert_allclose(y, hk_y)
 
 
+def test_vanilla_rnn():
+    rnn = pax.VanillaRNN(3, 9)
+    state = rnn.initial_state(2)
+    assert state.hidden.shape == (2, 9)
+    x = jnp.ones((2, 3))
+    state, x = rnn(state, x)
+    assert state.hidden.shape == (2, 9)
+    assert x.shape == (2, 9)
+
+
 def test_gru():
     gru = pax.GRU(3, 7)
     state = gru.initial_state(2)
