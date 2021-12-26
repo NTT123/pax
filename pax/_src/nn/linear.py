@@ -28,8 +28,8 @@ class Linear(ParameterModule):
         w_init=None,
         b_init=None,
         *,
-        name: Optional[str] = None,
         rng_key: KeyArray = None,
+        name: Optional[str] = None,
     ):
         """
         Arguments:
@@ -39,6 +39,7 @@ class Linear(ParameterModule):
             w_init: initializer function for the weight matrix.
             b_init: initializer function for the bias.
             rng_key: the key to generate initial parameters.
+            name: module name.
         """
         super().__init__(name=name)
         self.in_dim = in_dim
@@ -48,7 +49,8 @@ class Linear(ParameterModule):
         rng_key = next_rng_key() if rng_key is None else rng_key
         if w_init is None:
             w_init = jax.nn.initializers.normal(stddev=1.0 / np.sqrt(self.in_dim))
-        b_init = jax.nn.initializers.zeros
+        if b_init is None:
+            b_init = jax.nn.initializers.normal(stddev=1.0 / np.sqrt(self.in_dim))
         rng_key_w, rng_key_b = jax.random.split(rng_key)
         self.weight = w_init(rng_key_w, (in_dim, out_dim))
         if self.with_bias:
