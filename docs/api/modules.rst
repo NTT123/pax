@@ -14,6 +14,7 @@ Common Modules
     LayerNorm
     GroupNorm
     Sequential
+    VanillaRNN
     LSTM
     GRU
     MultiHeadAttention
@@ -111,6 +112,13 @@ GroupNorm
 
 Recurrent
 ---------
+
+
+VanillaRNN
+~~~~~~~~~~
+
+.. autoclass:: VanillaRNN
+   :members:
 
 
 LSTM
