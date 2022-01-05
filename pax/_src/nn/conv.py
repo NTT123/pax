@@ -32,10 +32,12 @@ class Conv(ParameterModule):
         w_init: Optional[Callable] = None,
         b_init: Optional[Callable] = None,
         data_format=None,
+        feature_group_count: int = 1,
         *,
         name: Optional[str] = None,
         rng_key: Optional[KeyArray] = None,
     ):
+        assert out_features % feature_group_count == 0
         assert in_features > 0 and out_features > 0, "positive values"
         assert data_format in [
             "NWC",
@@ -69,14 +71,14 @@ class Conv(ParameterModule):
                 "Tuple type padding is not supported. Use `[ (int, int) ]` instead."
             )
         self.padding = padding
-
         self.with_bias = with_bias
         self.data_format = data_format
+        self.feature_group_count = feature_group_count
 
         rng_key = next_rng_key() if rng_key is None else rng_key
         w_rng_key, b_rng_key = jax.random.split(rng_key)
 
-        w_shape = [*kernel_shape, in_features, out_features]
+        w_shape = [*kernel_shape, in_features // feature_group_count, out_features]
         if ndim == 1:
             self.kernel_format = "WIO"
         else:
@@ -119,6 +121,7 @@ class Conv(ParameterModule):
             self.kernel_dilation,  # lhs/image dilation
             self.rate,  # rhs/kernel dilation
             dimension_numbers,
+            feature_group_count=self.feature_group_count,
         )
 
         if self.bias is not None:
@@ -147,12 +150,15 @@ class Conv(ParameterModule):
             "rate": self.rate,
             "with_bias": self.with_bias,
             "data_format": self.data_format,
+            "feature_group_count": self.feature_group_count,
         }
         all_one = lambda x: all(e == 1 for e in x)
         if all_one(info["rate"]):
             del info["rate"]
         if all_one(info["stride"]):
             del info["stride"]
+        if info["feature_group_count"] == 1:
+            del info["feature_group_count"]
 
         return self._repr(info)
 
@@ -172,6 +178,7 @@ class Conv1D(Conv):
         w_init: Optional[Callable] = None,
         b_init: Optional[Callable] = None,
         data_format: str = "NWC",
+        feature_group_count: int = 1,
         *,
         name: Optional[str] = None,
         rng_key: Optional[KeyArray] = None,
@@ -198,6 +205,10 @@ class Conv1D(Conv):
             b_init: Optional bias initialization. By default, zeros.
             data_format: The data format of the input. Either ``NWC`` or ``NCW``. By
                 default, ``NWC``.
+            feature_group_count: Optional number of groups in group convolution.
+                Default value of 1 corresponds to normal dense convolution.
+                If a higher value is used, convolutions are applied separately to that many groups,
+                then stacked together.
             name: The name of the module.
             rng_key: The random key.
         """
@@ -217,6 +228,7 @@ class Conv1D(Conv):
             w_init=w_init,
             b_init=b_init,
             data_format=data_format,
+            feature_group_count=feature_group_count,
             name=name,
             rng_key=rng_key,
         )
@@ -237,6 +249,7 @@ class Conv2D(Conv):
         w_init: Optional[Callable] = None,
         b_init: Optional[Callable] = None,
         data_format: str = "NHWC",
+        feature_group_count: int = 1,
         *,
         name: Optional[str] = None,
         rng_key: Optional[KeyArray] = None,
@@ -263,6 +276,10 @@ class Conv2D(Conv):
             b_init: Optional bias initialization. By default, zeros.
             data_format: The data format of the input. Either ``NHWC`` or ``NCHW``. By
                 default, ``NHWC``.
+            feature_group_count: Optional number of groups in group convolution.
+                Default value of 1 corresponds to normal dense convolution.
+                If a higher value is used, convolutions are applied separately to that many groups,
+                then stacked together.
             name: The name of the module.
             rng_key: The random key.
         """
@@ -282,6 +299,7 @@ class Conv2D(Conv):
             w_init=w_init,
             b_init=b_init,
             data_format=data_format,
+            feature_group_count=feature_group_count,
             name=name,
             rng_key=rng_key,
         )
