@@ -16,15 +16,9 @@
 
 ## Introduction<a id="introduction"></a>
 
-``PAX`` is a stateful [pytree](https://jax.readthedocs.io/en/latest/pytrees.html) library for training neural networks. The main class of `PAX` is `pax.Module`.
+PAX is a [JAX]-based library for training neural networks.
 
-A `pax.Module` object has two sides:
-
-* It is a _normal_ python object which can be modified and called.
-* It is a _pytree_ object whose leaves are `ndarrays`.
-
-``pax.Module`` object manages the pytree and executes functions that depend on the pytree. As a pytree object, it can be input and output to JAX functions running on CPU/GPU/TPU cores.
-
+PAX modules are registered as JAX [pytree](https://jax.readthedocs.io/en/latest/pytrees.html), therefore, they can be input and output of JAX transformations such as `jax.jit`, `jax.grad`, etc. This makes programming with modules very convenient and easy to understand.
 
 ## Installation<a id="installation"></a>
 
@@ -46,97 +40,94 @@ pip install git+https://github.com/ntt123/pax.git#egg=pax3[test]
 
 ## Getting started<a id="gettingstarted"></a>
 
+
+Below is a simple example of a `Linear` module.
+
 ```python
-import jax, pax, jax.numpy as jnp
+import jax.numpy as jnp
+import pax
 
 class Linear(pax.Module):
     weight: jnp.ndarray
     bias: jnp.ndarray
-    counter: jnp.ndarray
     parameters = pax.parameters_method("weight", "bias")
 
     def __init__(self):
         super().__init__()
         self.weight = jnp.array(0.0)
         self.bias = jnp.array(0.0)
-        self.counter = jnp.array(0)
 
     def __call__(self, x):
-        self.counter = self.counter + 1
         return self.weight * x + self.bias
-
-def loss_fn(model: Linear, x: jnp.ndarray, y: jnp.ndarray):
-    model, y_hat = pax.purecall(model, x)
-    loss = jnp.mean(jnp.square(y_hat - y))
-    return loss, (loss, model)
-
-grad_fn = jax.grad(loss_fn, has_aux=True, allow_int=True)
-
-net = Linear()
-x, y = jnp.array(1.0), jnp.array(1.0)
-grads, (loss, net) = grad_fn(net, x, y)
-print(grads.counter)  # (b'',)
-print(grads.bias)  # -2.0
 ```
 
-There are a few noteworthy points in the above example:
+The implementation is very similar to a normal python class. The only difference here is that we need an additional line
 
-* ``weight`` and ``bias`` are trainable parameters by setting `parameters = pax.parameters_method("weight", "bias")`.
-* ``pax.purecall(model, x)`` executes `model(x)` and returns the updated `model` in the output.
-* ``loss_fn`` returns the updated `model` in the output.
-* ``jax.grad(..., allow_int=True)`` allows gradients with respect to integer ndarray leaves (e.g., `counter`).
+```python
+    parameters = pax.parameters_method("weight", "bias")
+```
+
+to declare that `weight` and `bias` are *trainable parameters* of the Linear module.
 
 ## PAX functional programming<a id="functional"></a>
 
 ### `pax.pure`
 
-It is a good practice to keep functions of PAX modules pure (no side effects).
-
-Following this practice, the modifications of PAX module's internal states are restricted.
-Only PAX functions decorated by `pax.pure` are allowed to modify a *copy* of its input modules.
-Any modification on the copy will not affect the original inputs.
-As a consequence, the only way to *update* an input module is to return it in the output.
+A PAX module can have internal states. For example, below is a simple `Counter` module with an internal counter.
 
 ```python
-net = Linear()
-net(0)
+class Counter(pax.Module):
+    count : jnp.ndarray
+
+    def __init__(self):
+        super().__init__()
+        self.count = jnp.array(0)
+    
+    def __call__(self):
+        self.count = self.count + 1
+        return self.count
+```
+
+However, PAX *aims* to guarantee that modules will have no side effects from the outside point of view.
+Therefore, the modifications of these internal states are restricted. For example, we get an error when trying to call `Counter` directly.
+
+```python
+counter = Counter()
+count = counter()
+# ...
+# ----> 9         self.count = self.count + 1
 # ...
 # ValueError: Cannot modify a module in immutable mode.
 # Please do this computation inside a function decorated by `pax.pure`.
-
-@pax.pure
-def update_counter_wo_return(m: Linear):
-    m(0)
-
-print(net.counter)
-# 0
-update_counter_wo_return(net)
-print(net.counter) # the same counter
-# 0
-
-@pax.pure
-def update_counter_and_return(m: Linear):
-    m(0)
-    return m
-
-print(net.counter)
-# 0
-net = update_counter_and_return(net)
-print(net.counter) # increased by 1
-# 1
 ```
+
+Only functions decorated by `pax.pure` are allowed to modify input module's internal states.
+
+```python
+@pax.pure
+def update_counter(counter: Counter):
+    count = counter()
+    return counter, count
+
+counter, count = update_counter(counter)
+print(counter.count, count)
+# 1 1
+```
+
+Note that we have to return `counter` in the output of `update_counter`, otherwise, the `counter` object will not be updated. This is because `pax.pure` only provides `update_counter` a copy of the `counter` object.
+
 
 ### `pax.purecall`
 
 For convenience, PAX provides the `pax.purecall` function. 
-It is a shortcut for `pax.pure(lambda f, x: [f, f(x)]`.
-Note that the function also returns the updated module in its output. For example:
+It is a shortcut for `pax.pure(lambda f, x: [f, f(x)])`.
+
+Instead of implementing an `update_counter` function, we can do the same thing with:
 
 ```python
-net = Linear()
-print(net.counter) # 0
-net, y = pax.purecall(net, 0)
-print(net.counter) # 1
+counter, count = pax.purecall(counter)
+print(counter.count, count)
+# 2, 2
 ```
 
 ### Replacing parts
@@ -214,25 +205,9 @@ At the moment, PAX includes:
 * ``pax.{Conv1D, Conv2D, Conv1DTranspose, Conv2DTranspose}``, 
 * ``pax.{Dropout, Sequential, Identity, Lambda, RngSeq, EMA}``.
 
-We are intent to add new modules in the near future.
-
 ## Optimizers<a id="optimizers"></a>
 
 PAX has its optimizers implemented in a separate library [opax](https://github.com/ntt123/opax). The `opax` library supports many common optimizers such as `adam`, `adamw`, `sgd`, `rmsprop`. Visit opax's GitHub repository for more information. 
-
-
-## Module transformations<a id="transformations"></a>
-
-A module transformation is a pure function that transforms PAX modules into new PAX modules.
-A PAX program can be seen as a series of module transformations.
-
-PAX provides several module transformations:
-
-- `pax.select_{parameters,states}`: select parameter/state leaves.
-- `pax.update_{parameters,states}`: updates module's parameters/states.
-- `pax.enable_{train,eval}_mode`: turn on/off training mode.
-- `pax.(un)freeze_parameters`: freeze/unfreeze trainable parameters.
-- `pax.apply_mp_policy`: apply a mixed-precision policy.
 
 
 ## Fine-tunning models<a id="finetune"></a>
