@@ -18,7 +18,7 @@
 
 PAX is a [JAX]-based library for training neural networks.
 
-PAX modules are registered as JAX [pytree](https://jax.readthedocs.io/en/latest/pytrees.html), therefore, they can be input and output of JAX transformations such as `jax.jit`, `jax.grad`, etc. This makes programming with modules very convenient and easy to understand.
+PAX modules are registered as JAX [pytree](https://jax.readthedocs.io/en/latest/pytrees.html), therefore, they can be input or output of JAX transformations such as `jax.jit`, `jax.grad`, etc. This makes programming with modules very convenient and easy to understand.
 
 ## Installation<a id="installation"></a>
 
