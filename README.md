@@ -61,7 +61,7 @@ class Linear(pax.Module):
         return self.weight * x + self.bias
 ```
 
-The implementation is very similar to a normal python class. The only difference here is that we need an additional line
+The implementation is very similar to a normal python class. However, we need an additional line
 
 ```python
     parameters = pax.parameters_method("weight", "bias")
