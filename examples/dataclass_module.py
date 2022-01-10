@@ -25,7 +25,9 @@ class Linear(pax.Module):
 
     def __post_init__(self):
         self.weight = self.w_init(pax.next_rng_key(), (self.in_dim, self.out_dim))
-        self.bias = self.b_init(None, (self.out_dim,)) if self.with_bias else None
+        self.bias = None
+        if self.with_bias:
+            self.bias = self.b_init(pax.next_rng_key(), (self.out_dim,))
         self.counter = jnp.array(0)
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
