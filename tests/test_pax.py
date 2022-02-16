@@ -554,3 +554,26 @@ def test_dataclass_eval():
 
     m = M(pax.Linear(3, 3))
     m = m.eval()
+
+
+def test_mutate_inside_scan():
+    class M(pax.Module):
+        def __init__(self):
+            super().__init__()
+            self.rng = pax.RngSeq()
+
+        def __call__(self, x):
+            def loop(prev, inp):
+                rng_key = self.rng.next_rng_key()
+                o = inp + jax.random.normal(rng_key, inp.shape)
+                return prev, o
+
+            state = jnp.zeros((x.shape[0], 1))
+            state, y = pax.scan(loop, state, x, time_major=False)
+            return y
+
+    net = M()
+    x = jnp.ones((2, 50, 1))
+    f = jax.jit(pax.pure(lambda net, x: net(x)))
+    with pytest.raises(ValueError):
+        f(net, x)

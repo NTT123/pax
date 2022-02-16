@@ -24,13 +24,13 @@ class PaxThreadingLocalState(threading.local):
         "_rng",
     ]
     _mutable_module_ref_list: Tuple[weakref.ReferenceType, ...]
-    _mutable_module_level: jax.core.Sublevel
+    _mutable_module_level: int
     _rng: Optional[random.Random]
 
     def __init__(self):
         super().__init__()
         self._mutable_module_ref_list = ()
-        self._mutable_module_level = jax.core.cur_sublevel()
+        self._mutable_module_level = _jax_cur_level()
         self._rng = random.Random(42)
 
     def add_mutable_module(self, module):
@@ -45,7 +45,7 @@ class PaxThreadingLocalState(threading.local):
 
         # cannot modify a module whose level of abstraction
         # is lower than the current level
-        if self._mutable_module_level < jax.core.cur_sublevel():
+        if self._mutable_module_level < _jax_cur_level():
             return False
 
         for ref in self._mutable_module_ref_list:
@@ -66,7 +66,7 @@ class PaxThreadingLocalState(threading.local):
         prev_abstraction_level = self._mutable_module_level
         try:
             self._mutable_module_ref_list = modules
-            self._mutable_module_level = jax.core.cur_sublevel()
+            self._mutable_module_level = _jax_cur_level()
             yield
         finally:
             self._mutable_module_ref_list = prev
@@ -93,6 +93,19 @@ class PaxThreadingLocalState(threading.local):
     def set_rng_state(self, state):
         """Set internal random states."""
         self._rng.setstate(state)
+
+
+def _jax_cur_level():
+    """
+    Return the level of current jax trace.
+
+    If it is an eval_trace, return -1.
+    """
+    trace = jax.core.thread_local_state.trace_state.trace_stack.stack[-1]
+    if trace.trace_type == jax.core.EvalTrace:
+        return -1
+    else:
+        return trace.level
 
 
 PAX_STATE = PaxThreadingLocalState()
