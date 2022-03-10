@@ -77,8 +77,11 @@ class BatchNorm(Module):
         else:
             self.offset = None
 
-        self.ema_mean = EMA(jnp.zeros_like(self.offset), decay_rate, debias=True)
-        self.ema_var = EMA(jnp.zeros_like(self.offset), decay_rate, debias=True)
+        # initial values do not matter because debias=True
+        initial_mean = jnp.zeros(param_shape, dtype=jnp.float32)
+        self.ema_mean = EMA(initial_mean, decay_rate, debias=True)
+        initial_var = jnp.ones(param_shape, dtype=jnp.float32)
+        self.ema_var = EMA(initial_var, decay_rate, debias=True)
 
     def __call__(self, x):
         if self.training:

@@ -45,6 +45,18 @@ def test_batchnorm2D_train():
     assert y.shape == (1, 10, 8, 3)
 
 
+def test_batchnorm_no_scale():
+    bn = pax.BatchNorm1D(3, False, True, 0.9)
+    x = jnp.ones((1, 10, 3))
+    bn, _ = pax.purecall(bn, x)
+
+
+def test_batchnorm_no_offset():
+    bn = pax.BatchNorm1D(3, True, False, 0.9)
+    x = jnp.ones((1, 10, 3))
+    bn, _ = pax.purecall(bn, x)
+
+
 # def test_batchnorm_eval():
 #     bn = pax.BatchNorm(
 #         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
