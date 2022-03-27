@@ -9,8 +9,9 @@ from ..core import StateModule
 
 
 def _has_integer_leaves(x):
+    """check if there is any interger/bool leaves"""
     leaves = jax.tree_leaves(x)
-    return any(jnp.issubdtype(leaf, jnp.integer) for leaf in leaves)
+    return not all(jnp.issubdtype(leaf, jnp.floating) for leaf in leaves)
 
 
 class EMA(StateModule):
@@ -75,11 +76,11 @@ class EMA(StateModule):
                 debias_func = lambda a, _: a
 
             def update_fn(a, x):
-                if jnp.issubdtype(a, jnp.integer):
-                    return x
-                else:
+                if jnp.issubdtype(a, jnp.floating):
                     a = debias_func(a, x)
                     return a * self.decay_rate + x * (1 - self.decay_rate)
+                else:
+                    return x
 
             self.averages = jax.tree_map(update_fn, self.averages, xs)
 

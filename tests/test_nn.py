@@ -1027,3 +1027,11 @@ def test_ema_allow_int_2():
     ema, x = pax.purecall(ema, x)
     assert x[0].dtype == jnp.int16
     assert x[1].dtype == jnp.float16
+
+
+def test_ema_allow_int_3():
+    x = jnp.ones((3, 3), dtype=jnp.int16) == 0
+    assert x.dtype == jnp.bool_
+    ema = pax.EMA(x, 0.9, allow_int=True)
+    ema, x = pax.purecall(ema, x)
+    assert x.dtype == jnp.bool_
