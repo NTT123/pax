@@ -18,11 +18,6 @@ KeyArray = Union[Any, jnp.ndarray]
 class PaxThreadingLocalState(threading.local):
     """Manage all thread local states used by PAX"""
 
-    __slots__ = [
-        "_mutable_module_ref_list",
-        "_mutable_module_level",
-        "_rng",
-    ]
     _mutable_module_ref_list: Tuple[weakref.ReferenceType, ...]
     _mutable_module_level: int
     _rng: Optional[random.Random]
