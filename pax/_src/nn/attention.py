@@ -61,7 +61,7 @@ class MultiHeadAttention(Module):
         query_heads = self.query_projection(query)
         key_heads = self.key_projection(key)
         value_heads = self.value_projection(value)
-        (query_heads, key_heads, value_heads) = jax.tree_map(
+        (query_heads, key_heads, value_heads) = jax.tree_util.tree_map(
             lambda x, y: x.reshape(*y.shape[:-1], self.num_heads, self.key_size),
             (query_heads, key_heads, value_heads),
             (query, key, value),

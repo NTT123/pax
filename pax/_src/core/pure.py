@@ -89,7 +89,9 @@ def purecall(module: Callable[..., O], *args, **kwargs) -> Tuple[Any, O]:
 
 def _get_modules(tree):
     "Return a list of modules in the pytree `tree`."
-    modules = jax.tree_flatten(tree, is_leaf=lambda x: isinstance(x, BaseModule))[0]
+    modules = jax.tree_util.tree_flatten(
+        tree, is_leaf=lambda x: isinstance(x, BaseModule)
+    )[0]
     modules = [m for m in modules if isinstance(m, BaseModule)]
     return modules
 
@@ -103,5 +105,5 @@ def get_all_submodules(value):
 
 
 def _copy(value: T) -> T:
-    leaves, treedef = jax.tree_flatten(value)
-    return jax.tree_unflatten(treedef, leaves)
+    leaves, treedef = jax.tree_util.tree_flatten(value)
+    return jax.tree_util.tree_unflatten(treedef, leaves)

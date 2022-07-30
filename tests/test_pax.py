@@ -34,7 +34,7 @@ def test_type_union():
             self.count = [0]
 
     counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
+    leaves, treedef = jax.tree_util.tree_flatten(counter)
     assert leaves == []
 
 
@@ -47,7 +47,7 @@ def test_type_list_int():
             self.count = [0]
 
     counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
+    leaves, treedef = jax.tree_util.tree_flatten(counter)
     assert leaves == []
 
 
@@ -60,7 +60,7 @@ def test_type_sequence():
             self.count = jnp.array([0.0])
 
     counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
+    leaves, treedef = jax.tree_util.tree_flatten(counter)
     assert leaves == [jnp.array(0.0)]
 
 
@@ -71,7 +71,7 @@ def test_type_dict():
             self.count = {"conv1": [1, 2, 3], "conv2": ["a", "b"]}
 
     counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
+    leaves, treedef = jax.tree_util.tree_flatten(counter)
     assert leaves == []
 
 
@@ -82,7 +82,7 @@ def test_type_dict_dict1():
             self.count = {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
 
     counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
+    leaves, treedef = jax.tree_util.tree_flatten(counter)
     assert leaves == []
 
 
@@ -93,7 +93,7 @@ def test_type_dict_dict_optional():
             self.count = {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
 
     counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
+    leaves, treedef = jax.tree_util.tree_flatten(counter)
     assert leaves == []
 
 
@@ -106,7 +106,7 @@ def test_type_dict_dict_optional1():
             self.count = {"conv1": {1: [1, 2, 3]}, "conv2": {2: ["a", "b"]}}
 
     counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
+    leaves, treedef = jax.tree_util.tree_flatten(counter)
     assert leaves == []
 
 
@@ -119,7 +119,7 @@ def test_type_tuple():
             self.count = (1, 2)
 
     counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
+    leaves, treedef = jax.tree_util.tree_flatten(counter)
     assert leaves == []
 
 
@@ -132,7 +132,7 @@ def test_type_optional():
             self.count = jnp.array(0)
 
     counter = Counter()
-    leaves, treedef = jax.tree_flatten(counter)
+    leaves, treedef = jax.tree_util.tree_flatten(counter)
     assert leaves == [0]
 
 
@@ -164,8 +164,8 @@ def test_state_of_param():
             self.m2 = {"m1": m11}
 
     m2 = M2(m1)
-    assert len(jax.tree_leaves(pax.select_parameters(m2))) == 1
-    assert len(jax.tree_leaves(pax.select_parameters(m1))) == 1
+    assert len(jax.tree_util.tree_leaves(pax.select_parameters(m2))) == 1
+    assert len(jax.tree_util.tree_leaves(pax.select_parameters(m1))) == 1
 
 
 def test_assign_module_with_default_kind():
@@ -385,10 +385,10 @@ def test_hash_module():
 
 def test_deepcopy_pytreedef():
     f = pax.Linear(3, 3)
-    f = f.set_attribute("de", jax.tree_structure(f))
+    f = f.set_attribute("de", jax.tree_util.tree_structure(f))
     g = f.copy()
 
-    assert jax.tree_structure(g) == jax.tree_structure(f)
+    assert jax.tree_util.tree_structure(g) == jax.tree_util.tree_structure(f)
 
 
 @pax.pure
@@ -520,7 +520,7 @@ def test_parameter_module():
             self.c1 = C()
 
     d = D()
-    assert len(jax.tree_leaves(d.parameters())) == 0
+    assert len(jax.tree_util.tree_leaves(d.parameters())) == 0
 
 
 def test_state_dict_mixed_attribute():

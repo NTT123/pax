@@ -15,7 +15,7 @@ def assert_structure_equal(tree_a: T, tree_b: T):
 
     Print out the difference.
     """
-    if jax.tree_structure(tree_a) == jax.tree_structure(tree_b):
+    if jax.tree_util.tree_structure(tree_a) == jax.tree_util.tree_structure(tree_b):
         return True
 
     def check(subtree_a, subtree_b):
@@ -24,7 +24,7 @@ def assert_structure_equal(tree_a: T, tree_b: T):
 
     has_error = False
     try:
-        jax.tree_map(
+        jax.tree_util.tree_map(
             check,
             tree_a,
             tree_b,
@@ -39,8 +39,8 @@ def assert_structure_equal(tree_a: T, tree_b: T):
         test_case = TestCase()
         test_case.maxDiff = None
         # do not compare weights
-        tree_a_w_none_leaves = jax.tree_map(lambda _: None, tree_a)
-        tree_b_w_none_leaves = jax.tree_map(lambda _: None, tree_b)
+        tree_a_w_none_leaves = jax.tree_util.tree_map(lambda _: None, tree_a)
+        tree_b_w_none_leaves = jax.tree_util.tree_map(lambda _: None, tree_b)
         test_case.assertDictEqual(
             vars(tree_a_w_none_leaves), vars(tree_b_w_none_leaves)
         )

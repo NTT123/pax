@@ -142,9 +142,9 @@ def build_update_fn(loss_fn, *, scan_mode: bool = False):
         assert isinstance(model, Module)
         assert isinstance(optimizer, Module)
 
-        model_treedef = jax.tree_structure(model)
+        model_treedef = jax.tree_util.tree_structure(model)
         grads, (aux, model) = grad(loss_fn, has_aux=True)(model, *inputs, **kwinputs)
-        if jax.tree_structure(model) != model_treedef:
+        if jax.tree_util.tree_structure(model) != model_treedef:
             raise ValueError("Expecting an updated model in the auxiliary output.")
 
         params = select_parameters(model)
@@ -186,10 +186,10 @@ def scan(func, init, xs, length=None, unroll: int = 1, time_major=True):
         # data format: NT...
         if xs is not None:
             # swap batch and time axes
-            xs = jax.tree_map(lambda leaf: jnp.swapaxes(leaf, 0, 1), xs)
+            xs = jax.tree_util.tree_map(lambda leaf: jnp.swapaxes(leaf, 0, 1), xs)
         state, output = jax.lax.scan(func, init, xs, length=length, unroll=unroll)
         # restore to format NT...
-        output = jax.tree_map(lambda leaf: jnp.swapaxes(leaf, 0, 1), output)
+        output = jax.tree_util.tree_map(lambda leaf: jnp.swapaxes(leaf, 0, 1), output)
         return state, output
 
 

@@ -77,7 +77,7 @@ def train(
     total_loss = 0.0
     tr = tqdm(dataloader)
     for step, batch in enumerate(tr, 1):
-        batch = jax.tree_map(lambda x: x.numpy(), batch)
+        batch = jax.tree_util.tree_map(lambda x: x.numpy(), batch)
         diffusion, optimizer, loss = fast_update_fn(diffusion, optimizer, batch)
         total_loss = total_loss + loss
 

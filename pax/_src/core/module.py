@@ -46,12 +46,12 @@ def parameters_method(*trainable_attributes, submodules=True):
             assert hasattr(self, name), f"Expecting an attribute with name `{name}`."
 
         is_submodule = lambda x: x is not self and isinstance(x, SafeBaseModule)
-        leaves, treedef = jax.tree_flatten(self, is_leaf=is_submodule)
+        leaves, treedef = jax.tree_util.tree_flatten(self, is_leaf=is_submodule)
         leaves = (
             leaf.parameters() if submodules and is_submodule(leaf) else EmptyNode()
             for leaf in leaves
         )
-        mod = jax.tree_unflatten(treedef, leaves)
+        mod = jax.tree_util.tree_unflatten(treedef, leaves)
         values = {name: getattr(self, name) for name in names}
         mod = mod.replace(**values)
         return mod
@@ -118,8 +118,8 @@ class Module(SafeBaseModule):
 
     def copy(self: T) -> T:
         """Return a copy of the current module."""
-        leaves, treedef = jax.tree_flatten(self)
-        return jax.tree_unflatten(treedef, leaves)
+        leaves, treedef = jax.tree_util.tree_flatten(self)
+        return jax.tree_util.tree_unflatten(treedef, leaves)
 
     def train(self: T) -> T:
         """Return a module in training mode."""
@@ -172,7 +172,7 @@ class Module(SafeBaseModule):
         >>> print(mod[0].weight.shape)
         (2, 3)
         """
-        leaves, tree_def = jax.tree_flatten(self, is_leaf=lambda x: x is node)
+        leaves, tree_def = jax.tree_util.tree_flatten(self, is_leaf=lambda x: x is node)
         count = sum(1 if x is node else 0 for x in leaves)
 
         if count != 1:
@@ -180,7 +180,7 @@ class Module(SafeBaseModule):
 
         # replace `node` by value
         new_leaves = [value if v is node else v for v in leaves]
-        mod: T = jax.tree_unflatten(tree_def, new_leaves)
+        mod: T = jax.tree_util.tree_unflatten(tree_def, new_leaves)
         mod.scan_bugs()
         return mod
 
@@ -232,13 +232,15 @@ class Module(SafeBaseModule):
 
     def map(self: T, func, *mods) -> T:
         mods = [mods.state_dict() for mods in mods]
-        return self.load_state_dict(jax.tree_map(func, self.state_dict(), *mods))
+        return self.load_state_dict(
+            jax.tree_util.tree_map(func, self.state_dict(), *mods)
+        )
 
     def apply(self: T, apply_fn) -> T:
         """Apply a function to all submodules.
 
         >>> def print_param_count(mod):
-        ...     count = sum(jax.tree_leaves(jax.tree_map(jnp.size, mod)))
+        ...     count = sum(jax.tree_util.tree_leaves(jax.tree_util.tree_map(jnp.size, mod)))
         ...     print(f"{count}\t{mod}")
         ...     return mod
         ...
@@ -259,7 +261,7 @@ class Module(SafeBaseModule):
                 return mod_or_ndarray
 
         submodules: List[Module] = self.submodules()
-        new_self = jax.tree_map(
+        new_self = jax.tree_util.tree_map(
             rec_fn,
             self,
             is_leaf=lambda x: isinstance(x, Module) and (x in submodules),
@@ -273,19 +275,19 @@ class Module(SafeBaseModule):
         """Apply a function to all submodules, recursively."""
         module = self.copy()
         submod_fn = lambda x: isinstance(x, Module) and x is not module
-        leaves, treedef = jax.tree_flatten(module, is_leaf=submod_fn)
+        leaves, treedef = jax.tree_util.tree_flatten(module, is_leaf=submod_fn)
         new_leaves = []
         for value in leaves:
             if isinstance(value, Module):
                 new_leaves.append(value.apply(func))
             else:
                 new_leaves.append(value)
-        return jax.tree_unflatten(treedef, new_leaves)
+        return jax.tree_util.tree_unflatten(treedef, new_leaves)
 
     def submodules(self) -> List[T]:
         """Return a list of submodules."""
         submod_fn = lambda x: isinstance(x, Module) and x is not self
-        leaves, _ = jax.tree_flatten(self, is_leaf=submod_fn)
+        leaves, _ = jax.tree_util.tree_flatten(self, is_leaf=submod_fn)
         return [leaf for leaf in leaves if submod_fn(leaf)]
 
     def scan_bugs(self: T) -> T:
@@ -383,7 +385,7 @@ def update_pytree(mod: T, *, other: T) -> T:
             return leaf_y
 
     is_empty = lambda x: isinstance(x, EmptyNode)
-    new_mod = jax.tree_map(_select_fn, mod, other, is_leaf=is_empty)
+    new_mod = jax.tree_util.tree_map(_select_fn, mod, other, is_leaf=is_empty)
     return new_mod
 
 
@@ -407,7 +409,7 @@ def save_weights_to_dict(module: Module) -> Dict[str, Any]:
     out = {}
     for name in module.pytree_attributes:
         value = getattr(module, name)
-        out[name] = jax.tree_map(
+        out[name] = jax.tree_util.tree_map(
             _dict_or_array,
             value,
             is_leaf=lambda x: isinstance(x, Module),
@@ -440,7 +442,7 @@ def load_weights_from_dict(module: T, state_dict: Dict[str, Any]) -> T:
     out = module
     for name in module.pytree_attributes:
         value = getattr(module, name)
-        value = jax.tree_map(
+        value = jax.tree_util.tree_map(
             _module_or_array,
             value,
             state_dict[name],

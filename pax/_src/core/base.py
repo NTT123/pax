@@ -44,7 +44,7 @@ class BaseModule:
         pytree_attributes = []
         mixed_pytree_attributes = []
         for name, value in self.__dict__.items():
-            leaves, _ = jax.tree_flatten(value, is_leaf=is_mod_or_node)
+            leaves, _ = jax.tree_util.tree_flatten(value, is_leaf=is_mod_or_node)
             pytree_cls = (jnp.ndarray, np.ndarray, BaseModule, EmptyNode)
             any_pytree = any(map(is_pytree, leaves))
             all_pytree = all(map(is_pytree, leaves))
@@ -68,9 +68,9 @@ class BaseModule:
             is_array_mod = lambda x: isinstance(x, array_mod_cls)
             for name in self._mixed_pytree_attributes:
                 value = aux.pop(name)
-                leaves, treedef = jax.tree_flatten(value, is_leaf=is_module)
+                leaves, treedef = jax.tree_util.tree_flatten(value, is_leaf=is_module)
                 leaves = (v if is_array_mod(v) else ValueNode(v) for v in leaves)
-                value = jax.tree_unflatten(treedef, leaves)
+                value = jax.tree_util.tree_unflatten(treedef, leaves)
                 children.append(value)
         return children, aux
 
@@ -86,7 +86,9 @@ class BaseModule:
             is_leaf = lambda x: isinstance(x, (ValueNode, BaseModule))
             unwrap = lambda x: x.value if isinstance(x, ValueNode) else x
             for name, value in zip(module._mixed_pytree_attributes, children[L:]):
-                module_dict[name] = jax.tree_map(unwrap, value, is_leaf=is_leaf)
+                module_dict[name] = jax.tree_util.tree_map(
+                    unwrap, value, is_leaf=is_leaf
+                )
         return module
 
     def __init_subclass__(cls):
@@ -101,8 +103,8 @@ class BaseModule:
         if type(self) is not type(o):
             return False
 
-        self_leaves, self_treedef = jax.tree_flatten(self)
-        o_leaves, o_treedef = jax.tree_flatten(o)
+        self_leaves, self_treedef = jax.tree_util.tree_flatten(self)
+        o_leaves, o_treedef = jax.tree_util.tree_flatten(o)
 
         if len(self_leaves) != len(o_leaves):
             return False
@@ -110,12 +112,14 @@ class BaseModule:
         if self_treedef != o_treedef:
             return False
 
-        leaves_equal = jax.tree_map(lambda a, b: a is b, self_leaves, o_leaves)
+        leaves_equal = jax.tree_util.tree_map(
+            lambda a, b: a is b, self_leaves, o_leaves
+        )
         return all(leaves_equal)
 
     def __hash__(self) -> int:
-        leaves, treedef = jax.tree_flatten(self)
-        leaves = jax.tree_map(lambda x: (x.shape, x.dtype), leaves)
+        leaves, treedef = jax.tree_util.tree_flatten(self)
+        leaves = jax.tree_util.tree_map(lambda x: (x.shape, x.dtype), leaves)
         return hash((tuple(leaves), treedef))
 
 

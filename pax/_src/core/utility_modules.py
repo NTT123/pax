@@ -138,7 +138,7 @@ class Flattener(Module):
         self.leaves_dict = {}
 
         for name, value in kwargs.items():
-            leaves, treedef = jax.tree_flatten(value)
+            leaves, treedef = jax.tree_util.tree_flatten(value)
             self.treedef_dict[name] = treedef
             self.leaves_dict[name] = leaves
 
@@ -146,7 +146,7 @@ class Flattener(Module):
         if name in self.treedef_dict:
             treedef = self.treedef_dict[name]
             leaves = self.leaves_dict[name]
-            value = jax.tree_unflatten(treedef, leaves)
+            value = jax.tree_util.tree_unflatten(treedef, leaves)
             return value
         else:
             raise AttributeError()
@@ -164,7 +164,7 @@ class Flattener(Module):
         """
         new_self = self.copy()
         for name, value in kwargs.items():
-            leaves, treedef = jax.tree_flatten(value)
+            leaves, treedef = jax.tree_util.tree_flatten(value)
             new_self.treedef_dict[name] = treedef
             new_self.leaves_dict[name] = leaves
         return new_self

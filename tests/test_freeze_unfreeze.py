@@ -44,6 +44,6 @@ def test_freeze_twice():
 def test_copy():
     a = pax.Linear(1, 1, with_bias=False)
     b = pax.enable_eval_mode(a)
-    assert jax.tree_structure(a) != jax.tree_structure(b)
+    assert jax.tree_util.tree_structure(a) != jax.tree_util.tree_structure(b)
     c = pax.enable_train_mode(b)
-    assert jax.tree_structure(a) == jax.tree_structure(c)
+    assert jax.tree_util.tree_structure(a) == jax.tree_util.tree_structure(c)

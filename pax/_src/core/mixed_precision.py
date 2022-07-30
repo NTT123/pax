@@ -162,5 +162,5 @@ def unwrap_mp_policy(module: T) -> T:
 
 def _has_module(mod):
     is_mod = lambda x: x is not mod
-    leaves, _ = jax.tree_flatten(mod, is_leaf=is_mod)
+    leaves, _ = jax.tree_util.tree_flatten(mod, is_leaf=is_mod)
     return any(map(is_mod, leaves))

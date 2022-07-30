@@ -47,15 +47,17 @@ def test_sgd():
             super().__init__()
             self.momentum = momentum
             self.learning_rate = learning_rate
-            self.velocity = jax.tree_map(lambda x: jnp.zeros_like(x), params)
+            self.velocity = jax.tree_util.tree_map(lambda x: jnp.zeros_like(x), params)
 
         def step(self, grads: pax.Module, params: pax.Module):
-            self.velocity = jax.tree_map(
+            self.velocity = jax.tree_util.tree_map(
                 lambda v, g: v * self.momentum + g * self.learning_rate,
                 self.velocity,
                 grads,
             )
-            new_params = jax.tree_map(lambda p, v: p - v, params, self.velocity)
+            new_params = jax.tree_util.tree_map(
+                lambda p, v: p - v, params, self.velocity
+            )
             return new_params
 
     f = pax.Linear(2, 2)

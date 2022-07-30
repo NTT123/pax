@@ -112,7 +112,7 @@ def train():
             loss = jnp.mean(total_losses) / (1000 if step > 0 else steps_per_update)
             total_losses = jnp.zeros_like(total_losses)
             # eval on a single device
-            eval_net = jax.tree_map(lambda x: x[0], net.eval())
+            eval_net = jax.tree_util.tree_map(lambda x: x[0], net.eval())
             out = eval_net.inference(
                 prompt=tokenize(test_prompt),
                 length=(128 if step < num_steps else 1024),

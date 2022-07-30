@@ -33,9 +33,9 @@ def freeze_parameters(mod: T) -> T:
 
 def unfreeze_parameters(mod: T, *, origin: T) -> T:
     """Return a copy module with all trainable parameters are converted to non-trainable states."""
-    tree_def = jax.tree_structure(origin)
-    leaves = jax.tree_leaves(mod)
-    return jax.tree_unflatten(tree_def, leaves)
+    tree_def = jax.tree_util.tree_structure(origin)
+    leaves = jax.tree_util.tree_leaves(mod)
+    return jax.tree_util.tree_unflatten(tree_def, leaves)
 
 
 def select_parameters(mod: T) -> T:

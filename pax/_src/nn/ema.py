@@ -10,7 +10,7 @@ from ..core import StateModule
 
 def _has_integer_leaves(x):
     """check if there is any interger/bool leaves"""
-    leaves = jax.tree_leaves(x)
+    leaves = jax.tree_util.tree_leaves(x)
     return not all(jnp.issubdtype(leaf, jnp.floating) for leaf in leaves)
 
 
@@ -82,6 +82,6 @@ class EMA(StateModule):
                 else:
                     return x
 
-            self.averages = jax.tree_map(update_fn, self.averages, xs)
+            self.averages = jax.tree_util.tree_map(update_fn, self.averages, xs)
 
         return self.averages

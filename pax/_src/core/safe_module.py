@@ -67,7 +67,7 @@ class SafeBaseModule(BaseModule, metaclass=SafeBaseModuleMetaclass):
 
     def _assert_not_shared_weight(self):
         """Shared weight is not allowed."""
-        leaves = jax.tree_leaves(self)
+        leaves = jax.tree_util.tree_leaves(self)
         leaf_ids = set()
         for leaf in leaves:
             if id(leaf) in leaf_ids:
@@ -89,8 +89,8 @@ class SafeBaseModule(BaseModule, metaclass=SafeBaseModuleMetaclass):
             value = getattr(self, name)
             is_mod = lambda x: isinstance(x, BaseModule)
             is_ndarray = lambda x: isinstance(x, (jnp.ndarray, np.ndarray))
-            mods, _ = jax.tree_flatten(value, is_leaf=is_mod)
-            leaves = jax.tree_leaves(value)
+            mods, _ = jax.tree_util.tree_flatten(value, is_leaf=is_mod)
+            leaves = jax.tree_util.tree_leaves(value)
             has_mods = any(map(is_mod, mods))
             has_arrays = any(map(is_ndarray, mods))
 
@@ -121,7 +121,7 @@ def _find_shared_module(module: BaseModule):
     def _get_all_modules(mod: BaseModule, lst: List):
         lst.append(mod)
         is_mod = lambda x: isinstance(x, BaseModule) and x is not mod
-        submodules, _ = jax.tree_flatten(mod, is_leaf=is_mod)
+        submodules, _ = jax.tree_util.tree_flatten(mod, is_leaf=is_mod)
         submodules = (m for m in submodules if is_mod(m))
         for m in submodules:
             _get_all_modules(m, lst)

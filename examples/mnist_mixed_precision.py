@@ -130,7 +130,7 @@ def train(batch_size=32, num_epochs=5, learning_rate=1e-4, weight_decay=1e-4):
     for epoch in range(0, num_epochs):
         losses = 0.0
         for batch in tqdm(train_data, desc="train", leave=False):
-            batch = jax.tree_map(lambda x: x.numpy(), batch)
+            batch = jax.tree_util.tree_map(lambda x: x.numpy(), batch)
             net, optimizer, loss_scale, loss = update_fn(
                 net, optimizer, loss_scale, batch
             )
@@ -139,7 +139,7 @@ def train(batch_size=32, num_epochs=5, learning_rate=1e-4, weight_decay=1e-4):
 
         test_losses = 0.0
         for batch in tqdm(test_data, desc="eval", leave=False):
-            batch = jax.tree_map(lambda x: x.numpy(), batch)
+            batch = jax.tree_util.tree_map(lambda x: x.numpy(), batch)
             test_losses = test_losses + test_loss_fn(net, batch)
         test_loss = test_losses / len(test_data)
 
