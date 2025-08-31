@@ -1,6 +1,5 @@
 """Utility Modules."""
 
-
 from typing import Any, Callable, Dict, List, Optional, Sequence, TypeVar, Union
 
 import jax

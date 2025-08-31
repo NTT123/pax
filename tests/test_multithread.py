@@ -1,6 +1,7 @@
 """
 Test PAX in multithread environment.
 """
+
 import queue
 import threading
 import time

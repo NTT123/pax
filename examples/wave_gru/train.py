@@ -52,13 +52,13 @@ def train(
     n_mels=80,
     fmin=0,
     fmax=8000,
-    seq_len=2 ** 10,
+    seq_len=2**10,
     n_mu_bits=8,
     log_freq: int = 1000,
     random_seed=42,
 ):
     pax.seed_rng_key(random_seed)
-    mu = 2 ** n_mu_bits - 1
+    mu = 2**n_mu_bits - 1
     n_frames = seq_len // hop_length
     wave_gru = WaveGRU(n_mels, hidden_dim)
     print(wave_gru.summary())

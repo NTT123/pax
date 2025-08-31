@@ -6,7 +6,6 @@ import numpy as np
 import pax
 import pytest
 
-
 # def test_batchnorm_train():
 #     bn = pax.BatchNorm(
 #         3, True, True, 0.9, reduced_axes=[0, 1], param_shape=[1, 1, 3]
@@ -28,7 +27,7 @@ def test_batchnorm1D_train():
     old_state = bn.ema_mean.averages
     bn, y = pax.purecall(bn, x)
     new_state = bn.ema_mean.averages
-    chex.assert_tree_all_equal_shapes(old_state, new_state)
+    chex.assert_trees_all_equal_shapes(old_state, new_state)
     chex.assert_tree_all_finite(new_state)
     assert y.shape == (1, 10, 3)
 
@@ -40,7 +39,7 @@ def test_batchnorm2D_train():
     old_state = bn.scale
     bn, y = pax.purecall(bn, x)
     new_state = bn.scale
-    chex.assert_tree_all_equal_shapes(old_state, new_state)
+    chex.assert_trees_all_equal_shapes(old_state, new_state)
     chex.assert_tree_all_finite(new_state)
     assert y.shape == (1, 10, 8, 3)
 

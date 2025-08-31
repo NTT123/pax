@@ -1,5 +1,3 @@
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import pax
@@ -14,7 +12,7 @@ class UpsampleNet(pax.Module):
         self.dilated_convs = []
         self.bns = []
         for i in range(5):
-            conv = pax.Conv1D(512, 512, 3, rate=2 ** i, padding="VALID")
+            conv = pax.Conv1D(512, 512, 3, rate=2**i, padding="VALID")
             self.dilated_convs.append(conv)
             self.bns.append(pax.BatchNorm1D(512, True, True, 0.99))
         self.upsample_conv_1 = pax.Conv1DTranspose(512, 512, 4, stride=4)
@@ -54,8 +52,8 @@ class WaveGRU(pax.Module):
 
         self.upsampling = UpsampleNet(n_mels, hidden_dim)
         self.gru = pax.GRU(hidden_dim, hidden_dim)
-        self.logits = pax.Linear(hidden_dim, 2 ** n_mu_bits)
-        self.embed = pax.Embed(2 ** n_mu_bits, hidden_dim)
+        self.logits = pax.Linear(hidden_dim, 2**n_mu_bits)
+        self.embed = pax.Embed(2**n_mu_bits, hidden_dim)
 
     def __call__(self, inputs):
         logmel, wav = inputs

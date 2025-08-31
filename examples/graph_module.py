@@ -1,8 +1,8 @@
 """A model as a directed graph."""
 
 import jax
-import pax
 import jax.numpy as jnp
+import pax
 from pax.experimental.graph import Node, build_graph_module
 
 pax.seed_rng_key(42)

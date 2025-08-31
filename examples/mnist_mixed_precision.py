@@ -118,7 +118,7 @@ def train(batch_size=32, num_epochs=5, learning_rate=1e-4, weight_decay=1e-4):
         opax.adamw(learning_rate=learning_rate, weight_decay=weight_decay),
     ).init(net.parameters())
 
-    loss_scale = jmp.DynamicLossScale(jmp.half_dtype()(2 ** 15), period=2000)
+    loss_scale = jmp.DynamicLossScale(jmp.half_dtype()(2**15), period=2000)
 
     train_data = (
         load_dataset("train")

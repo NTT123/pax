@@ -1,7 +1,6 @@
 import jax.numpy as jnp
 import numpy as np
 import pax
-import pytest
 
 
 def test_list_of_mod():
@@ -31,6 +30,7 @@ def test_assigned_field_an_array():
     n = N()
 
     n.scan_bugs()
+
     # no error because we will automatically assign `a` to kind PARAMETER
     def mutate(n: N) -> N:
         n.b = jnp.array([1, 2, 3], dtype=jnp.float32)

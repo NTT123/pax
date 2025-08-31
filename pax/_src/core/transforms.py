@@ -1,4 +1,5 @@
 """Transform a module to a new one."""
+
 from typing import Any, TypeVar
 
 import jax

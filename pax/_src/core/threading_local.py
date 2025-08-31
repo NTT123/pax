@@ -10,7 +10,7 @@ from typing import Any, Optional, Tuple, Union
 
 import jax
 import jax.numpy as jnp
-import jax.tree_util
+from jax.core import take_current_trace
 
 KeyArray = Union[Any, jnp.ndarray]
 
@@ -90,17 +90,21 @@ class PaxThreadingLocalState(threading.local):
         self._rng.setstate(state)
 
 
+def _get_trace_level(trace):
+    if hasattr(trace, "parent_trace"):
+        return _get_trace_level(trace.parent_trace) + 1
+    else:
+        return -1
+
+
 def _jax_cur_level():
     """
     Return the level of current jax trace.
 
     If it is an eval_trace, return -1.
     """
-    trace = jax.core.thread_local_state.trace_state.trace_stack.stack[-1]
-    if trace.trace_type == jax.core.EvalTrace:
-        return -1
-    else:
-        return trace.level
+    with take_current_trace() as trace:
+        return _get_trace_level(trace)
 
 
 PAX_STATE = PaxThreadingLocalState()
